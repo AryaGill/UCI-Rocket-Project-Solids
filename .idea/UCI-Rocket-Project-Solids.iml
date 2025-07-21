@@ -3,6 +3,8 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv1" />
+      <excludeFolder url="file://$MODULE_DIR$/data-analysis/.venv" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.13 (UCI-Rocket-Project-Solids)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
