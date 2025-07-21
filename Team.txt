@@ -1,4 +1,4 @@
-# This is a testing branch for 25-26 AV Software Team's first project PR
+# This is a testing file for 25-26 AV Software Team's first project PR
 # Each member must add to this file in this format – [Name] - [Position]
 
 Arya - AV Software Lead
