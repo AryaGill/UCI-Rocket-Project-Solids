@@ -2,3 +2,4 @@
 # Each member must add to this file in this format – [Name] - [Position]
 
 Arya - AV Software Lead
+Brady - Airbrake Control
