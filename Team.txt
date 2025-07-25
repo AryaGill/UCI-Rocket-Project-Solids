@@ -3,3 +3,4 @@
 
 Arya - AV Software Lead
 Brady - Airbrake Control
+Danny - Embedded Firmware
