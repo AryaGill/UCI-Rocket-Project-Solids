@@ -69,8 +69,12 @@ int stage;
 int base_alt = 500; // Hard-coded base altitude in emergency cases
 int counter = 0;
 int prev_time;
-//Variable for setting how many data entries are written at once
+
+//Variables for setting how many data entries are written at once
 int cycles_per_write = 20;
+int write_count=0;
+String storageDataString="";
+
 void writeSD(String data) {
   File dataFile = SD.open("rocket.csv", FILE_WRITE);  
     if (dataFile) {
@@ -296,15 +300,15 @@ void loop(){
   //               String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
   //               String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," + String(stage) + "," + String(millis());
   
-  String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
+  storageDataString += String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
                 String(Accel_x2, 7) + "," + String(Accel_y2, 7) + "," + String(Accel_z2, 7) + "," +
                 String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," +
                 String(Gyro_x, 7) + "," + String(Gyro_y, 7) + "," + String(Gyro_z, 7) + "," +
                 String(Mag_x, 7) + "," + String(Mag_y, 7) + "," + String(Mag_z, 7) + "," +
                 String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
                 String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
-                String(stage) + "," + String(millis());
-
+                String(stage) + "," + String(millis()) + "\n";
+  write_count++;
   String dataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt, 1) + "," +
                 String(Accel_x2, 1) + "," + String(Accel_y2, 1) + "," + String(Accel_z2, 1) + "," +
                 String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1) + "," +
@@ -314,9 +318,12 @@ void loop(){
     HWSERIAL.println(dataString);
     prev_time = millis();
   }
-  
-  writeSD(storageDataString);
 
+  if(write_count>=cycles_per_write){
+    writeSD(storageDataString.trim());
+    write_count=0;
+    storageDataString="";
+  }
 
   if(HWSERIAL.available() > 0) {
     String receivedData = HWSERIAL.readStringUntil('\n');
