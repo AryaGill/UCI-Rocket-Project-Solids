@@ -69,7 +69,8 @@ int stage;
 int base_alt = 500; // Hard-coded base altitude in emergency cases
 int counter = 0;
 int prev_time;
-
+//Variable for setting how many data entries are written at once
+int cycles_per_write = 20;
 void writeSD(String data) {
   File dataFile = SD.open("rocket.csv", FILE_WRITE);  
     if (dataFile) {
@@ -104,6 +105,9 @@ void setup() {
   pinMode(camera1, OUTPUT);
   pinMode(camera2, OUTPUT);
 
+//Turn both cameras on by default
+  digitalWrite(camera1, HIGH)
+  digitalWrite(camera2, HIGH)
 // BPM390 Setup
   Serial.println("BMP390 Setup");
   if (!bmpModule.begin()){
@@ -271,7 +275,7 @@ void loop(){
         fall_counter1 = fall_counter1 + 1;
       }
       else{
-        fall_counter = 0;
+        fall_counter1 = 0;
       }
     }
         
