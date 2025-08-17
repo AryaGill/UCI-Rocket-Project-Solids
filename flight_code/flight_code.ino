@@ -60,7 +60,16 @@ const int charge_delay = 500; //500
 const int backup_delay = 500; //2500
 bool launch_flag = 0;
 bool drogue_flag = 0;
+bool drogue_primary_deployed = 0;
+bool drogue_secondary_deployed = 0;
+unsigned long drogue_primary_start_time;
+unsigned long drogue_secondary_start_time;
+
 bool main_flag = 0;
+bool main_primary_deployed = 0;
+bool main_secondary_deployed = 0;
+unsigned long main_primary_start_time;
+unsigned long main_secondary_start_time;
 int fall_counter = 0;
 int fall_counter1 = 0;
 int rise_counter = 0;
@@ -241,16 +250,9 @@ void loop(){
       if ((pre_alt - Alt > 0.1 && fall_counter >= 1) && (Alt - startAlt > 305)) {
         drogue_flag = true;
         digitalWrite(drogue_1, HIGH);
-        delay(charge_delay);
-        digitalWrite(drogue_1, LOW);
         writeSD("Primary Drogue Deployed");
-
-        delay(backup_delay);
-
-        digitalWrite(drogue_2, HIGH);
-        delay(charge_delay);
-        digitalWrite(drogue_2, LOW);
-        writeSD("Secondary Drogue Deployed");
+        drogue_primary_start_time = millis();
+        drogue_primary_deployed = true;
       }
       else if ((pre_alt - Alt > 0.1)){
         fall_counter = fall_counter + 1;
@@ -259,21 +261,30 @@ void loop(){
         fall_counter = 0;
       }
     }
-    
+    if(drogue_flag && drogue_primary_deployed) {
+        unsigned long current_time = millis();
+        if(current_time - drogue_primary_start_time >= charge_delay){
+          digitalWrite(drogue_1, LOW);
+        }
+        if(!drogue_secondary_deployed && (current_time - drogue_primary_start_time >= charge_delay + backup_delay)){
+          digitalWrite(drogue_2, HIGH);
+          writeSD("Secondary Drogue Deployed");
+          drogue_secondary_start_time = millis();
+          drogue_secondary_deployed = true;
+        }
+        if(drogue_secondary_deployed && (current_time - drogue_secondary_start_time >= charge_delay)){
+          digitalWrite(drogue_2, LOW);
+          drogue_primary_deployed = false;
+        }
+    }
+
     if (!main_flag) {
       if ((Alt >= 152 + startAlt) && (Alt <= 305 + startAlt) && (pre_alt - Alt > 1) && fall_counter1 >= 10) { // 1 should be changed to terminal velocity
         main_flag = true;
         digitalWrite(main_1, HIGH);
-        delay(charge_delay);
-        digitalWrite(main_1, LOW);
         writeSD("Primary Main Deployed");
-
-        delay(backup_delay);
-
-        digitalWrite(main_2, HIGH);
-        delay(charge_delay);
-        digitalWrite(main_2, LOW);
-        writeSD("Secondary Main Deployed");
+        main_primary_start_time = millis();
+        main_primary_deployed = true;
       }
       else if ((pre_alt - Alt > 0.1)){
         fall_counter1 = fall_counter1 + 1;
@@ -282,7 +293,22 @@ void loop(){
         fall_counter1 = 0;
       }
     }
-        
+    if(main_flag && main_primary_deployed) {
+        unsigned long current_time = millis();
+        if(current_time - main_primary_start_time >= charge_delay){
+          digitalWrite(main_1, LOW);
+        }
+        if(!main_secondary_deployed && (current_time - main_primary_start_time >= charge_delay + backup_delay)){
+          digitalWrite(main_2, HIGH);
+          writeSD("Secondary Main Deployed");
+          main_secondary_start_time = millis();
+          main_secondary_deployed = true;
+        }
+        if(main_secondary_deployed && (current_time - main_secondary_start_time >= charge_delay)){
+          digitalWrite(main_2, LOW);
+          main_primary_deployed = false;
+        }
+    }
 
   pre_alt = Alt;
 
