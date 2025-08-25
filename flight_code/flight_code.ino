@@ -59,17 +59,25 @@ const int delay_time = 10;
 const int charge_delay = 500; //500
 const int backup_delay = 500; //2500
 bool launch_flag = 0;
+
+//drogue deployment state variables
 bool drogue_flag = 0;
 bool drogue_primary_deployed = 0;
+bool drogue_primary_ended = 0;
 bool drogue_secondary_deployed = 0;
 unsigned long drogue_primary_start_time;
+unsigned long drogue_primary_end_time;
 unsigned long drogue_secondary_start_time;
 
+//main deployment state variables
 bool main_flag = 0;
 bool main_primary_deployed = 0;
+bool main_primary_ended = 0;
 bool main_secondary_deployed = 0;
 unsigned long main_primary_start_time;
+unsigned long main_primary_end_time;
 unsigned long main_secondary_start_time;
+
 int fall_counter = 0;
 int fall_counter1 = 0;
 int rise_counter = 0;
@@ -143,23 +151,41 @@ void setup() {
 
   algo.begin(200);
 
-  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Stage,Time";
-  writeSD(dataString);
-
+  //possible start altitude after reset fix
   for (int i = 0; i <= 10; i++){
      BPM_SensorData BPM_data = bmpModule.readData();
     if (BPM_data.temperature != -999) {
-      if (BPM_data.altitude > 1000){
-        startAlt = base_alt;
-      }
-      else{
-        startAlt = BPM_data.altitude;
-      }
+      startAlt = BPM_data.altitude;
     }
     else {
     Serial.println("Failed to get BPM390 data");
     }
   }
+  //read file to see if an initial altitude value was recorded already
+  File f = SD.open("rocket.csv", FILE_READ);
+  //if the file exists and is not empty that means a starting altitude was already previously recorded
+  if (f && f.size() > 0) {
+    //set the starting altitude to the first altitude recorded
+    String firstLine = f.readStringUntil('\n');
+    f.close();
+    firstLine.trim();
+    startAlt = firstLine.toFloat();
+    Serial.print("startAlt loaded from file: ");
+    Serial.println(startAlt);
+
+  }
+
+  //if the file does not exist yet or is empty that means this is the first time that the computer has ran (not a reset)
+  //startAlt is kept as the sensor reading
+  else {
+    if (f) f.close(); 
+    Serial.println("Starting Altitude set");
+    writeSD(String(startAlt, 8));
+  }
+
+  //data headers
+  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Stage,Time";
+  writeSD(dataString);
  
   delay(1000);
   analogWriteFrequency(buzzer, 4500);
@@ -235,7 +261,7 @@ void loop(){
   else {
     Serial.println("Failed to get LSM9DS1 data");
   }
-
+    //detect if launch has occured
     if (!launch_flag) {
       if (rise_counter > 10 && (pre_alt - Alt < 0 )) {
         launch_flag = true;
@@ -246,11 +272,13 @@ void loop(){
         rise_counter = 0;
       }
     }
+    //New delay logic that prevents program blocking
     if (!drogue_flag) {
       if ((pre_alt - Alt > 0.1 && fall_counter >= 1) && (Alt - startAlt > 305)) {
         drogue_flag = true;
         digitalWrite(drogue_1, HIGH);
         writeSD("Primary Drogue Deployed");
+        //drogue primary starts firing and the time this starts is stored
         drogue_primary_start_time = millis();
         drogue_primary_deployed = true;
       }
@@ -261,23 +289,39 @@ void loop(){
         fall_counter = 0;
       }
     }
+    //state based deployment management based on states runs only if drogue primary has already fired and the firing process is not complete
     if(drogue_flag && drogue_primary_deployed) {
         unsigned long current_time = millis();
-        if(current_time - drogue_primary_start_time >= charge_delay){
+
+        //the current time is measured and used to determine if charge_delay time has passed since primary firing
+        if(!drogue_primary_ended && (current_time - drogue_primary_start_time >= charge_delay)){
           digitalWrite(drogue_1, LOW);
+
+          //time that primary finishes is stored and bool is set to true so this state does not run again
+          drogue_primary_ended = true;
+          drogue_primary_end_time = millis();
         }
-        if(!drogue_secondary_deployed && (current_time - drogue_primary_start_time >= charge_delay + backup_delay)){
+
+        //if the previous state has run already and backup_delay time has passed since drogue_primary finished this state runs
+        if(drogue_primary_ended && !drogue_secondary_deployed && (current_time - drogue_primary_end_time >= backup_delay)){
           digitalWrite(drogue_2, HIGH);
           writeSD("Secondary Drogue Deployed");
+
+          //time when secondary finishes is stored and bools set so this state does not run again
           drogue_secondary_start_time = millis();
           drogue_secondary_deployed = true;
         }
+
+        //final state to stop drogue secondary from firing
         if(drogue_secondary_deployed && (current_time - drogue_secondary_start_time >= charge_delay)){
           digitalWrite(drogue_2, LOW);
+
+          //outermost boolean used so that once this state is run no other states will run again
           drogue_primary_deployed = false;
         }
     }
 
+    //main deployment logic that prevents program blocking, same logic as drogue
     if (!main_flag) {
       if ((Alt >= 152 + startAlt) && (Alt <= 305 + startAlt) && (pre_alt - Alt > 1) && fall_counter1 >= 10) { // 1 should be changed to terminal velocity
         main_flag = true;
@@ -293,12 +337,15 @@ void loop(){
         fall_counter1 = 0;
       }
     }
+    
     if(main_flag && main_primary_deployed) {
         unsigned long current_time = millis();
         if(current_time - main_primary_start_time >= charge_delay){
           digitalWrite(main_1, LOW);
+          main_primary_ended = true;
+          main_primary_end_time = millis();
         }
-        if(!main_secondary_deployed && (current_time - main_primary_start_time >= charge_delay + backup_delay)){
+        if(main_primary_ended && !main_secondary_deployed && (current_time - main_primary_end_time >= backup_delay)){
           digitalWrite(main_2, HIGH);
           writeSD("Secondary Main Deployed");
           main_secondary_start_time = millis();
@@ -351,6 +398,7 @@ void loop(){
     storageDataString="";
   }
 
+  //RF command handling
   if(HWSERIAL.available() > 0) {
     String receivedData = HWSERIAL.readStringUntil('\n');
     receivedData.trim();
