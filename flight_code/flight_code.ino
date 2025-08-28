@@ -32,6 +32,9 @@ LSM9DS1_Module LSM9DS1Module(lsm);
 // Madgwick filter;
 Adafruit_Mahony algo;
 
+//CSV File Declaration
+File dataFile;
+
 // Declare global variables
 float Temp = 0;
 float Press = 0;
@@ -90,17 +93,6 @@ int prev_time;
 //Variables for setting how many data entries are written at once
 int cycles_per_write = 20;
 int write_count=0;
-String storageDataString="";
-
-void writeSD(String data) {
-  File dataFile = SD.open("rocket.csv", FILE_WRITE);  
-    if (dataFile) {
-      dataFile.println(data);
-      dataFile.close();
-    } else {
-      Serial.println("Error Opening Data File.");
-    }
-}
 
 void setup() {
   Serial.begin(115200);
@@ -127,8 +119,8 @@ void setup() {
   pinMode(camera2, OUTPUT);
 
 //Turn both cameras on by default
-  digitalWrite(camera1, HIGH)
-  digitalWrite(camera2, HIGH)
+  digitalWrite(camera1, HIGH);
+  digitalWrite(camera2, HIGH);
 // BPM390 Setup
   Serial.println("BMP390 Setup");
   if (!bmpModule.begin()){
@@ -161,32 +153,42 @@ void setup() {
     Serial.println("Failed to get BPM390 data");
     }
   }
-  //read file to see if an initial altitude value was recorded already
-  File f = SD.open("rocket.csv", FILE_READ);
-  //if the file exists and is not empty that means a starting altitude was already previously recorded
-  if (f && f.size() > 0) {
-    //set the starting altitude to the first altitude recorded
-    String firstLine = f.readStringUntil('\n');
-    f.close();
-    firstLine.trim();
-    startAlt = firstLine.toFloat();
-    Serial.print("startAlt loaded from file: ");
-    Serial.println(startAlt);
+//combine starting alt checking with opening the file for data writing
+dataFile = SD.open("rocket.csv", FILE_READ);
 
-  }
-
-  //if the file does not exist yet or is empty that means this is the first time that the computer has ran (not a reset)
-  //startAlt is kept as the sensor reading
-  else {
-    if (f) f.close(); 
-    Serial.println("Starting Altitude set");
-    writeSD(String(startAlt, 8));
-  }
+if (dataFile) {
+    if (dataFile.size() > 0) {
+        // File exists and has data
+        String firstLine = dataFile.readStringUntil('\n');
+        firstLine.trim();
+        startAlt = firstLine.toFloat();
+        Serial.print("startAlt loaded from file: ");
+        Serial.println(startAlt);
+    } else {
+        // File exists but empty, close previous read mode
+        Serial.println("Writing starting altitude.");
+        dataFile.close();
+        dataFile = SD.open("rocket.csv", FILE_WRITE);
+        dataFile.println(String(startAlt, 8));
+        dataFile.flush();
+    }
+} else {
+    // File doesn't exist 
+    Serial.println("Creating and writing starting altitude.");
+    dataFile = SD.open("rocket.csv", FILE_WRITE);
+    if (dataFile) {
+        dataFile.println(String(startAlt, 8));
+        dataFile.flush();
+    } else {
+        Serial.println("Failed to create file");
+    }
+}
 
   //data headers
   String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Stage,Time";
-  writeSD(dataString);
- 
+  dataFile.println(dataString);
+  dataFile.flush();
+
   delay(1000);
   analogWriteFrequency(buzzer, 4500);
   analogWrite(buzzer, 128);
@@ -265,7 +267,7 @@ void loop(){
     if (!launch_flag) {
       if (rise_counter > 10 && (pre_alt - Alt < 0 )) {
         launch_flag = true;
-        writeSD("LAUNCHED");        
+        dataFile.println("LAUNCHED");        
       } else if (pre_alt - Alt < 0 ) {
         rise_counter++;
       } else {
@@ -277,7 +279,7 @@ void loop(){
       if ((pre_alt - Alt > 0.1 && fall_counter >= 1) && (Alt - startAlt > 305)) {
         drogue_flag = true;
         digitalWrite(drogue_1, HIGH);
-        writeSD("Primary Drogue Deployed");
+        dataFile.println("Primary Drogue Deployed");
         //drogue primary starts firing and the time this starts is stored
         drogue_primary_start_time = millis();
         drogue_primary_deployed = true;
@@ -305,7 +307,7 @@ void loop(){
         //if the previous state has run already and backup_delay time has passed since drogue_primary finished this state runs
         if(drogue_primary_ended && !drogue_secondary_deployed && (current_time - drogue_primary_end_time >= backup_delay)){
           digitalWrite(drogue_2, HIGH);
-          writeSD("Secondary Drogue Deployed");
+          dataFile.println("Secondary Drogue Deployed");
 
           //time when secondary finishes is stored and bools set so this state does not run again
           drogue_secondary_start_time = millis();
@@ -326,7 +328,7 @@ void loop(){
       if ((Alt >= 152 + startAlt) && (Alt <= 305 + startAlt) && (pre_alt - Alt > 1) && fall_counter1 >= 10) { // 1 should be changed to terminal velocity
         main_flag = true;
         digitalWrite(main_1, HIGH);
-        writeSD("Primary Main Deployed");
+        dataFile.println("Primary Main Deployed");
         main_primary_start_time = millis();
         main_primary_deployed = true;
       }
@@ -347,7 +349,7 @@ void loop(){
         }
         if(main_primary_ended && !main_secondary_deployed && (current_time - main_primary_end_time >= backup_delay)){
           digitalWrite(main_2, HIGH);
-          writeSD("Secondary Main Deployed");
+          dataFile.println("Secondary Main Deployed");
           main_secondary_start_time = millis();
           main_secondary_deployed = true;
         }
@@ -373,15 +375,18 @@ void loop(){
   //               String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
   //               String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," + String(stage) + "," + String(millis());
   
-  storageDataString += String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
+  String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
                 String(Accel_x2, 7) + "," + String(Accel_y2, 7) + "," + String(Accel_z2, 7) + "," +
                 String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," +
                 String(Gyro_x, 7) + "," + String(Gyro_y, 7) + "," + String(Gyro_z, 7) + "," +
                 String(Mag_x, 7) + "," + String(Mag_y, 7) + "," + String(Mag_z, 7) + "," +
                 String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
                 String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
-                String(stage) + "," + String(millis()) + "\n";
+                String(stage) + "," + String(millis());
+
+  dataFile.println(storageDataString);
   write_count++;
+
   String dataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt, 1) + "," +
                 String(Accel_x2, 1) + "," + String(Accel_y2, 1) + "," + String(Accel_z2, 1) + "," +
                 String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1) + "," +
@@ -392,10 +397,10 @@ void loop(){
     prev_time = millis();
   }
 
+
   if(write_count>=cycles_per_write){
-    writeSD(storageDataString.trim());
+    dataFile.flush();
     write_count=0;
-    storageDataString="";
   }
 
   //RF command handling
