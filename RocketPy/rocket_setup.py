@@ -1,5 +1,6 @@
 from rocketpy import Environment, SolidMotor, Rocket, Flight
 import math
+import numpy as np
 
 class PID:
     def __init__(self, Kp, Ki, Kd, setpoint=0.0):
@@ -133,23 +134,17 @@ def create_rocket(config, env):
         noise=config.drogue_noise,
     )
 
+    
+    def angle_from_vertical(e0, e1, e2, e3):
+        w, x, y, z = e0, e1, e2, e3
+        # Compute tilt angle from vertical (radians)
+        theta = np.arccos(1 - 2 * (x**2 + y**2))
+        return np.degrees(theta)  # convert to degrees if you want
+
     TARGET_APOGEE_FT = 10000
     TARGET_APOGEE_M = TARGET_APOGEE_FT * 0.3048
 
-    pid = PID(Kp=0.1, Ki=0.01, Kd=0.1, setpoint=TARGET_APOGEE_M)
-
-    # def predict_apogee(cur_alt, vz):
-        # Kinematic Equation:
-        # return cur_alt + (vz ** 2) / (2 * 9.8)
-    
-        # Ballistic Coasting Method
-        # m   = config.mass     # current mass [kg]
-
-        # if vz <= 0:
-        #     return alt  # already past apogee
-
-        # g_eff = 9.80665 + D / m
-        # delta_h = vz**2 / (2 * g_eff)
+    pid = PID(Kp=0.0001, Ki=0.0001, Kd=0.0000, setpoint=TARGET_APOGEE_M)
 
     # Using Drag
     # def predict_apogee(flight, alt, vz, airbrake_Cd):
@@ -165,31 +160,31 @@ def create_rocket(config, env):
     
     
     # Simulation
-    deltaT = 0.01
+    deltaT = 0.1
     gamma = 1.4
     R = 287
     g = 9.81
     L = 0.0065   # K/m lapse rate
-    def predict_apogee(alt, vz, air_brakes, T0, pressure0):
+    A = (config.radius ** 2) * math.pi
+    def predict_apogee(alt, vz, air_brakes, T0, pressure0, deployment_level, angle_of_attack):
         v_sim = vz
         alt_sim = alt
-        A = (config.radius ** 2) * math.pi
         for i in range(0, 3000):
 
             # Calculate Mach Number
-            # T_local = T0
-            T_local = max(T0 - L * alt_sim, 1.0)
+            T_local = max(T0 - (L * (alt_sim - alt)), 1.0)
             speed_of_sound = (gamma * R * T_local) ** 0.5
             mach_number = v_sim / speed_of_sound
 
-            airbrake_Cd = air_brakes.drag_coefficient(air_brakes.deployment_level, mach_number)
+            airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number) + rocket.power_off_drag(mach_number)
+            # airbrake_Cd = rocket.power_on_drag(mach_number)
 
             p_local = pressure0 * (T_local / T0) ** (g / (R * L))
             rho_sim = p_local / (R * T_local)
 
-            F = -0.5*airbrake_Cd*rho_sim*A*(v_sim**2) - g*config.mass
-            a_sim = F / config.mass
-            v_sim = v_sim + a_sim * deltaT
+            F = -0.5*airbrake_Cd*rho_sim*A*(v_sim**2) - g*(config.mass + config.dry_mass)
+            a_sim = F / (config.mass + config.dry_mass)
+            v_sim += a_sim * deltaT
             alt_sim += v_sim * deltaT
 
             if v_sim < 0:
@@ -205,6 +200,8 @@ def create_rocket(config, env):
         altitude_AGL = altitude_ASL - env.elevation
         vx, vy, vz = state[3], state[4], state[5]
 
+        angle_of_attack = angle_from_vertical(state[6], state[7], state[8], state[9])
+
         # Get winds in x and y directions
         wind_x, wind_y = env.wind_velocity_x(altitude_ASL), env.wind_velocity_y(altitude_ASL)
 
@@ -214,28 +211,13 @@ def create_rocket(config, env):
         ) ** 0.5
         mach_number = free_stream_speed / env.speed_of_sound(altitude_ASL)
 
-        # Get previous state from state_history
-        previous_state = state_history[-1]
-        previous_vz = previous_state[5]
-
-        # If we wanted to we could get the returned values from observed_variables:
-        # returned_time, deployment_level, drag_coefficient = observed_variables[-1]
-
         # Check if the rocket has reached burnout
         if time < motor.burn_time[1] or vz <= 0:
             air_brakes.deployment_level = 0
             return None
         
-        # predicted_apogee = predict_apogee(rocket, altitude_AGL, vz, air_brakes.drag_coefficient(air_brakes.deployment_level, mach_number))
-        predicted_apogee = predict_apogee(altitude_AGL, vz, air_brakes, env.temperature(altitude_ASL), env.pressure(altitude_ASL))
-        # predicted_apogee = predict_apogee(altitude_AGL, vz)
+        predicted_apogee = predict_apogee(altitude_AGL, vz, air_brakes, env.temperature(altitude_ASL), env.pressure(altitude_ASL), air_brakes.deployment_level, angle_of_attack)
         new_deployment_level = min(1, max(0, air_brakes.deployment_level + pid.update(predicted_apogee, time)))
-        # new_deployment_level = 0
-
-        # Controller logic
-        # new_deployment_level = (
-        #     air_brakes.deployment_level + 0.1 * vz + 0.01 * previous_vz**2
-        # )
 
         # Limiting the speed of the air_brakes to 0.2 per second
         # Since this function is called every 1/sampling_rate seconds
@@ -255,16 +237,16 @@ def create_rocket(config, env):
             predicted_apogee,
         )
     
-    # air_brakes = rocket.add_air_brakes(
-    #     drag_coefficient_curve=config.drag_coefficient_curve,
-    #     controller_function=controller_function,
-    #     sampling_rate=config.air_brakes_sampling_rate,
-    #     reference_area=config.air_brakes_reference_area,
-    #     clamp=config.air_brakes_clamp,
-    #     initial_observed_variables=config.air_brakes_initial_observed_variables,
-    #     override_rocket_drag=config.air_brakes_override_rocket_drag,
-    #     name=config.air_brakes_name,
-    # )
+    air_brakes = rocket.add_air_brakes(
+        drag_coefficient_curve=config.drag_coefficient_curve,
+        controller_function=controller_function,
+        sampling_rate=config.air_brakes_sampling_rate,
+        reference_area=config.air_brakes_reference_area,
+        clamp=config.air_brakes_clamp,
+        initial_observed_variables=config.air_brakes_initial_observed_variables,
+        override_rocket_drag=config.air_brakes_override_rocket_drag,
+        name=config.air_brakes_name,
+    )
 
     # air_brakes.all_info()
     

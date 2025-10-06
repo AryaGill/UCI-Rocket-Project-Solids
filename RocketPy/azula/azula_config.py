@@ -12,10 +12,6 @@ class config:
         self.month = tomorrow.month
         self.day = tomorrow.day
 
-        # self.year = 2025
-        # self.month = 6
-        # self.day = 13
-
         self.atmosphere_model_type = "Forecast"
         # self.atmosphere_model_type = "standard_atmosphere"
         self.atmosphere_model_file = "GFS"

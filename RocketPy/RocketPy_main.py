@@ -12,20 +12,22 @@ if __name__ == "__main__":
 
     # Run simulation
     test_flight = Flight(
-        rocket=rocket, environment=env, rail_length=5.2, inclination=90, heading=0
+        rocket=rocket, environment=env, rail_length=5.2, inclination=90, heading=0, terminate_on_apogee=True
         )
+    
+    test_flight.aerodynamic_drag()
 
     # # Print data
     # test_flight.info()
-    # # test_flight.prints.initial_conditions()
-    # # test_flight.prints.surface_wind_conditions()
-    # # test_flight.prints.launch_rail_conditions()
-    # # test_flight.prints.out_of_rail_conditions()
-    # # test_flight.prints.burn_out_conditions()
+    # test_flight.prints.initial_conditions()
+    # test_flight.prints.surface_wind_conditions()
+    # test_flight.prints.launch_rail_conditions()
+    # test_flight.prints.out_of_rail_conditions()
+    # test_flight.prints.burn_out_conditions()
     test_flight.prints.apogee_conditions()
-    # # test_flight.prints.events_registered()
-    # # test_flight.prints.impact_conditions()
-    # # test_flight.prints.maximum_values()
+    # test_flight.prints.events_registered()
+    # test_flight.prints.impact_conditions()
+    # test_flight.prints.maximum_values()
 
     # test_flight.all_info()
     test_flight.plots.trajectory_3d()
