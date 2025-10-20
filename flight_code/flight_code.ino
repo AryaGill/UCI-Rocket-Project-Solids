@@ -101,8 +101,8 @@ void setup() {
   
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
-  analogWriteFrequency(buzzer, 4500);
-  analogWrite(buzzer, 128);
+  // analogWriteFrequency(buzzer, 4500);
+  // analogWrite(buzzer, 128);
   
   if (!SD.begin(BUILTIN_SDCARD)) {
   Serial.println("SD card failed or not present.");
@@ -190,9 +190,12 @@ if (dataFile) {
   dataFile.flush();
 
   delay(1000);
-  analogWriteFrequency(buzzer, 4500);
-  analogWrite(buzzer, 128);
+  // analogWriteFrequency(buzzer, 4500);
+  // analogWrite(buzzer, 128);
   prev_time = millis();
+
+  //comment out for actual launch
+  digitalWrite(buzzer, LOW);
 }
   
 
@@ -433,14 +436,14 @@ void loop(){
     } else if (receivedData == "Fire Drogue P"){
       Serial.println("Drogue Primary"); 
       HWSERIAL.println("TEENSY Fired Drogue Primary");
-      writeSD("Drouge Primary");
+      dataFile.println("Drouge Primary");
       digitalWrite(drogue_1, HIGH);
       delay(charge_delay);
       digitalWrite(drogue_1, LOW);
     } else if (receivedData == "Fire Drogue S"){
       Serial.println("Drogue Secondary"); 
       HWSERIAL.println("TEENSY Fired Drogue Secondary");
-      writeSD("Drouge Secondary");
+      dataFile.println("Drouge Secondary");
       digitalWrite(drogue_2, HIGH);
       delay(charge_delay);
       digitalWrite(drogue_2, LOW); 
