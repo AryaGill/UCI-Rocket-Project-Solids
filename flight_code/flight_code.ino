@@ -1,3 +1,7 @@
+#include <ArduinoEigen.h>
+#include <ArduinoEigenDense.h>
+#include <ArduinoEigenSparse.h>
+
 // Include custom libraries
 
 #include <Arduino.h>
@@ -21,6 +25,8 @@
 #define camera2_adc 14 //camera 2 adc
 
 #define HWSERIAL Serial7 // Hardware Serial Needed for RF
+
+#include "kalman-filter.hpp" //Kalman Filter setup
 
 Adafruit_BMP3XX bmp;
 BPM390_Module bmpModule(bmp);
@@ -72,6 +78,10 @@ unsigned long drogue_primary_start_time;
 unsigned long drogue_primary_end_time;
 unsigned long drogue_secondary_start_time;
 
+//drogue and main cooldown variables
+bool main_ready = 1;
+unsigned long drogue_end_time;
+unsigned long cooldown_time = 10000; //set to how long cooldown should be (10s)
 //main deployment state variables
 bool main_flag = 0;
 bool main_primary_deployed = 0;
@@ -93,6 +103,29 @@ int prev_time;
 //Variables for setting how many data entries are written at once
 int cycles_per_write = 20;
 int write_count=0;
+
+//Kalman State Variables
+typedef Eigen::Matrix<float,3,3,Eigen::DontAlign> Mat3f;
+typedef Eigen::Matrix<float,3,1,Eigen::DontAlign> Vec3f;
+typedef Eigen::RowVector3f Row3f;
+typedef Eigen::Matrix<float,1,1,Eigen::DontAlign> Mat1f;
+
+
+Mat3f A, Q, P;
+Vec3f B;
+Row3f C;
+Mat1f R;
+
+KalmanFilter kf(A, B, C, Q, R, P);
+Vec3f x; // [alt, vel, bias]
+bool kf_initialized = false;
+unsigned long last_kf_time = 0;
+
+// Kalman filter tuning
+float r_var = 1.8f;     // barometer noise (trust less if high)
+float sigma_a = 0.3f;   // accelerometer noise (m/s^2)
+float q_bias = 1e-5f;   // bias drift
+float g = 9.80665f;     // gravity constant
 
 void setup() {
   Serial.begin(115200);
@@ -185,7 +218,7 @@ if (dataFile) {
 }
 
   //data headers
-  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Stage,Time";
+  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Alt_KF,Vel_kf,Bias_KF,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Stage,Time";
   dataFile.println(dataString);
   dataFile.flush();
 
@@ -196,6 +229,27 @@ if (dataFile) {
 
   //comment out for actual launch
   digitalWrite(buzzer, LOW);
+
+  // Initialize Kalman filter
+  float dt = 0.02f;
+  A << 1, dt, -0.5f*dt*dt,
+      0, 1,      -dt,
+      0, 0,       1;
+  B << 0.5f*dt*dt, dt, 0.0f;
+  C << 1, 0, 0;
+
+  Q.setZero();
+  Q(0,0) = 0.25f * sigma_a * sigma_a * powf(dt,4);
+  Q(1,1) =         sigma_a * sigma_a * powf(dt,2);
+  Q(2,2) = q_bias * dt;
+  R << r_var;
+  P = Mat3f::Identity() * 100.0f;
+
+  kf = KalmanFilter(A, B, C, Q, R, P);
+  x << startAlt, 0.0f, 0.0f;
+  kf.init(x);
+  kf_initialized = true;
+  last_kf_time = millis();
 }
   
 
@@ -367,7 +421,39 @@ void loop(){
   int voltage_left = analogRead(camera1_adc);
   int voltage_right = analogRead(camera2_adc);
 
+  // === Kalman Filter Update ===
+  unsigned long now = millis();
+  float dt = (now - last_kf_time) / 1000.0f;
+  if (dt < 1e-4f) dt = 1e-4f;    // min timestep
+  if (dt > 0.1f)  dt = 0.1f;     // max timestep
+  last_kf_time = now;
 
+  // update matrices (only A, Q depend on dt)
+  A << 1, dt, -0.5f*dt*dt,
+      0, 1,      -dt,
+      0, 0,       1;
+  B << 0.5f*dt*dt, dt, 0.0f;
+  Q.setZero();
+  Q(0,0) = 0.25f * sigma_a*sigma_a * powf(dt,4);
+  Q(1,1) =        sigma_a*sigma_a * powf(dt,2);
+  Q(2,2) = q_bias * dt;
+  kf.update_dynamics(A);
+  kf.update_process_noise(Q);
+
+  // set measurement (baro) and control (accel + gravity)
+  Eigen::Matrix<float,1,1> y, u;
+  y << Alt;
+  u << Accel_y + g;
+
+  // predict + update
+  kf.predict(u);
+  kf.update(y);
+
+  // retrieve filtered states
+  Vec3f x_hat = kf.state();
+  float Alt_KF = x_hat[0];
+  float Vel_KF = x_hat[1];
+  float Bias_KF = x_hat[2];
 // Print combined data
 
   // String dataString = String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
@@ -380,7 +466,7 @@ void loop(){
   
   String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
                 String(Accel_x2, 7) + "," + String(Accel_y2, 7) + "," + String(Accel_z2, 7) + "," +
-                String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," +
+                String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," + String(Alt_KF, 7) + "," + String(Vel_KF, 7) + "," + String(Bias_KF, 7) + "," +
                 String(Gyro_x, 7) + "," + String(Gyro_y, 7) + "," + String(Gyro_z, 7) + "," +
                 String(Mag_x, 7) + "," + String(Mag_y, 7) + "," + String(Mag_z, 7) + "," +
                 String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
