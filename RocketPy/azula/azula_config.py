@@ -12,8 +12,8 @@ class config:
         self.month = tomorrow.month
         self.day = tomorrow.day
 
-        self.atmosphere_model_type = "Forecast"
-        # self.atmosphere_model_type = "standard_atmosphere"
+        # self.atmosphere_model_type = "Forecast"
+        self.atmosphere_model_type = "standard_atmosphere"
         self.atmosphere_model_file = "GFS"
 
         # Motor
@@ -37,7 +37,8 @@ class config:
 
         # Rocket
         self.radius = 0.07886715773
-        self.mass = 15.591
+        # self.mass = 15.591
+        self.mass = 13
         self.inertia = (10.020, 10.020, 0.067) # Guess
         self.power_off_drag = "RocketPy/azula/azula_power_on_drag.csv"
         self.power_on_drag = "RocketPy/azula/azula_power_on_drag.csv"
@@ -93,5 +94,5 @@ class config:
         self.air_brakes_reference_area = None
         self.air_brakes_clamp = True
         self.air_brakes_initial_observed_variables = [0, 0, 0, 0]
-        self.air_brakes_override_rocket_drag = False
+        self.air_brakes_override_rocket_drag = True
         self.air_brakes_name = "Air Brakes"

@@ -14,8 +14,6 @@ if __name__ == "__main__":
     test_flight = Flight(
         rocket=rocket, environment=env, rail_length=5.2, inclination=90, heading=0, terminate_on_apogee=True
         )
-    
-    test_flight.aerodynamic_drag()
 
     # # Print data
     # test_flight.info()
@@ -67,7 +65,7 @@ if __name__ == "__main__":
     plt.show()
 
     # Plot predicted apogee by time
-    plt.plot(time_list, [x / 0.3048 for x in predicted_apogee_list])
+    plt.plot(time_list[20:], [x / 0.3048 for x in predicted_apogee_list[20:]])
     plt.xlabel("Time (s)")
     plt.ylabel("Predicted Apogee (ft)")
     plt.title("Predicted Apogee by Time")
