@@ -266,10 +266,14 @@ void read_sensors() {
 
 float get_avg_alt_dif() {
   float sum = 0;
+  float largest = alt_dif_buffer[0];
+  float smallest = alt_dif_buffer[0];
   for (int i = 0; i < ALT_DIF_BUF_SIZE; ++i){
     sum += alt_dif_buffer[i];
+    largest = max(largest, alt_dif_buffer[i]);
+    smallest = min (smallest, alt_dif_buffer[i]);
   }
-  return sum;
+  return (sum - largest - smallest) / (ALT_DIF_BUF_SIZE - 2);
 }
 
 void update_alt_dif_buf(float new_alt_dif) {
