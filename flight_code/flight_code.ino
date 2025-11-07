@@ -40,6 +40,7 @@ Adafruit_Mahony algo;
 
 //CSV File Declaration
 File dataFile;
+File stateFile;
 
 // Declare global variables
 float Temp = 0;
@@ -69,27 +70,17 @@ const int charge_delay = 500; //500
 const int backup_delay = 500; //2500
 bool launch_flag = 0;
 
-//drogue deployment state variables
-bool drogue_flag = 0;
-bool drogue_primary_deployed = 0;
-bool drogue_primary_ended = 0;
-bool drogue_secondary_deployed = 0;
-unsigned long drogue_primary_start_time;
-unsigned long drogue_primary_end_time;
-unsigned long drogue_secondary_start_time;
+// Time variables
+unsigned long launch_start_time = 0;
+unsigned long drogue_primary_start_time = 0;
+unsigned long drogue_primary_end_time = 0;
+unsigned long drogue_secondary_start_time = 0;
+unsigned long main_primary_start_time = 0;
+unsigned long main_primary_end_time = 0;
+unsigned long main_secondary_start_time = 0;
 
 //drogue and main cooldown variables
-bool main_ready = 1;
-unsigned long drogue_end_time;
 unsigned long cooldown_time = 10000; //set to how long cooldown should be (10s)
-//main deployment state variables
-bool main_flag = 0;
-bool main_primary_deployed = 0;
-bool main_primary_ended = 0;
-bool main_secondary_deployed = 0;
-unsigned long main_primary_start_time;
-unsigned long main_primary_end_time;
-unsigned long main_secondary_start_time;
 
 int fall_counter = 0;
 int fall_counter1 = 0;
@@ -100,9 +91,33 @@ int base_alt = 500; // Hard-coded base altitude in emergency cases
 int counter = 0;
 int prev_time;
 
+// Altitude Filtering for Flight State
+#define LAUNCH_THRESHOLD 0.5
+#define LANDED_THRESHOLD -0.5
+#define ALT_DIF_BUF_SIZE 10
+float alt_dif_buffer[ALT_DIF_BUF_SIZE];
+float alt_dif_buffer_idx = 0;
+
 //Variables for setting how many data entries are written at once
 int cycles_per_write = 20;
 int write_count=0;
+
+// Flight State Variables
+enum FlightState {
+  LAUNCH_PAD,
+  MOTOR_BURN,
+  GLIDING_ASCENT,
+  DROGUE_PRIMARY_DEPLOYING,
+  DROGUE_PRIMARY_DEPLOYED,
+  DROGUE_SECONDARY_DEPLOYING,
+  DROGUE_SECONDARY_DEPLOYED,
+  MAIN_PRIMARY_DEPLOYING,
+  MAIN_PRIMARY_DEPLOYED,
+  MAIN_SECONDARY_DEPLOYING,
+  MAIN_SECONDARY_DEPLOYED,
+  LANDED
+};
+FlightState flight_state = LAUNCH_PAD;
 
 //Kalman State Variables
 typedef Eigen::Matrix<float,3,3,Eigen::DontAlign> Mat3f;
@@ -127,109 +142,25 @@ float sigma_a = 0.3f;   // accelerometer noise (m/s^2)
 float q_bias = 1e-5f;   // bias drift
 float g = 9.80665f;     // gravity constant
 
-void setup() {
-  Serial.begin(115200);
-  // while (!Serial);
-  Serial.println("Running the Flight Computer\n");
-  
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
-  // analogWriteFrequency(buzzer, 4500);
-  // analogWrite(buzzer, 128);
-  
-  if (!SD.begin(BUILTIN_SDCARD)) {
-  Serial.println("SD card failed or not present.");
-  }
+void initialize_dataFile() {
+  dataFile = SD.open("rocket.csv", FILE_READ);
 
-  HWSERIAL.begin(57600);
-
-  pinMode(main_1, OUTPUT);
-  pinMode(main_2, OUTPUT);
-  pinMode(drogue_1, OUTPUT);
-  pinMode(drogue_2, OUTPUT);
-  pinMode(buzzer, OUTPUT);
-  pinMode(camera1, OUTPUT);
-  pinMode(camera2, OUTPUT);
-
-//Turn both cameras on by default
-  digitalWrite(camera1, HIGH);
-  digitalWrite(camera2, HIGH);
-// BPM390 Setup
-  Serial.println("BMP390 Setup");
-  if (!bmpModule.begin()){
-    Serial.println("Could not find a valid BMP sensor");
-    //while (1);
-  }
-
-// LIS3DH Setup
-  Serial.println("LIS3DH Setup");
-  if (!LIS3DHModule.begin()){
-    Serial.println("Could not find a valid LIS3DH sensor");
-  }
-
-
-// LSM9DS1 Setup
-  Serial.println("LSM9DS1 Setup");
-  if (!LSM9DS1Module.begin()){
-    Serial.println("Could not find a valid LSM9DS1 sensor");
-  }
-
-  algo.begin(200);
-
-  //possible start altitude after reset fix
-  for (int i = 0; i <= 10; i++){
-     BPM_SensorData BPM_data = bmpModule.readData();
-    if (BPM_data.temperature != -999) {
-      startAlt = BPM_data.altitude;
-    }
-    else {
-    Serial.println("Failed to get BPM390 data");
-    }
-  }
-//combine starting alt checking with opening the file for data writing
-dataFile = SD.open("rocket.csv", FILE_READ);
-
-if (dataFile) {
-    if (dataFile.size() > 0) {
-        // File exists and has data
-        String firstLine = dataFile.readStringUntil('\n');
-        firstLine.trim();
-        startAlt = firstLine.toFloat();
-        Serial.print("startAlt loaded from file: ");
-        Serial.println(startAlt);
-    } else {
-        // File exists but empty, close previous read mode
-        Serial.println("Writing starting altitude.");
-        dataFile.close();
-        dataFile = SD.open("rocket.csv", FILE_WRITE);
-        dataFile.println(String(startAlt, 8));
-        dataFile.flush();
-    }
-} else {
+  if (!dataFile) {
     // File doesn't exist 
-    Serial.println("Creating and writing starting altitude.");
+    Serial.println("Creating data file.");
     dataFile = SD.open("rocket.csv", FILE_WRITE);
-    if (dataFile) {
-        dataFile.println(String(startAlt, 8));
-        dataFile.flush();
-    } else {
+    if (!dataFile) {
         Serial.println("Failed to create file");
     }
-}
+  }
 
   //data headers
   String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Alt_KF,Vel_kf,Bias_KF,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Stage,Time";
   dataFile.println(dataString);
   dataFile.flush();
+}
 
-  delay(1000);
-  // analogWriteFrequency(buzzer, 4500);
-  // analogWrite(buzzer, 128);
-  prev_time = millis();
-
-  //comment out for actual launch
-  digitalWrite(buzzer, LOW);
-
+void initialize_kalman_filter() {
   // Initialize Kalman filter
   float dt = 0.02f;
   A << 1, dt, -0.5f*dt*dt,
@@ -251,11 +182,31 @@ if (dataFile) {
   kf_initialized = true;
   last_kf_time = millis();
 }
-  
 
-void loop(){
+void initialize_sensors() {
+  // BPM390 Setup
+  Serial.println("BMP390 Setup");
+  if (!bmpModule.begin()){
+    Serial.println("Could not find a valid BMP sensor");
+    //while (1);
+  }
+
+  // LIS3DH Setup
+  Serial.println("LIS3DH Setup");
+  if (!LIS3DHModule.begin()){
+    Serial.println("Could not find a valid LIS3DH sensor");
+  }
+
+
+  // LSM9DS1 Setup
+  Serial.println("LSM9DS1 Setup");
+  if (!LSM9DS1Module.begin()){
+    Serial.println("Could not find a valid LSM9DS1 sensor");
+  }
+}
+
+void read_sensors() {
   // BPM390 Data
-
   BPM_SensorData BPM_data = bmpModule.readData();
   if (BPM_data.temperature != -999) {
     Temp = BPM_data.temperature;
@@ -266,16 +217,7 @@ void loop(){
     Serial.println("Failed to get BPM390 data");
   }
 
-  // Potential Add-on
-  counter++;
-  if(counter %10 == 0){
-    if(abs(Alt - startAlt) < 0.5){
-      startAlt = Alt;
-    }
-  }
-  // End of Add-on
-
-// LIS3DH Data
+  // LIS3DH Data
   LIS3DH_SensorData LIS3DH_data = LIS3DHModule.readData();
   if (LIS3DH_data.accel_x != -999 && LIS3DH_data.accel_y != -999 && LIS3DH_data.accel_z != -999){
     Accel_x2 = LIS3DH_data.accel_x;
@@ -286,7 +228,7 @@ void loop(){
     Serial.println("Failed to get LIS3DH data");
   }
 
-// LSM9DS1 Data
+  // LSM9DS1 Data
   LSM9DS1_SensorData LSM9DS1_data = LSM9DS1Module.readData();
 
   if (LSM9DS1_data.accel_x != -999 && LSM9DS1_data.accel_y != -999 && LSM9DS1_data.accel_z != -999 &&
@@ -320,26 +262,108 @@ void loop(){
   else {
     Serial.println("Failed to get LSM9DS1 data");
   }
-    //detect if launch has occured
-    if (!launch_flag) {
-      if (rise_counter > 10 && (pre_alt - Alt < 0 )) {
-        launch_flag = true;
-        dataFile.println("LAUNCHED");        
-      } else if (pre_alt - Alt < 0 ) {
-        rise_counter++;
-      } else {
-        rise_counter = 0;
-      }
+}
+
+float get_avg_alt_dif() {
+  float sum = 0;
+  for (int i = 0; i < ALT_DIF_BUF_SIZE; ++i){
+    sum += alt_dif_buffer[i];
+  }
+  return sum;
+}
+
+void update_alt_dif_buf(float new_alt_dif) {
+  alt_dif_buffer[alt_dif_buffer_idx] = new_alt_dif;
+  alt_dif_buffer_idx = (alt_dif_buffer_idx + 1) % ALT_DIF_BUF_SIZE;
+}
+
+void set_flight_state(FlightState new_state) {
+  flight_state = new_state;
+
+  // Write flight state to state file
+  stateFile = SD.open("rocket_state.csv", FILE_WRITE);
+  if (stateFile) {
+      stateFile.println(String(startAlt, 8));
+      stateFile.flush();
+      stateFile.println((int)flight_state);
+      stateFile.flush();
+  } else {
+      Serial.println("Failed to create state file");
+  }
+}
+
+void initialize_flight_state() {
+  //possible start altitude after reset fix
+  for (int i = 0; i < ALT_DIF_BUF_SIZE + 1; ++i) {
+    BPM_SensorData BPM_data = bmpModule.readData();
+    if (BPM_data.temperature != -999) {
+      startAlt = BPM_data.altitude;
+      update_alt_dif_buf(startAlt - pre_alt);
+      pre_alt = startAlt;
     }
-    //New delay logic that prevents program blocking
-    if (!drogue_flag) {
-      if ((pre_alt - Alt > 0.1 && fall_counter >= 1) && (Alt - startAlt > 305)) {
-        drogue_flag = true;
+    else {
+    Serial.println("Failed to get BPM390 data");
+    }
+  }
+
+  // Open rocket state file
+  stateFile = SD.open("rocket_state.csv", FILE_READ);
+
+  if (stateFile) {
+    if (stateFile.size() > 0) {
+        // File exists and has data
+        startAlt = stateFile.readStringUntil('\n').trim().toFloat();
+        Serial.print("startAlt loaded from file: ");
+        Serial.println(startAlt);
+
+        flight_state = stateFile.readStringUntil('\n').trim().toInt();
+        Serial.print("Flight state loaded from file: ");
+        Serial.println((int)flight_state);
+
+    } else {
+        // File exists but empty, close previous read mode
+        Serial.println("Writing starting altitude.");
+        stateFile.close();
+        set_flight_state(LAUNCH_PAD);
+    }
+  } else {
+    // File doesn't exist 
+    Serial.println("Creating and writing starting altitude.");
+    set_flight_state(LAUNCH_PAD);
+  }
+}
+
+void update_flight_state() {
+  update_alt_dif_buf(Alt - pre_alt);
+
+  // Determine Next State
+  switch(flight_state) {
+    case LAUNCH_PAD:
+      // Detect if launched
+      if (get_avg_alt_dif() > LAUNCH_THRESHOLD) {
+        dataFile.println("LAUNCHED");
+        launch_start_time = millis();
+        set_flight_state(MOTOR_BURN);
+      }
+
+      break;
+
+    case MOTOR_BURN:
+      // Add logic: wait for certain delay or for acceleration to change
+      if (millis() - launch_start_time > 5000){
+        set_flight_state(GLIDING_ASCENT);
+      }
+
+      break;
+
+    case GLIDING_ASCENT:
+      // if ((pre_alt - Alt > 0.1 && fall_counter >= 1) && (Alt - startAlt > 305)) {
+      if (get_avg_alt_dif() < 0) {
+        set_flight_state(DROGUE_PRIMARY_DEPLOYING);
         digitalWrite(drogue_1, HIGH);
         dataFile.println("Primary Drogue Deployed");
         //drogue primary starts firing and the time this starts is stored
         drogue_primary_start_time = millis();
-        drogue_primary_deployed = true;
       }
       else if ((pre_alt - Alt > 0.1)){
         fall_counter = fall_counter + 1;
@@ -347,47 +371,48 @@ void loop(){
       else{
         fall_counter = 0;
       }
-    }
-    //state based deployment management based on states runs only if drogue primary has already fired and the firing process is not complete
-    if(drogue_flag && drogue_primary_deployed) {
-        unsigned long current_time = millis();
 
-        //the current time is measured and used to determine if charge_delay time has passed since primary firing
-        if(!drogue_primary_ended && (current_time - drogue_primary_start_time >= charge_delay)){
+      break;
+
+    case DROGUE_PRIMARY_DEPLOYING:
+      if (millis() - drogue_primary_start_time >= charge_delay) {
           digitalWrite(drogue_1, LOW);
 
           //time that primary finishes is stored and bool is set to true so this state does not run again
-          drogue_primary_ended = true;
           drogue_primary_end_time = millis();
+
+          set_flight_state(DROGUE_PRIMARY_DEPLOYED);
         }
 
-        //if the previous state has run already and backup_delay time has passed since drogue_primary finished this state runs
-        if(drogue_primary_ended && !drogue_secondary_deployed && (current_time - drogue_primary_end_time >= backup_delay)){
-          digitalWrite(drogue_2, HIGH);
-          dataFile.println("Secondary Drogue Deployed");
+      break;
 
-          //time when secondary finishes is stored and bools set so this state does not run again
-          drogue_secondary_start_time = millis();
-          drogue_secondary_deployed = true;
-        }
+    case DROGUE_PRIMARY_DEPLOYED:
+      if (millis() - drogue_primary_end_time >= backup_delay) {
+        digitalWrite(drogue_2, HIGH);
+        dataFile.println("Secondary Drogue Deployed");
 
-        //final state to stop drogue secondary from firing
-        if(drogue_secondary_deployed && (current_time - drogue_secondary_start_time >= charge_delay)){
-          digitalWrite(drogue_2, LOW);
+        //time when secondary finishes is stored and bools set so this state does not run again
+        drogue_secondary_start_time = millis();
 
-          //outermost boolean used so that once this state is run no other states will run again
-          drogue_primary_deployed = false;
-        }
-    }
+        set_flight_state(DROGUE_SECONDARY_DEPLOYING);
+      }
 
-    //main deployment logic that prevents program blocking, same logic as drogue
-    if (!main_flag) {
+      break;
+
+    case DROGUE_SECONDARY_DEPLOYING:
+      if (millis() - drogue_secondary_start_time >= charge_delay){
+        digitalWrite(drogue_2, LOW);
+
+        set_flight_state(DROGUE_SECONDARY_DEPLOYED);
+      }
+    
+    case DROGUE_SECONDARY_DEPLOYED:
+      // Wait for main deployment
       if ((Alt >= 152 + startAlt) && (Alt <= 305 + startAlt) && (pre_alt - Alt > 1) && fall_counter1 >= 10) { // 1 should be changed to terminal velocity
-        main_flag = true;
         digitalWrite(main_1, HIGH);
         dataFile.println("Primary Main Deployed");
         main_primary_start_time = millis();
-        main_primary_deployed = true;
+        set_flight_state(MAIN_PRIMARY_DEPLOYING);
       }
       else if ((pre_alt - Alt > 0.1)){
         fall_counter1 = fall_counter1 + 1;
@@ -395,32 +420,50 @@ void loop(){
       else{
         fall_counter1 = 0;
       }
-    }
-    
-    if(main_flag && main_primary_deployed) {
-        unsigned long current_time = millis();
-        if(current_time - main_primary_start_time >= charge_delay){
-          digitalWrite(main_1, LOW);
-          main_primary_ended = true;
-          main_primary_end_time = millis();
-        }
-        if(main_primary_ended && !main_secondary_deployed && (current_time - main_primary_end_time >= backup_delay)){
-          digitalWrite(main_2, HIGH);
-          dataFile.println("Secondary Main Deployed");
-          main_secondary_start_time = millis();
-          main_secondary_deployed = true;
-        }
-        if(main_secondary_deployed && (current_time - main_secondary_start_time >= charge_delay)){
-          digitalWrite(main_2, LOW);
-          main_primary_deployed = false;
-        }
-    }
+
+      break;
+
+    case MAIN_PRIMARY_DEPLOYING:
+      if(millis() - main_primary_start_time >= charge_delay){
+        digitalWrite(main_1, LOW);
+        main_primary_end_time = millis();
+        set_flight_state(MAIN_PRIMARY_DEPLOYED);
+      }
+
+      break;
+
+    case MAIN_PRIMARY_DEPLOYED:
+      if(millis() - main_primary_end_time >= backup_delay){
+        digitalWrite(main_2, HIGH);
+        dataFile.println("Secondary Main Deployed");
+        main_secondary_start_time = millis();
+        set_flight_state(MAIN_SECONDARY_DEPLOYING);
+      }
+
+      break;
+
+    case MAIN_SECONDARY_DEPLOYING:
+      if(millis() - main_secondary_start_time >= charge_delay){
+        digitalWrite(main_2, LOW);
+        set_flight_state(MAIN_SECONDARY_DEPLOYED);
+      }
+      break;
+
+    case MAIN_SECONDARY_DEPLOYED:
+      if (get_avg_alt_dif() > LANDED_THRESHOLD){ // Change condition
+        set_flight_state(LANDED);
+      }
+      break;
+
+    case LANDED:
+
+      break;
+  }
 
   pre_alt = Alt;
+}
 
-  int voltage_left = analogRead(camera1_adc);
-  int voltage_right = analogRead(camera2_adc);
-
+void kalman_filter() {
   // === Kalman Filter Update ===
   unsigned long now = millis();
   float dt = (now - last_kf_time) / 1000.0f;
@@ -448,6 +491,11 @@ void loop(){
   // predict + update
   kf.predict(u);
   kf.update(y);
+}
+
+void log_data() {
+  int voltage_left = analogRead(camera1_adc);
+  int voltage_right = analogRead(camera2_adc);
 
   // retrieve filtered states
   Vec3f x_hat = kf.state();
@@ -491,7 +539,9 @@ void loop(){
     dataFile.flush();
     write_count=0;
   }
+}
 
+void handle_rf_commands() {
   //RF command handling
   if(HWSERIAL.available() > 0) {
     String receivedData = HWSERIAL.readStringUntil('\n');
@@ -549,4 +599,77 @@ void loop(){
       Serial.println("Camera2 Off Recieved");
       HWSERIAL.println("TEENSY Camera2 OFF");
       digitalWrite(camera2,LOW);
-  } } }
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  // while (!Serial);
+  Serial.println("Running the Flight Computer\n");
+  
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
+  // analogWriteFrequency(buzzer, 4500);
+  // analogWrite(buzzer, 128);
+
+  HWSERIAL.begin(57600);
+
+  pinMode(main_1, OUTPUT);
+  pinMode(main_2, OUTPUT);
+  pinMode(drogue_1, OUTPUT);
+  pinMode(drogue_2, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(camera1, OUTPUT);
+  pinMode(camera2, OUTPUT);
+
+//Turn both cameras on by default
+  digitalWrite(camera1, HIGH);
+  digitalWrite(camera2, HIGH);
+
+  initialize_sensors();
+
+  algo.begin(200);
+
+  if (!SD.begin(BUILTIN_SDCARD)) {
+    Serial.println("SD card failed or not present.");
+  }
+  initialize_flight_state();
+  initialize_dataFile();
+
+  delay(1000);
+  // analogWriteFrequency(buzzer, 4500);
+  // analogWrite(buzzer, 128);
+  prev_time = millis();
+
+  //comment out for actual launch
+  digitalWrite(buzzer, LOW);
+
+  initialize_kalman_filter();
+}
+
+void loop(){
+  read_sensors();
+
+  // Potential Add-on
+  counter++;
+  if(counter %10 == 0){
+    if(abs(Alt - startAlt) < 0.5){
+      startAlt = Alt;
+    }
+  }
+  // End of Add-on
+
+  update_flight_state();
+
+  kalman_filter();
+
+  // ADD LATER: Air Brakes Algorithm
+  // if (flight_state == GLIDING_ASCENT){
+  //   // Call algorithm
+  // }
+
+  log_data();
+
+  handle_rf_commands();
+}
