@@ -2,6 +2,8 @@
 #include <ArduinoEigenDense.h>
 #include <ArduinoEigenSparse.h>
 
+#include <math.h>
+
 // Include custom libraries
 
 #include <Arduino.h>
@@ -119,6 +121,21 @@ enum FlightState {
 };
 FlightState flight_state = LAUNCH_PAD;
 
+// Air Brakes variables
+#define TARGET_APOGEE_FT 10000
+#define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
+#define GAMMA 1.4;
+#define R 287.05287;
+#define g 9.80665; // Gravity
+#define L 0.0065; // Temperature Lapse Rate
+#define MASS 20;
+#define WANTED_AIRBRAKE_ALG_TIME 30; // ms
+#define TIME_PER_AIRBRAKE_CALL 0.0125; // ms
+float deltaT = 0.01;
+float A = pow(0.07886715773, 2) * M_PI;
+float deltaT_coefficient = (TIME_PER_AIRBRAKE_CALL / WANTED_AIRBRAKE_ALG_TIME) / g;
+int deployment = 0;
+
 //Kalman State Variables
 typedef Eigen::Matrix<float,3,3,Eigen::DontAlign> Mat3f;
 typedef Eigen::Matrix<float,3,1,Eigen::DontAlign> Vec3f;
@@ -142,6 +159,74 @@ float sigma_a = 0.3f;   // accelerometer noise (m/s^2)
 float q_bias = 1e-5f;   // bias drift
 float g = 9.80665f;     // gravity constant
 
+float get_drag_coefficient(const int& deployment_level, const float& mach_number){
+  return 0.5;
+}
+
+float get_mach_number(const float& velocity, const float& temp){
+  float speed_of_sound = pow(R * GAMMA * temp, 0.5);
+  return velocity / speed_of_sound;
+}
+
+float predict_apogee(const float& alt, const float& temp0, const float& pressure0, const float& angle_of_attack, const float& speed0, const int& deployment_level){
+  deltaT = max(0.01, min(speed0 * deltaT_coefficient * cos(angle_of_attack), 0.1));
+  
+  float alt_sim = alt;
+  float vz_sim = speed0 * cos(angle_of_attack);
+  float vx_sim = speed0 * sin(angle_of_attack);
+
+  for (int i = 0; i < 100000; ++i){
+    float vz_sim_before = vz_sim;
+    float T_local = max(temp0 - (L * (alt_sim - alt)), 1);
+    float mach_number = get_mach_number(pow(vz_sim * vz_sim + vx_sim * vx_sim, 0.5), T_local);
+
+    float airbrake_Cd = get_drag_coefficient(deployment_level, mach_number);
+
+    float p_local = pressure0 * pow(T_local / temp0, g / (R * L));
+    float rho_sim = p_local / (R * T_local);
+
+    float Fd = 0.5 * airbrake_Cd * rho_sim * A * (vx_sim * vx_sim + vz_sim * vz_sim);
+    
+    float angle_sim = atan2(vx_sim, vz_sim);
+    float Fx = -Fd * sin(angle_sim);
+    float Fz = -Fd * cos(angle_sim) - g * MASS;
+    vx_sim += (Fx / MASS) * deltaT;
+    vz_sim += (Fz / MASS) * deltaT;
+    alt_sim += ((vz_sim + vz_sim_before) / 2) * deltaT;
+
+    if (vz_sim < 0){
+      break;
+    }
+  }
+
+  // Serial.print("Altitude: ");
+  // Serial.println(alt_sim);
+  return alt_sim;
+}
+
+int optimal_deployment(const float& alt, const float& temp0, const float& pressure0, const float& angle_of_attack, const float& speed0){
+  if (angle_of_attack > 30 * M_PI / 180){
+    return 0;
+  }
+
+  int num_sims = 10;
+
+  int low = 0;
+  int high = pow(2, num_sims);
+
+  for (int i = 0; i < num_sims; ++i){
+    int mid = (high + low) / 2;
+    if (predict_apogee(alt, temp0, pressure0, angle_of_attack, speed0, mid) > TARGET_APOGEE_M){
+      low = mid;
+    }
+    else{
+      high = mid;
+    }
+  }
+
+  return low;
+}
+
 void initialize_dataFile() {
   dataFile = SD.open("rocket.csv", FILE_READ);
 
@@ -155,7 +240,7 @@ void initialize_dataFile() {
   }
 
   //data headers
-  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Alt_KF,Vel_kf,Bias_KF,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Stage,Time";
+  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Alt_KF,Vel_kf,Bias_KF,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Time,State,Deployment,Predicted_Apogee";
   dataFile.println(dataString);
   dataFile.flush();
 }
@@ -497,6 +582,50 @@ void kalman_filter() {
   kf.update(y);
 }
 
+String state_to_string(FlightState state) {
+  switch(state) {
+    case LAUNCH_PAD:
+      return "LAUNCH_PAD";
+      break;
+    case MOTOR_BURN:
+      return "MOTOR_BURN";
+      break;
+    case GLIDING_ASCENT:
+      return "GLIDING_ASCENT";
+      break;
+    case DROGUE_PRIMARY_DEPLOYING:
+      return "DROGUE_PRIMARY_DEPLOYING";
+      break;
+    case DROGUE_PRIMARY_DEPLOYED:
+      return "DROGUE_PRIMARY_DEPLOYED";
+      break;
+    case DROGUE_SECONDARY_DEPLOYING:
+      return "DROGUE_SECONDARY_DEPLOYING";
+      break;
+    case DROGUE_SECONDARY_DEPLOYED:
+      return "DROGUE_SECONDARY_DEPLOYED";
+      break;
+    case MAIN_PRIMARY_DEPLOYING:
+      return "MAIN_PRIMARY_DEPLOYING";
+      break;
+    case MAIN_PRIMARY_DEPLOYED:
+      return "MAIN_PRIMARY_DEPLOYED";
+      break;
+    case MAIN_SECONDARY_DEPLOYING:
+      return "MAIN_SECONDARY_DEPLOYING";
+      break;
+    case MAIN_SECONDARY_DEPLOYED:
+      return "MAIN_SECONDARY_DEPLOYED";
+      break;
+    case LANDED:
+      return "LANDED";
+      break;
+    default:
+      return "UNKNOWN_STATE";
+      break;
+  }
+}
+
 void log_data() {
   int voltage_left = analogRead(camera1_adc);
   int voltage_right = analogRead(camera2_adc);
@@ -508,14 +637,15 @@ void log_data() {
   float Bias_KF = x_hat[2];
 // Print combined data
 
-  // String dataString = String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
+  // String dataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
   //               String(Accel_x2, 7) + "," + String(Accel_y2, 7) + "," + String(Accel_z2, 7) + "," +
-  //               String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," +
+  //               String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," + String(Alt_KF, 7) + "," + String(Vel_KF, 7) + "," + String(Bias_KF, 7) + "," +
   //               String(Gyro_x, 7) + "," + String(Gyro_y, 7) + "," + String(Gyro_z, 7) + "," +
   //               String(Mag_x, 7) + "," + String(Mag_y, 7) + "," + String(Mag_z, 7) + "," +
   //               String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
-  //               String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," + String(stage) + "," + String(millis());
-  
+  //               String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
+  //               String(millis()) + "," + state_to_string(flight_state) + "," + String(deployment, 7);
+
   String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
                 String(Accel_x2, 7) + "," + String(Accel_y2, 7) + "," + String(Accel_z2, 7) + "," +
                 String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," + String(Alt_KF, 7) + "," + String(Vel_KF, 7) + "," + String(Bias_KF, 7) + "," +
@@ -523,7 +653,8 @@ void log_data() {
                 String(Mag_x, 7) + "," + String(Mag_y, 7) + "," + String(Mag_z, 7) + "," +
                 String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
                 String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
-                String(stage) + "," + String(millis());
+                String(millis()) + "," + state_to_string(flight_state) + "," + String(deployment, 7) + "," +
+                String(predict_apogee(Alt - startAlt, Temp, Press, 0 /*angle of attack*/, 0 /*velocity*/, deployment), 7);
 
   dataFile.println(storageDataString);
   write_count++;
@@ -668,10 +799,13 @@ void loop(){
 
   kalman_filter();
 
-  // ADD LATER: Air Brakes Algorithm
-  // if (flight_state == GLIDING_ASCENT){
-  //   // Call algorithm
-  // }
+  // Run Air Brakes Alg
+  if (flight_state == GLIDING_ASCENT){ // ADD: && get_mach_number(velocity, Temp) < 0.7 && angle of attack < 30 deg
+    deployment = optimal_deployment(Alt - startAlt, Temp, Press, 0 /*angle of attack*/, 0 /*velocity of roll axis*/);
+  }
+  else {
+    deployment = 0;
+  }
 
   log_data();
 
