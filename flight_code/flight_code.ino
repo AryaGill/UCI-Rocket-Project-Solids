@@ -16,6 +16,8 @@
 #include <Adafruit_Sensor_Calibration.h>
 #include <Adafruit_AHRS.h>
 
+#include "air_brakes_drag.h"
+
 #define main_1 11     // main primary
 #define main_2 10    // main secondary     
 #define drogue_1 12   // drogue primary
@@ -160,7 +162,37 @@ float q_bias = 1e-5f;   // bias drift
 float g = 9.80665f;     // gravity constant
 
 float get_drag_coefficient(const int& deployment_level, const float& mach_number){
-  return 0.5;
+  float mach_idx = mach_number * (NUM_RECORDED_MACH_NUMS - 1) / 0.7;
+  float deployment_idx = (float)deployment_level * (NUM_DEPLOYMENT_LEVELS - 1) / (NUM_RECORDED_DEPLOYMENT_LEVELS - 1);
+
+  // Integer and fractional parts
+  int mach_i = (int)mach_idx;                 // lower index
+  float mach_frac = mach_idx - (float)mach_i;      // fractional part
+  int deployment_i = (int)deployment_idx;
+  float deployment_frac = deployment_idx - (float)deployment_i;
+
+  float low_low = air_brakes_drag_coefficient[deployment_i][mach_i];
+  float low_high = air_brakes_drag_coefficient[deployment_i][mach_i + 1];
+
+  if (deployment_idx == floor(deployment_idx)){
+    // deployment_level is round. No need for upper value
+    return low_low + (low_high - low_low) * mach_frac;
+  }
+
+  float high_low = air_brakes_drag_coefficient[deployment_i + 1][mach_i];
+  float high_high = air_brakes_drag_coefficient[deployment_i + 1][mach_i + 1];
+
+  // --- Bilinear interpolation ---
+  float x = mach_frac;
+  float y = deployment_frac;
+
+  float result =
+      (1 - x) * (1 - y) * low_low +
+          x   * (1 - y) * low_high +
+      (1 - x) *     y   * high_low +
+          x   *     y   * high_high;
+
+  return result;
 }
 
 float get_mach_number(const float& velocity, const float& temp){
@@ -209,10 +241,10 @@ int optimal_deployment(const float& alt, const float& temp0, const float& pressu
     return 0;
   }
 
-  int num_sims = 10;
-
   int low = 0;
-  int high = pow(2, num_sims);
+  int high = NUM_DEPLOYMENT_LEVELS - 1;
+
+  int num_sims = log2(high);
 
   for (int i = 0; i < num_sims; ++i){
     int mid = (high + low) / 2;
