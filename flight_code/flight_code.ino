@@ -86,17 +86,17 @@ unsigned long main_secondary_start_time = 0;
 //drogue and main cooldown variables
 unsigned long cooldown_time = 10000; //set to how long cooldown should be (10s)
 
-int fall_counter = 0;
-int fall_counter1 = 0;
 float pre_alt = 0;
 int stage;
 int base_alt = 500; // Hard-coded base altitude in emergency cases
 int counter = 0;
 int prev_time;
+int prev_alt_time = 0;
 
 // Altitude Filtering for Flight State
-#define LAUNCH_THRESHOLD 0.5
-#define LANDED_THRESHOLD -0.5
+#define LAUNCH_THRESHOLD 10
+#define APOGEE_THRESHOLD -0.5
+#define LANDED_THRESHOLD -0.2
 #define ALT_DIF_BUF_SIZE 10
 float alt_dif_buffer[ALT_DIF_BUF_SIZE];
 float alt_dif_buffer_idx = 0;
@@ -393,8 +393,13 @@ float get_avg_alt_dif() {
 }
 
 void update_alt_dif_buf(float new_alt_dif) {
-  alt_dif_buffer[alt_dif_buffer_idx] = new_alt_dif;
+  float cur_time = millis();
+  if (cur_time == prev_time){
+    return;
+  }
+  alt_dif_buffer[alt_dif_buffer_idx] = new_alt_dif / (cur_time - prev_alt_time) * 1000;
   alt_dif_buffer_idx = (alt_dif_buffer_idx + 1) % ALT_DIF_BUF_SIZE;
+  prev_alt_time = cur_time;
 }
 
 void set_flight_state(FlightState new_state) {
@@ -431,14 +436,20 @@ void initialize_flight_state() {
 
   if (stateFile) {
     if (stateFile.size() > 0) {
+        float read_alt = startAlt;
         // File exists and has data
         startAlt = stateFile.readStringUntil('\n').trim().toFloat();
         Serial.print("startAlt loaded from file: ");
         Serial.println(startAlt);
 
-        flight_state = stateFile.readStringUntil('\n').trim().toInt();
-        Serial.print("Flight state loaded from file: ");
-        Serial.println((int)flight_state);
+        if (read_alt - startAlt > 183){
+          flight_state = stateFile.readStringUntil('\n').trim().toInt();
+          Serial.print("Flight state loaded from file: ");
+          Serial.println((int)flight_state);
+        }
+        else{
+          set_flight_state(LAUNCH_PAD);
+        }
 
     } else {
         // File exists but empty, close previous read mode
@@ -470,26 +481,19 @@ void update_flight_state() {
 
     case MOTOR_BURN:
       // Add logic: wait for certain delay or for acceleration to change
-      if (millis() - launch_start_time > 5000){
+      if (millis() - launch_start_time > 1500){
         set_flight_state(GLIDING_ASCENT);
       }
 
       break;
 
     case GLIDING_ASCENT:
-      // if ((pre_alt - Alt > 0.1 && fall_counter >= 1) && (Alt - startAlt > 305)) {
-      if (get_avg_alt_dif() < 0) {
+      if (get_avg_alt_dif() < APOGEE_THRESHOLD) {
         set_flight_state(DROGUE_PRIMARY_DEPLOYING);
         digitalWrite(drogue_1, HIGH);
         dataFile.println("Primary Drogue Deployed");
         //drogue primary starts firing and the time this starts is stored
         drogue_primary_start_time = millis();
-      }
-      else if ((pre_alt - Alt > 0.1)){
-        fall_counter = fall_counter + 1;
-      }
-      else{
-        fall_counter = 0;
       }
 
       break;
@@ -678,7 +682,7 @@ void log_data() {
                 String(Mag_x, 7) + "," + String(Mag_y, 7) + "," + String(Mag_z, 7) + "," +
                 String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
                 String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
-                String(millis()) + "," + state_to_string(flight_state) + "," + String(deployment, 7) + "," +
+                String(millis()) + "," + state_to_string(flight_state) + "," + String(deployment) + "," +
                 String(predict_apogee(Alt - startAlt, Temp, Press, 0 /*angle of attack*/, 0 /*velocity*/, deployment), 7);
 
   dataFile.println(storageDataString);
@@ -803,7 +807,7 @@ void setup() {
   prev_time = millis();
 
   //comment out for actual launch
-  digitalWrite(buzzer, LOW);
+  // digitalWrite(buzzer, LOW);
 
   initialize_kalman_filter();
 }
