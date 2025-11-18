@@ -815,15 +815,6 @@ void setup() {
 void loop(){
   read_sensors();
 
-  // Potential Add-on
-  counter++;
-  if(counter %10 == 0){
-    if(abs(Alt - startAlt) < 0.5){
-      startAlt = Alt;
-    }
-  }
-  // End of Add-on
-
   update_flight_state();
 
   kalman_filter();
