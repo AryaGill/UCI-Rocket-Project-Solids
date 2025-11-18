@@ -88,7 +88,6 @@ unsigned long cooldown_time = 10000; //set to how long cooldown should be (10s)
 
 int fall_counter = 0;
 int fall_counter1 = 0;
-int rise_counter = 0;
 float pre_alt = 0;
 int stage;
 int base_alt = 500; // Hard-coded base altitude in emergency cases
@@ -126,13 +125,13 @@ FlightState flight_state = LAUNCH_PAD;
 // Air Brakes variables
 #define TARGET_APOGEE_FT 10000
 #define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
-#define GAMMA 1.4;
-#define R 287.05287;
-#define g 9.80665; // Gravity
-#define L 0.0065; // Temperature Lapse Rate
-#define MASS 20;
-#define WANTED_AIRBRAKE_ALG_TIME 30; // ms
-#define TIME_PER_AIRBRAKE_CALL 0.0125; // ms
+#define GAMMA 1.4
+#define R 287.05287
+#define g 9.80665 // Gravity
+#define L 0.0065 // Temperature Lapse Rate
+#define MASS 20
+#define WANTED_AIRBRAKE_ALG_TIME 30 // ms
+#define TIME_PER_AIRBRAKE_CALL 0.0125 // ms
 float deltaT = 0.01;
 float A = pow(0.07886715773, 2) * M_PI;
 float deltaT_coefficient = (TIME_PER_AIRBRAKE_CALL / WANTED_AIRBRAKE_ALG_TIME) / g;
@@ -529,17 +528,11 @@ void update_flight_state() {
     
     case DROGUE_SECONDARY_DEPLOYED:
       // Wait for main deployment
-      if ((Alt >= 152 + startAlt) && (Alt <= 305 + startAlt) && (pre_alt - Alt > 1) && fall_counter1 >= 10) { // 1 should be changed to terminal velocity
+      if (Alt - startAlt < 229 && Alt - startAlt > 77){
         digitalWrite(main_1, HIGH);
         dataFile.println("Primary Main Deployed");
         main_primary_start_time = millis();
         set_flight_state(MAIN_PRIMARY_DEPLOYING);
-      }
-      else if ((pre_alt - Alt > 0.1)){
-        fall_counter1 = fall_counter1 + 1;
-      }
-      else{
-        fall_counter1 = 0;
       }
 
       break;
