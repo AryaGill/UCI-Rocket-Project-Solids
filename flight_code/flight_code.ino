@@ -169,8 +169,12 @@ float sigma_a = 0.3f;   // accelerometer noise (m/s^2)
 float q_bias = 1e-5f;   // bias drift
 
 float get_drag_coefficient(const int& deployment_level, const float& mach_number){
+  if (mach_number >= 0.7){
+    return air_brakes_drag_coefficient[NUM_RECORDED_DEPLOYMENT_LEVELS - 1][NUM_RECORDED_MACH_NUMS - 1];
+  }
+
   float mach_idx = mach_number * (NUM_RECORDED_MACH_NUMS - 1) / 0.7;
-  float deployment_idx = (float)deployment_level * (NUM_DEPLOYMENT_LEVELS - 1) / (NUM_RECORDED_DEPLOYMENT_LEVELS - 1);
+  float deployment_idx = (float)deployment_level * (NUM_RECORDED_DEPLOYMENT_LEVELS - 1) / (NUM_DEPLOYMENT_LEVELS - 1);
 
   // Integer and fractional parts
   int mach_i = (int)mach_idx;                 // lower index
@@ -251,7 +255,7 @@ int optimal_deployment(const float& alt, const float& temp0, const float& pressu
   int low = 0;
   int high = NUM_DEPLOYMENT_LEVELS - 1;
 
-  int num_sims = log2(high);
+  int num_sims = log2(NUM_DEPLOYMENT_LEVELS);
 
   for (int i = 0; i < num_sims; ++i){
     int mid = (high + low) / 2;
