@@ -68,6 +68,13 @@ float Quaternion_2 = 0;
 float Quaternion_3 = 0;
 float Quaternion_4 = 0;
 
+float Vel_x  = 0.0f;
+float Vel_y  = 0.0f;
+float Vel_z  = 0.0f;
+float Vel_x2 = 0.0f;
+float Vel_y2 = 0.0f;
+float Vel_z2 = 0.0f;
+
 // Declare rocket stage detection variables
 const int delay_time = 10;
 const int charge_delay = 500; //500
@@ -92,6 +99,9 @@ int base_alt = 500; // Hard-coded base altitude in emergency cases
 int counter = 0;
 int prev_time;
 int prev_alt_time = 0;
+unsigned long prev_vel_time = 0;
+unsigned long current_time = 0;
+
 
 // Altitude Filtering for Flight State
 #define LAUNCH_THRESHOLD 10
@@ -143,11 +153,10 @@ typedef Eigen::Matrix<float,3,1,Eigen::DontAlign> Vec3f;
 typedef Eigen::RowVector3f Row3f;
 typedef Eigen::Matrix<float,1,1,Eigen::DontAlign> Mat1f;
 
-
 Mat3f A, Q, P;
 Vec3f B;
-Row3f C;
-Mat1f R;
+Eigen::Matrix<float,3,3> C;
+Eigen::Matrix<float,3,3> R;
 
 KalmanFilter kf(A, B, C, Q, R, P);
 Vec3f x; // [alt, vel, bias]
@@ -158,7 +167,6 @@ unsigned long last_kf_time = 0;
 float r_var = 1.8f;     // barometer noise (trust less if high)
 float sigma_a = 0.3f;   // accelerometer noise (m/s^2)
 float q_bias = 1e-5f;   // bias drift
-float g = 9.80665f;     // gravity constant
 
 float get_drag_coefficient(const int& deployment_level, const float& mach_number){
   float mach_idx = mach_number * (NUM_RECORDED_MACH_NUMS - 1) / 0.7;
@@ -271,32 +279,49 @@ void initialize_dataFile() {
   }
 
   //data headers
-  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Alt_KF,Vel_kf,Bias_KF,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Time,State,Deployment,Predicted_Apogee";
+  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Alt_KF,Vel_kf,Bias_KF,Vel_x,Vel_y,Vel_z,Vel_x2,Vel_y2,Vel_z2,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Time,State,Deployment,Predicted_Apogee";
   dataFile.println(dataString);
   dataFile.flush();
 }
 
 void initialize_kalman_filter() {
   // Initialize Kalman filter
-  float dt = 0.02f;
-  A << 1, dt, -0.5f*dt*dt,
+  float dt = 0.02f;  // initial timestep estimate
+
+  A << 1, dt, -0.5f * dt * dt,
       0, 1,      -dt,
       0, 0,       1;
-  B << 0.5f*dt*dt, dt, 0.0f;
-  C << 1, 0, 0;
 
+  B << 0.5f * dt * dt, dt, 0.0f;
+
+  // Observation matrix (3 measurements: altitude, vel_y, vel_y2)
+  C << 1, 0, 0,
+       0, 1, 0,
+       0, 1, 0;
+
+  // Process noise
   Q.setZero();
   Q(0,0) = 0.25f * sigma_a * sigma_a * powf(dt,4);
-  Q(1,1) =         sigma_a * sigma_a * powf(dt,2);
+  Q(1,1) = sigma_a * sigma_a * powf(dt,2);
   Q(2,2) = q_bias * dt;
-  R << r_var;
+
+  // Measurement noise (trust altitude most)
+  R.setZero();
+  R(0,0) = r_var;  // barometer
+  R(1,1) = 2.0f;   // velocity 1
+  R(2,2) = 2.0f;   // velocity 2
+
   P = Mat3f::Identity() * 100.0f;
 
+  // Initialize Kalman filter
   kf = KalmanFilter(A, B, C, Q, R, P);
   x << startAlt, 0.0f, 0.0f;
   kf.init(x);
   kf_initialized = true;
+
   last_kf_time = millis();
+  prev_vel_time = millis();
+  current_time = millis();
 }
 
 void initialize_sensors() {
@@ -378,6 +403,24 @@ void read_sensors() {
   else {
     Serial.println("Failed to get LSM9DS1 data");
   }
+  current_time = millis();
+
+  float dt_vel = (current_time - prev_vel_time) / 1000.0f;
+
+  if (dt_vel > 0 && dt_vel < 0.2f) {
+
+      // Integrate LSM9DS1
+      Vel_x  += Accel_x  * dt_vel;
+      Vel_y  += Accel_y  * dt_vel;
+      Vel_z  += Accel_z  * dt_vel;
+
+      // Integrate LIS3DH
+      Vel_x2 += Accel_x2 * dt_vel;
+      Vel_y2 += Accel_y2 * dt_vel;
+      Vel_z2 += Accel_z2 * dt_vel;
+  }
+
+  prev_vel_time = current_time;
 }
 
 float get_avg_alt_dif() {
@@ -596,15 +639,19 @@ void kalman_filter() {
   B << 0.5f*dt*dt, dt, 0.0f;
   Q.setZero();
   Q(0,0) = 0.25f * sigma_a*sigma_a * powf(dt,4);
-  Q(1,1) =        sigma_a*sigma_a * powf(dt,2);
+  Q(1,1) = sigma_a*sigma_a * powf(dt,2);
   Q(2,2) = q_bias * dt;
   kf.update_dynamics(A);
   kf.update_process_noise(Q);
 
   // set measurement (baro) and control (accel + gravity)
-  Eigen::Matrix<float,1,1> y, u;
-  y << Alt;
-  u << Accel_y + g;
+  float fused_accel_y = 0.5f * (Accel_y + Accel_y2);  // fuse both Y accelerations
+  Eigen::Matrix<float,1,1> u;
+  u << fused_accel_y + g;
+
+  // measurement vector (altitude + two Y velocities)
+  Eigen::Matrix<float,3,1> y;
+  y << Alt, Vel_y, Vel_y2;
 
   // predict + update
   kf.predict(u);
@@ -678,6 +725,8 @@ void log_data() {
   String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
                 String(Accel_x2, 7) + "," + String(Accel_y2, 7) + "," + String(Accel_z2, 7) + "," +
                 String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," + String(Alt_KF, 7) + "," + String(Vel_KF, 7) + "," + String(Bias_KF, 7) + "," +
+                String(Vel_x, 7) + "," + String(Vel_y, 7) + "," + String(Vel_z, 7) + "," +
+                String(Vel_x2, 7) + "," + String(Vel_y2, 7) + "," + String(Vel_z2, 7) + "," +
                 String(Gyro_x, 7) + "," + String(Gyro_y, 7) + "," + String(Gyro_z, 7) + "," +
                 String(Mag_x, 7) + "," + String(Mag_y, 7) + "," + String(Mag_z, 7) + "," +
                 String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
