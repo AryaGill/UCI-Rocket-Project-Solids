@@ -146,8 +146,6 @@ def create_rocket(config, env):
     TARGET_APOGEE_FT = 10000
     TARGET_APOGEE_M = TARGET_APOGEE_FT * 0.3048
 
-    pid = PID(Kp=0.0001, Ki=0.0001, Kd=0.0000, setpoint=TARGET_APOGEE_M)
-
     def binary_search_deployment(alt, vz, air_brakes, T0, pressure0, angle_of_attack, speed0):
         num_sims = 10
         
@@ -176,91 +174,240 @@ def create_rocket(config, env):
     
     
     # Simulation
-    deltaT = 0.1
-    gamma = 1.4
+    # deltaT = 0.1
+    # gamma = 1.4
+    # R = 287.05287
+    # g = 9.80665
+    # L = 0.0065   # K/m lapse rate
+    # A = (config.radius ** 2) * math.pi
+    # wanted_time = 10 # ms
+    # time_per_call = 0.0125 # ms
+    # deltaT_coefficient = (time_per_call / wanted_time) / g
+    # def predict_apogee(alt, vz, air_brakes, T0, pressure0, deployment_level, angle_of_attack, speed0):
+
+    #     deltaT = max(0.01, min(speed0 * deltaT_coefficient * math.cos(angle_of_attack), 0.1))
+    #     print(deltaT)
+        
+    #     # v_sim = vz
+    #     alt_sim = alt
+
+    #     vz_sim = speed0 * math.cos(angle_of_attack)
+    #     vx_sim = speed0 * math.sin(angle_of_attack)
+
+    #     for i in range(0, 3000):
+
+    #         # Calculate Mach Number
+    #         # T_local = max(T0 - (L * (alt_sim - alt)), 1.0)
+    #         # speed_of_sound = math.sqrt(gamma * R * T_local)
+    #         # mach_number = v_sim / speed_of_sound
+
+    #         # # airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number) + rocket.power_off_drag(mach_number)
+    #         # # airbrake_Cd = rocket.power_on_drag(mach_number)
+    #         # airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number)
+
+    #         # p_local = pressure0 * (T_local / T0) ** (g / (R * L))
+    #         # rho_sim = p_local / (R * T_local)
+
+    #         # F = -0.5*airbrake_Cd*rho_sim*A*(v_sim**2) - g*(config.mass + config.dry_mass)
+    #         # a_sim = F / (config.mass + config.dry_mass)
+    #         # v_sim += a_sim * deltaT
+    #         # alt_sim += v_sim * deltaT
+
+
+
+    #         # Calculate Mach Number
+    #         vz_sim_before = vz_sim
+    #         T_local = max(T0 - (L * (alt_sim - alt)), 1.0)
+    #         speed_of_sound = math.sqrt(gamma * R * T_local)
+    #         mach_number = math.sqrt(vz_sim ** 2 + vx_sim ** 2) / speed_of_sound
+
+    #         # airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number) + rocket.power_off_drag(mach_number)
+    #         # airbrake_Cd = rocket.power_off_drag(mach_number)
+    #         airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number)
+
+    #         p_local = pressure0 * (T_local / T0) ** (g / (R * L))
+    #         rho_sim = p_local / (R * T_local)
+
+    #         Fd = 0.5*airbrake_Cd*rho_sim*A*(vx_sim**2 + vz_sim ** 2)
+    #         angle_sim = math.atan2(vx_sim, vz_sim)
+    #         Fx = -Fd * math.sin(angle_sim)
+    #         Fz = -Fd * math.cos(angle_sim) - g*(config.mass + config.dry_mass)
+    #         vx_sim += (Fx / (config.mass + config.dry_mass)) * deltaT
+    #         vz_sim += (Fz / (config.mass + config.dry_mass)) * deltaT
+    #         alt_sim += ((vz_sim + vz_sim_before) / 2) * deltaT
+
+
+
+    #         # Angle, no change
+    #         # vz_sim_before = vz_sim
+    #         # T_local = max(T0 - (L * (alt_sim - alt)), 1.0)
+    #         # speed_of_sound = math.sqrt(gamma * R * T_local)
+    #         # mach_number = (vz_sim / math.cos(angle_of_attack)) / speed_of_sound
+
+    #         # # airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number) + rocket.power_off_drag(mach_number)
+    #         # airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number)
+
+    #         # p_local = pressure0 * (T_local / T0) ** (g / (R * L))
+    #         # rho_sim = p_local / (R * T_local)
+
+    #         # Fd = 0.5*airbrake_Cd*rho_sim*A*((vz_sim / math.cos(angle_of_attack)) ** 2)
+    #         # Fz = -Fd * math.cos(angle_of_attack) - g*(config.mass + config.dry_mass)
+    #         # vz_sim += (Fz / (config.mass + config.dry_mass)) * deltaT
+    #         # alt_sim += ((vz_sim + vz_sim_before) / 2) * deltaT
+
+    #         if vz_sim < 0:
+    #             break
+
+    #     return alt_sim
+
+
+
+    TARGET_APOGEE_FT = 10000
+    TARGET_APOGEE_M = TARGET_APOGEE_FT * 0.3048
+    GAMMA = 1.4
     R = 287.05287
-    g = 9.80665
-    L = 0.0065   # K/m lapse rate
-    A = (config.radius ** 2) * math.pi
-    wanted_time = 10 # ms
-    time_per_call = 0.0125 # ms
-    deltaT_coefficient = (time_per_call / wanted_time) / g
-    def predict_apogee(alt, vz, air_brakes, T0, pressure0, deployment_level, angle_of_attack, speed0):
+    g = 9.80665          # Gravity
+    L = 0.0065           # Temperature Lapse Rate
+    MASS = 20
+    WANTED_AIRBRAKE_ALG_TIME = 30      # ms
+    TIME_PER_AIRBRAKE_CALL = 0.0125    # ms
+
+    deltaT = 0.01
+    A = (0.07886715773 ** 2) * math.pi
+    deltaT_coefficient = (TIME_PER_AIRBRAKE_CALL / WANTED_AIRBRAKE_ALG_TIME) / g
+    deployment = 0
+
+    NUM_RECORDED_DEPLOYMENT_LEVELS = 11
+    NUM_RECORDED_MACH_NUMS = 8
+    NUM_DEPLOYMENT_LEVELS = 1024
+
+    air_brakes_drag_coefficient = [
+        [0.400, 0.400, 0.400, 0.400, 0.400, 0.400, 0.400, 0.400],  # 0.0
+        [0.430, 0.460, 0.490, 0.520, 0.550, 0.580, 0.610, 0.640],  # 0.1
+        [0.460, 0.490, 0.520, 0.550, 0.580, 0.610, 0.640, 0.670],  # 0.2
+        [0.490, 0.520, 0.550, 0.580, 0.610, 0.640, 0.670, 0.700],  # 0.3
+        [0.520, 0.550, 0.580, 0.610, 0.640, 0.670, 0.700, 0.730],  # 0.4
+        [0.550, 0.580, 0.610, 0.640, 0.670, 0.700, 0.730, 0.760],  # 0.5
+        [0.580, 0.610, 0.640, 0.670, 0.700, 0.730, 0.760, 0.790],  # 0.6
+        [0.610, 0.640, 0.670, 0.700, 0.730, 0.760, 0.790, 0.820],  # 0.7
+        [0.640, 0.670, 0.700, 0.730, 0.760, 0.790, 0.820, 0.850],  # 0.8
+        [0.670, 0.700, 0.730, 0.760, 0.790, 0.820, 0.850, 0.880],  # 0.9
+        [0.700, 0.730, 0.760, 0.790, 0.820, 0.850, 0.880, 0.910],  # 1.0
+    ]
+
+    def get_drag_coefficient(deployment_level: int, mach_number: float) -> float:
+        if (mach_number >= 0.7):
+            return air_brakes_drag_coefficient[NUM_RECORDED_DEPLOYMENT_LEVELS - 1][NUM_RECORDED_MACH_NUMS - 1]
+
+        mach_idx = mach_number * (NUM_RECORDED_MACH_NUMS - 1) / 0.7
+        deployment_idx = deployment_level * (NUM_RECORDED_DEPLOYMENT_LEVELS - 1) / (NUM_DEPLOYMENT_LEVELS - 1)
+
+        mach_i = int(mach_idx)
+        mach_frac = mach_idx - mach_i
+
+        deployment_i = int(deployment_idx)
+        deployment_frac = deployment_idx - deployment_i
+
+        low_low = air_brakes_drag_coefficient[deployment_i][mach_i]
+        low_high = air_brakes_drag_coefficient[deployment_i][mach_i + 1]
+
+        if deployment_idx == math.floor(deployment_idx):
+            return low_low + (low_high - low_low) * mach_frac
+
+        high_low = air_brakes_drag_coefficient[deployment_i + 1][mach_i]
+        high_high = air_brakes_drag_coefficient[deployment_i + 1][mach_i + 1]
+
+        x = mach_frac
+        y = deployment_frac
+
+        # Bilinear interpolation
+        result = (
+            (1 - x) * (1 - y) * low_low +
+            x * (1 - y) * low_high +
+            (1 - x) * y * high_low +
+            x * y * high_high
+        )
+
+        return result
+
+
+    # ---------------------------------------------------------
+    #   MACH NUMBER
+    # ---------------------------------------------------------
+    def get_mach_number(velocity: float, temp: float) -> float:
+        speed_of_sound = math.sqrt(R * GAMMA * temp)
+        return velocity / speed_of_sound
+
+
+    # ---------------------------------------------------------
+    #   PREDICT APOGEE
+    # ---------------------------------------------------------
+    def predict_apogee(alt: float, temp0: float, pressure0: float,
+                        angle_of_attack: float, speed0: float,
+                        deployment_level: int) -> float:
+        global deltaT
 
         deltaT = max(0.01, min(speed0 * deltaT_coefficient * math.cos(angle_of_attack), 0.1))
-        print(deltaT)
-        
-        # v_sim = vz
-        alt_sim = alt
 
+        alt_sim = alt
         vz_sim = speed0 * math.cos(angle_of_attack)
         vx_sim = speed0 * math.sin(angle_of_attack)
 
-        for i in range(0, 3000):
+        for _ in range(100000):
+            vz_before = vz_sim
 
-            # Calculate Mach Number
-            # T_local = max(T0 - (L * (alt_sim - alt)), 1.0)
-            # speed_of_sound = math.sqrt(gamma * R * T_local)
-            # mach_number = v_sim / speed_of_sound
+            T_local = max(temp0 - (L * (alt_sim - alt)), 1)
 
-            # # airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number) + rocket.power_off_drag(mach_number)
-            # # airbrake_Cd = rocket.power_on_drag(mach_number)
-            # airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number)
+            mach_number = get_mach_number(math.sqrt(vz_sim**2 + vx_sim**2), T_local)
+            airbrake_Cd = get_drag_coefficient(deployment_level, mach_number)
 
-            # p_local = pressure0 * (T_local / T0) ** (g / (R * L))
-            # rho_sim = p_local / (R * T_local)
-
-            # F = -0.5*airbrake_Cd*rho_sim*A*(v_sim**2) - g*(config.mass + config.dry_mass)
-            # a_sim = F / (config.mass + config.dry_mass)
-            # v_sim += a_sim * deltaT
-            # alt_sim += v_sim * deltaT
-
-
-
-            # Calculate Mach Number
-            vz_sim_before = vz_sim
-            T_local = max(T0 - (L * (alt_sim - alt)), 1.0)
-            speed_of_sound = math.sqrt(gamma * R * T_local)
-            mach_number = math.sqrt(vz_sim ** 2 + vx_sim ** 2) / speed_of_sound
-
-            # airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number) + rocket.power_off_drag(mach_number)
-            # airbrake_Cd = rocket.power_off_drag(mach_number)
-            airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number)
-
-            p_local = pressure0 * (T_local / T0) ** (g / (R * L))
+            p_local = pressure0 * (T_local / temp0) ** (g / (R * L))
             rho_sim = p_local / (R * T_local)
 
-            Fd = 0.5*airbrake_Cd*rho_sim*A*(vx_sim**2 + vz_sim ** 2)
+            Fd = 0.5 * airbrake_Cd * rho_sim * A * (vx_sim**2 + vz_sim**2)
+
             angle_sim = math.atan2(vx_sim, vz_sim)
             Fx = -Fd * math.sin(angle_sim)
-            Fz = -Fd * math.cos(angle_sim) - g*(config.mass + config.dry_mass)
-            vx_sim += (Fx / (config.mass + config.dry_mass)) * deltaT
-            vz_sim += (Fz / (config.mass + config.dry_mass)) * deltaT
-            alt_sim += ((vz_sim + vz_sim_before) / 2) * deltaT
+            Fz = -Fd * math.cos(angle_sim) - g * MASS
 
+            vx_sim += (Fx / MASS) * deltaT
+            vz_sim += (Fz / MASS) * deltaT
 
-
-            # Angle, no change
-            # vz_sim_before = vz_sim
-            # T_local = max(T0 - (L * (alt_sim - alt)), 1.0)
-            # speed_of_sound = math.sqrt(gamma * R * T_local)
-            # mach_number = (vz_sim / math.cos(angle_of_attack)) / speed_of_sound
-
-            # # airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number) + rocket.power_off_drag(mach_number)
-            # airbrake_Cd = air_brakes.drag_coefficient(deployment_level, mach_number)
-
-            # p_local = pressure0 * (T_local / T0) ** (g / (R * L))
-            # rho_sim = p_local / (R * T_local)
-
-            # Fd = 0.5*airbrake_Cd*rho_sim*A*((vz_sim / math.cos(angle_of_attack)) ** 2)
-            # Fz = -Fd * math.cos(angle_of_attack) - g*(config.mass + config.dry_mass)
-            # vz_sim += (Fz / (config.mass + config.dry_mass)) * deltaT
-            # alt_sim += ((vz_sim + vz_sim_before) / 2) * deltaT
+            alt_sim += ((vz_sim + vz_before) / 2) * deltaT
 
             if vz_sim < 0:
                 break
 
         return alt_sim
+
+
+    # ---------------------------------------------------------
+    #   BINARY SEARCH FOR OPTIMAL DEPLOYMENT
+    # ---------------------------------------------------------
+    def optimal_deployment(alt: float, temp0: float, pressure0: float,
+                        angle_of_attack: float, speed0: float) -> int:
+
+        if angle_of_attack > math.radians(30):
+            return 0
+
+        low = 0
+        high = NUM_DEPLOYMENT_LEVELS - 1
+
+        num_sims = int(math.log2(NUM_DEPLOYMENT_LEVELS))
+
+        for _ in range(num_sims):
+            mid = (high + low) // 2
+
+            if predict_apogee(alt, temp0, pressure0, angle_of_attack, speed0, mid) > TARGET_APOGEE_M:
+                low = mid
+            else:
+                high = mid
+
+        return low
+    
+
+
+
 
     def controller_function(
         time, sampling_rate, state, state_history, observed_variables, air_brakes
@@ -282,7 +429,7 @@ def create_rocket(config, env):
         ) ** 0.5
         mach_number = free_stream_speed / env.speed_of_sound(altitude_ASL)
 
-        speed_of_sound = (gamma * R * env.temperature(altitude_ASL)) ** 0.5
+        speed_of_sound = (GAMMA * R * env.temperature(altitude_ASL)) ** 0.5
         my_mach_number = speed / speed_of_sound
 
         # Check if the rocket has reached burnout
@@ -292,10 +439,11 @@ def create_rocket(config, env):
         
         
         # Binary Search Method
-        new_deployment_level = binary_search_deployment(altitude_AGL, vz, air_brakes, env.temperature(altitude_ASL), env.pressure(altitude_ASL), angle_of_attack, speed)
+        # new_deployment_level = binary_search_deployment(altitude_AGL, vz, air_brakes, env.temperature(altitude_ASL), env.pressure(altitude_ASL), angle_of_attack, speed)
+        new_deployment_level = optimal_deployment(altitude_AGL, env.temperature(altitude_ASL), env.pressure(altitude_ASL), angle_of_attack, speed) / NUM_DEPLOYMENT_LEVELS
 
         # PID Method
-        predicted_apogee = predict_apogee(altitude_AGL, vz, air_brakes, env.temperature(altitude_ASL), env.pressure(altitude_ASL), air_brakes.deployment_level, angle_of_attack, speed)
+        predicted_apogee = predict_apogee(altitude_AGL, env.temperature(altitude_ASL), env.pressure(altitude_ASL), angle_of_attack, speed, air_brakes.deployment_level * NUM_DEPLOYMENT_LEVELS)
         # new_deployment_level = min(1, max(0, air_brakes.deployment_level + pid.update(predicted_apogee, time)))
         # new_deployment_level = 0.3
 
