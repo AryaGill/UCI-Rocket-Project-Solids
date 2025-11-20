@@ -109,7 +109,7 @@ unsigned long current_time = 0;
 #define LANDED_THRESHOLD -0.2
 #define ALT_DIF_BUF_SIZE 10
 float alt_dif_buffer[ALT_DIF_BUF_SIZE];
-float alt_dif_buffer_idx = 0;
+int alt_dif_buffer_idx = 0;
 
 //Variables for setting how many data entries are written at once
 int cycles_per_write = 20;
@@ -490,7 +490,7 @@ void initialize_flight_state() {
         Serial.println(startAlt);
 
         if (read_alt - startAlt > 183){
-          flight_state = stateFile.readStringUntil('\n').trim().toInt();
+          flight_state = static_cast<FlightState>(stateFile.readStringUntil('\n').trim().toInt());
           Serial.print("Flight state loaded from file: ");
           Serial.println((int)flight_state);
         }
