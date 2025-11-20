@@ -153,12 +153,12 @@ typedef Eigen::Matrix<float,3,1,Eigen::DontAlign> Vec3f;
 typedef Eigen::RowVector3f Row3f;
 typedef Eigen::Matrix<float,1,1,Eigen::DontAlign> Mat1f;
 
-Mat3f A, Q, P;
+Mat3f Amatrix, Q, P;
 Vec3f B;
 Eigen::Matrix<float,3,3> C;
-Eigen::Matrix<float,3,3> R;
+Eigen::Matrix<float,3,3> Rmatrix;
 
-KalmanFilter kf(A, B, C, Q, R, P);
+KalmanFilter kf(Amatrix, B, C, Q, Rmatrix, P);
 Vec3f x; // [alt, vel, bias]
 bool kf_initialized = false;
 unsigned long last_kf_time = 0;
@@ -292,7 +292,7 @@ void initialize_kalman_filter() {
   // Initialize Kalman filter
   float dt = 0.02f;  // initial timestep estimate
 
-  A << 1, dt, -0.5f * dt * dt,
+  Amatrix << 1, dt, -0.5f * dt * dt,
       0, 1,      -dt,
       0, 0,       1;
 
@@ -310,15 +310,15 @@ void initialize_kalman_filter() {
   Q(2,2) = q_bias * dt;
 
   // Measurement noise (trust altitude most)
-  R.setZero();
-  R(0,0) = r_var;  // barometer
-  R(1,1) = 2.0f;   // velocity 1
-  R(2,2) = 2.0f;   // velocity 2
+  Rmatrix.setZero();
+  Rmatrix(0,0) = r_var;  // barometer
+  Rmatrix(1,1) = 2.0f;   // velocity 1
+  Rmatrix(2,2) = 2.0f;   // velocity 2
 
   P = Mat3f::Identity() * 100.0f;
 
   // Initialize Kalman filter
-  kf = KalmanFilter(A, B, C, Q, R, P);
+  kf = KalmanFilter(Amatrix, B, C, Q, Rmatrix, P);
   x << startAlt, 0.0f, 0.0f;
   kf.init(x);
   kf_initialized = true;
@@ -637,7 +637,7 @@ void kalman_filter() {
   last_kf_time = now;
 
   // update matrices (only A, Q depend on dt)
-  A << 1, dt, -0.5f*dt*dt,
+  Amatrix << 1, dt, -0.5f*dt*dt,
       0, 1,      -dt,
       0, 0,       1;
   B << 0.5f*dt*dt, dt, 0.0f;
@@ -645,7 +645,7 @@ void kalman_filter() {
   Q(0,0) = 0.25f * sigma_a*sigma_a * powf(dt,4);
   Q(1,1) = sigma_a*sigma_a * powf(dt,2);
   Q(2,2) = q_bias * dt;
-  kf.update_dynamics(A);
+  kf.update_dynamics(Amatrix);
   kf.update_process_noise(Q);
 
   // set measurement (baro) and control (accel + gravity)
