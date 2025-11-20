@@ -133,17 +133,17 @@ enum FlightState {
 FlightState flight_state = LAUNCH_PAD;
 
 // Air Brakes variables
-#define TARGET_APOGEE_FT 10000
+#define TARGET_APOGEE_FT 3500
 #define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
 #define GAMMA 1.4
 #define R 287.05287
 #define g 9.80665 // Gravity
 #define L 0.0065 // Temperature Lapse Rate
-#define MASS 20
+#define MASS 2.562797
 #define WANTED_AIRBRAKE_ALG_TIME 30 // ms
 #define TIME_PER_AIRBRAKE_CALL 0.0125 // ms
 float deltaT = 0.01;
-float A = pow(0.07886715773, 2) * M_PI;
+float A = pow(0.1016, 2) * M_PI;
 float deltaT_coefficient = (TIME_PER_AIRBRAKE_CALL / WANTED_AIRBRAKE_ALG_TIME) / g;
 int deployment = 0;
 
