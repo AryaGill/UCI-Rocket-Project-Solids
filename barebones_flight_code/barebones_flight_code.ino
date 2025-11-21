@@ -283,7 +283,9 @@ void initialize_dataFile() {
   }
 
   //data headers
-  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Alt_KF,Vel_kf,Bias_KF,Vel_x,Vel_y,Vel_z,Vel_x2,Vel_y2,Vel_z2,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Time,State,Deployment,Predicted_Apogee";
+  // String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Alt_KF,Vel_kf,Bias_KF,Vel_x,Vel_y,Vel_z,Vel_x2,Vel_y2,Vel_z2,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Time,State,Deployment,Predicted_Apogee";
+  // dataString without kalman filtering or airbrakes
+  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Vel_x,Vel_y,Vel_z,Vel_x2,Vel_y2,Vel_z2,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Time,State";
   dataFile.println(dataString);
   dataFile.flush();
 }
@@ -711,10 +713,10 @@ void log_data() {
   int voltage_right = analogRead(camera2_adc);
 
   // retrieve filtered states
-  Vec3f x_hat = kf.state();
-  float Alt_KF = x_hat[0];
-  float Vel_KF = x_hat[1];
-  float Bias_KF = x_hat[2];
+  // Vec3f x_hat = kf.state();
+  // float Alt_KF = x_hat[0];
+  // float Vel_KF = x_hat[1];
+  // float Bias_KF = x_hat[2];
 // Print combined data
 
   // String dataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
@@ -726,17 +728,29 @@ void log_data() {
   //               String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
   //               String(millis()) + "," + state_to_string(flight_state) + "," + String(deployment, 7);
 
+  // String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
+  //               String(Accel_x2, 7) + "," + String(Accel_y2, 7) + "," + String(Accel_z2, 7) + "," +
+  //               String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," + String(Alt_KF, 7) + "," + String(Vel_KF, 7) + "," + String(Bias_KF, 7) + "," +
+  //               String(Vel_x, 7) + "," + String(Vel_y, 7) + "," + String(Vel_z, 7) + "," +
+  //               String(Vel_x2, 7) + "," + String(Vel_y2, 7) + "," + String(Vel_z2, 7) + "," +
+  //               String(Gyro_x, 7) + "," + String(Gyro_y, 7) + "," + String(Gyro_z, 7) + "," +
+  //               String(Mag_x, 7) + "," + String(Mag_y, 7) + "," + String(Mag_z, 7) + "," +
+  //               String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
+  //               String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
+  //               String(millis()) + "," + state_to_string(flight_state) + "," + String(deployment) + "," +
+  //               String(predict_apogee(Alt - startAlt, Temp, Press, 0 /*angle of attack*/, 0 /*velocity*/, deployment), 7);
+
+  // storageDataString without kalman filtering or air brakes
   String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
-                String(Accel_x2, 7) + "," + String(Accel_y2, 7) + "," + String(Accel_z2, 7) + "," +
-                String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," + String(Alt_KF, 7) + "," + String(Vel_KF, 7) + "," + String(Bias_KF, 7) + "," +
-                String(Vel_x, 7) + "," + String(Vel_y, 7) + "," + String(Vel_z, 7) + "," +
-                String(Vel_x2, 7) + "," + String(Vel_y2, 7) + "," + String(Vel_z2, 7) + "," +
-                String(Gyro_x, 7) + "," + String(Gyro_y, 7) + "," + String(Gyro_z, 7) + "," +
-                String(Mag_x, 7) + "," + String(Mag_y, 7) + "," + String(Mag_z, 7) + "," +
-                String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
-                String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
-                String(millis()) + "," + state_to_string(flight_state) + "," + String(deployment) + "," +
-                String(predict_apogee(Alt - startAlt, Temp, Press, 0 /*angle of attack*/, 0 /*velocity*/, deployment), 7);
+              String(Accel_x2, 7) + "," + String(Accel_y2, 7) + "," + String(Accel_z2, 7) + "," +
+              String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," +
+              String(Vel_x, 7) + "," + String(Vel_y, 7) + "," + String(Vel_z, 7) + "," +
+              String(Vel_x2, 7) + "," + String(Vel_y2, 7) + "," + String(Vel_z2, 7) + "," +
+              String(Gyro_x, 7) + "," + String(Gyro_y, 7) + "," + String(Gyro_z, 7) + "," +
+              String(Mag_x, 7) + "," + String(Mag_y, 7) + "," + String(Mag_z, 7) + "," +
+              String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
+              String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
+              String(millis()) + "," + state_to_string(flight_state);
 
   dataFile.println(storageDataString);
   write_count++;
