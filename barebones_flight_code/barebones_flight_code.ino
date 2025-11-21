@@ -45,6 +45,7 @@ Adafruit_Mahony algo;
 //CSV File Declaration
 File dataFile;
 File stateFile;
+File simFile;
 
 // Declare global variables
 float Temp = 0;
@@ -427,6 +428,30 @@ void read_sensors() {
   }
 
   prev_vel_time = current_time;
+}
+
+void init_sim_file(){
+  simFile = SD.open("sim_data.csv", FILE_READ);
+
+  if (!simFile) {
+    Serial.println("Simulation file does not exist");
+  }
+
+  // Read header
+  simFile.readStringUntil('\n');
+}
+
+void read_sim_data(){
+  String line = simFile.readStringUntil('\n');
+
+  // Alt is 5th column
+  int start = 0;
+  int end = -1;
+  for (int i = 0; i <= 5; i++) {
+    start = end + 1;
+    end = line.indexOf(',', start);
+  }
+  Alt = line.substring(start, end).toFloat();
 }
 
 float get_avg_alt_dif() {
@@ -841,8 +866,6 @@ void setup() {
   
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
-  // analogWriteFrequency(buzzer, 4500);
-  // analogWrite(buzzer, 128);
 
   HWSERIAL.begin(57600);
 
@@ -881,6 +904,7 @@ void setup() {
 
 void loop(){
   read_sensors();
+  read_sim_data();
 
   update_flight_state();
 
