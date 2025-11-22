@@ -106,7 +106,7 @@ unsigned long current_time = 0;
 
 // Altitude Filtering for Flight State
 #define LAUNCH_THRESHOLD 10
-#define APOGEE_THRESHOLD -0.5
+#define APOGEE_THRESHOLD -2
 #define LANDED_THRESHOLD -0.2
 #define ALT_DIF_BUF_SIZE 10
 float alt_dif_buffer[ALT_DIF_BUF_SIZE];
@@ -432,38 +432,147 @@ void read_sensors() {
 
 void init_sim_file(){
   simFile = SD.open("sim_data.csv", FILE_READ);
-
+ 
   if (!simFile) {
     Serial.println("Simulation file does not exist");
+    return;
   }
-
+ 
   // Read header
-  simFile.readStringUntil('\n');
+  String header = simFile.readStringUntil('\n');
 }
 
-void read_sim_data(){
-  String line = simFile.readStringUntil('\n');
+// bool read_sim_data() {
+//     delay(10);
+//     if (!simFile.available()) {
+//         Serial.println("Reached end of file");
+//         return false;  // end of sim data
+//     }
 
-  // Alt is 5th column
-  int start = 0;
-  int end = -1;
-  for (int i = 0; i <= 5; i++) {
-    start = end + 1;
-    end = line.indexOf(',', start);
-  }
-  Alt = line.substring(start, end).toFloat();
+//     String line = simFile.readStringUntil('\n');
+//     line.trim();
+
+//     // If the line itself is "END", stop immediately
+//     if (line == "END") {
+//         Serial.println("END detected");
+//         return false;
+//     }
+
+//     // Parse the 5th column (index 4)
+//     int start = 0;
+//     int end = -1;
+//     for (int i = 0; i <= 4; i++) {
+//         start = end + 1;
+//         end = line.indexOf(',', start);
+
+//         // If there is no comma (e.g. malformed row), stop safely
+//         if (end == -1 && i < 4) {
+//             Serial.println("Malformed line, stopping");
+//             return false;
+//         }
+//     }
+
+//     String altStr = line.substring(start, end);
+//     altStr.trim();
+
+//     // Check if altitude column says END
+//     if (altStr.equalsIgnoreCase("END")) {
+//         Serial.println("END detected in ALT column");
+//         return false;
+//     }
+
+//     Alt = altStr.toFloat();
+//     Serial.println(Alt);
+
+//     return true;  // valid data row
+// }
+bool read_sim_data() {
+    delay(10);
+    if (!simFile.available()) {
+        Serial.println("Reached end of file");
+        return false;  // end of sim data
+    }
+
+    String line = simFile.readStringUntil('\n');
+    line.trim();
+
+    // If the line itself is "END", stop immediately
+    if (line == "END") {
+        Serial.println("END detected");
+        return false;
+    }
+
+    // Parse the 5th column (index 4) for Alt
+    int start = 0;
+    int end = -1;
+    for (int i = 0; i <= 4; i++) {
+        start = end + 1;
+        end = line.indexOf(',', start);
+
+        // If there is no comma (e.g., malformed row), stop safely
+        if (end == -1 && i < 4) {
+            Serial.println("Malformed line, stopping");
+            return false;
+        }
+    }
+
+    String altStr = line.substring(start, end);
+    altStr.trim();
+
+    // Check if altitude column says END
+    if (altStr.equalsIgnoreCase("END")) {
+        Serial.println("END detected in ALT column");
+        return false;
+    }
+
+    Alt = altStr.toFloat();
+    Serial.println(Alt);
+
+    return true;  // valid data row
 }
 
+// float get_avg_alt_dif() {
+//   float sum = 0;
+//   float largest = alt_dif_buffer[0];
+//   float smallest = alt_dif_buffer[0];
+//   for (int i = 0; i < ALT_DIF_BUF_SIZE; ++i){
+//     sum += alt_dif_buffer[i];
+//     largest = max(largest, alt_dif_buffer[i]);
+//     smallest = min (smallest, alt_dif_buffer[i]);
+//   }
+  
+//   Serial.println((sum - largest - smallest) / (ALT_DIF_BUF_SIZE - 2));
+//   return (sum - largest - smallest) / (ALT_DIF_BUF_SIZE - 2);
+// }
 float get_avg_alt_dif() {
   float sum = 0;
-  float largest = alt_dif_buffer[0];
-  float smallest = alt_dif_buffer[0];
-  for (int i = 0; i < ALT_DIF_BUF_SIZE; ++i){
-    sum += alt_dif_buffer[i];
-    largest = max(largest, alt_dif_buffer[i]);
-    smallest = min (smallest, alt_dif_buffer[i]);
+ 
+  float largest1 = -1e9, largest2 = -1e9;
+  float smallest1 =  1e9, smallest2 =  1e9;
+ 
+  for (int i = 0; i < ALT_DIF_BUF_SIZE; ++i) {
+    float v = alt_dif_buffer[i];
+    sum += v;
+ 
+    // Update largest values
+    if (v > largest1) {
+      largest2 = largest1;
+      largest1 = v;
+    } else if (v > largest2) {
+      largest2 = v;
+    }
+ 
+    // Update smallest values
+    if (v < smallest1) {
+      smallest2 = smallest1;
+      smallest1 = v;
+    } else if (v < smallest2) {
+      smallest2 = v;
+    }
   }
-  return (sum - largest - smallest) / (ALT_DIF_BUF_SIZE - 2);
+ 
+  return (sum - largest1 - largest2 - smallest1 - smallest2) /
+         (ALT_DIF_BUF_SIZE - 4);
 }
 
 void update_alt_dif_buf(float new_alt_dif) {
@@ -479,17 +588,23 @@ void update_alt_dif_buf(float new_alt_dif) {
 void set_flight_state(FlightState new_state) {
   flight_state = new_state;
 
-  // Write flight state to state file
-  // stateFile = SD.open("rocket_state.csv", FILE_WRITE);
-  // if (stateFile) {
-  //     stateFile.println(String(startAlt, 8));
-  //     stateFile.flush();
-  //     stateFile.println((int)flight_state);
-  //     stateFile.flush();
-  // } else {
-  //     Serial.println("Failed to create state file");
-  // }
+  //Write flight state to state file
+  if (SD.exists("rocket_state.csv")){
+    SD.remove("rocket_state.csv");
+  }
+
+  stateFile = SD.open("rocket_state.csv", FILE_WRITE);
+  if (stateFile) {
+      stateFile.println(String(startAlt, 8));
+      stateFile.flush();
+      stateFile.println((int)flight_state);
+      stateFile.flush();
+  } else {
+      Serial.println("Failed to create state file");
+  }
 }
+
+
 
 void initialize_flight_state() {
   //possible start altitude after reset fix
@@ -506,36 +621,39 @@ void initialize_flight_state() {
   }
 
   // Open rocket state file
-  // stateFile = SD.open("rocket_state.csv", FILE_READ);
+  stateFile = SD.open("rocket_state.csv", FILE_READ);
 
-  // if (stateFile) {
-  //   if (stateFile.size() > 0) {
-  //       float read_alt = startAlt;
-  //       // File exists and has data
-  //       startAlt = stateFile.readStringUntil('\n').trim().toFloat();
-  //       Serial.print("startAlt loaded from file: ");
-  //       Serial.println(startAlt);
+  if (stateFile) {
+    if (stateFile.size() > 0) {
+        // File exists and has data
+        float csv_startAlt = stateFile.readStringUntil('\n').trim().toFloat();
+        Serial.println(csv_startAlt);
+        Serial.println(startAlt);
+        Serial.println(startAlt - csv_startAlt);
+        
+        if (startAlt - csv_startAlt > 50){
+          flight_state = static_cast<FlightState>(stateFile.readStringUntil('\n').trim().toInt());
+          startAlt = csv_startAlt;
+          Serial.print("startAlt loaded from file: ");
+          Serial.println(startAlt);
+          Serial.print("Flight state loaded from file: ");
+          Serial.println(state_to_string(flight_state));
+        }
+        else{
+          set_flight_state(LAUNCH_PAD);
+        }
 
-  //       if (read_alt - startAlt > 183){
-  //         flight_state = static_cast<FlightState>(stateFile.readStringUntil('\n').trim().toInt());
-  //         Serial.print("Flight state loaded from file: ");
-  //         Serial.println((int)flight_state);
-  //       }
-  //       else{
-  //         set_flight_state(LAUNCH_PAD);
-  //       }
-
-  //   } else {
-  //       // File exists but empty, close previous read mode
-  //       Serial.println("Writing starting altitude.");
-  //       stateFile.close();
-  //       set_flight_state(LAUNCH_PAD);
-  //   }
-  // } else {
-  //   // File doesn't exist 
-  //   Serial.println("Creating and writing starting altitude.");
-  //   set_flight_state(LAUNCH_PAD);
-  // }
+    } else {
+        // File exists but empty, close previous read mode
+        Serial.println("Writing starting altitude.");
+        stateFile.close();
+        set_flight_state(LAUNCH_PAD);
+    }
+  } else {
+    // File doesn't exist 
+    Serial.println("Creating and writing starting altitude.");
+    set_flight_state(LAUNCH_PAD);
+  }
 }
 
 void update_flight_state() {
@@ -547,6 +665,8 @@ void update_flight_state() {
       // Detect if launched
       if (get_avg_alt_dif() > LAUNCH_THRESHOLD) {
         dataFile.println("LAUNCHED");
+        Serial.println("LAUNCHED");
+
         launch_start_time = millis();
         set_flight_state(MOTOR_BURN);
       }
@@ -557,6 +677,7 @@ void update_flight_state() {
       // Add logic: wait for certain delay or for acceleration to change
       if (millis() - launch_start_time > 1500){
         set_flight_state(GLIDING_ASCENT);
+        Serial.println("Motor Burnout");
       }
 
       break;
@@ -566,6 +687,9 @@ void update_flight_state() {
         set_flight_state(DROGUE_PRIMARY_DEPLOYING);
         digitalWrite(drogue_1, HIGH);
         dataFile.println("Primary Drogue Deployed");
+        Serial.println("Primary Drogue Deployed");
+
+        
         //drogue primary starts firing and the time this starts is stored
         drogue_primary_start_time = millis();
       }
@@ -588,6 +712,7 @@ void update_flight_state() {
       if (millis() - drogue_primary_end_time >= backup_delay) {
         digitalWrite(drogue_2, HIGH);
         dataFile.println("Secondary Drogue Deployed");
+        Serial.println("Secondary Drogue Deployed");
 
         //time when secondary finishes is stored and bools set so this state does not run again
         drogue_secondary_start_time = millis();
@@ -609,6 +734,8 @@ void update_flight_state() {
       if (Alt - startAlt < 229 && Alt - startAlt > 77){
         digitalWrite(main_1, HIGH);
         dataFile.println("Primary Main Deployed");
+        Serial.println("Primary Main Deployed");
+
         main_primary_start_time = millis();
         set_flight_state(MAIN_PRIMARY_DEPLOYING);
       }
@@ -628,6 +755,8 @@ void update_flight_state() {
       if(millis() - main_primary_end_time >= backup_delay){
         digitalWrite(main_2, HIGH);
         dataFile.println("Secondary Main Deployed");
+        Serial.println("Secondary Main Deployed");
+
         main_secondary_start_time = millis();
         set_flight_state(MAIN_SECONDARY_DEPLOYING);
       }
@@ -778,6 +907,8 @@ void log_data() {
               String(millis()) + "," + state_to_string(flight_state);
 
   dataFile.println(storageDataString);
+
+
   write_count++;
 
   String dataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt, 1) + "," +
@@ -900,11 +1031,19 @@ void setup() {
   // digitalWrite(buzzer, LOW);
 
   // initialize_kalman_filter();
+  init_sim_file();
+  // startAlt = 891;
 }
 
 void loop(){
-  read_sensors();
-  read_sim_data();
+  
+  
+  // read_sensors();
+
+  if (!read_sim_data()) {
+        Serial.println("Simulation finished. Halting.");
+        while (true) { delay(100); }  // freeze program
+    }
 
   update_flight_state();
 
