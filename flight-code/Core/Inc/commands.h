@@ -1,0 +1,5 @@
+#pragma once
+
+#define RX_BUF_SIZE 64
+
+void handle_rf_commands(char *cmd);
