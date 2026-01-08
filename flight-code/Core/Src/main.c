@@ -168,7 +168,7 @@ int main(void)
 
 	  kalman_filter(&telemetry);
 
-	  set_airbrake_deployment(optimal_deployment(&flight_state, &telemetry));
+	  set_optimal_deployment(flight_state, &telemetry);
 
 	  log_data(&flight_state, &telemetry);
 
