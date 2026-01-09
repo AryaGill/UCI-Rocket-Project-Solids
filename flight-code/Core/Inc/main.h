@@ -57,10 +57,26 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Flash_CS_Pin GPIO_PIN_3
+#define Flash_CS_GPIO_Port GPIOA
+#define IMU_2_CS_Pin GPIO_PIN_2
+#define IMU_2_CS_GPIO_Port GPIOB
+#define SD_CS_Pin GPIO_PIN_9
+#define SD_CS_GPIO_Port GPIOE
+#define SD_CD_Pin GPIO_PIN_10
+#define SD_CD_GPIO_Port GPIOE
+#define Baro_CS_Pin GPIO_PIN_11
+#define Baro_CS_GPIO_Port GPIOE
+#define IMU_CS_Pin GPIO_PIN_10
+#define IMU_CS_GPIO_Port GPIOB
 #define Droge_Parachute_2_Pin GPIO_PIN_10
 #define Droge_Parachute_2_GPIO_Port GPIOD
 #define Droge_Parachute_1_Pin GPIO_PIN_11
 #define Droge_Parachute_1_GPIO_Port GPIOD
+#define Mag_SDIO_Pin GPIO_PIN_6
+#define Mag_SDIO_GPIO_Port GPIOC
+#define Mag_CS_Pin GPIO_PIN_7
+#define Mag_CS_GPIO_Port GPIOC
 #define Main_Parachute_2_Pin GPIO_PIN_9
 #define Main_Parachute_2_GPIO_Port GPIOA
 #define Main_Parachute_1_Pin GPIO_PIN_10

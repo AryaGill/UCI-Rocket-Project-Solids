@@ -12,8 +12,17 @@ typedef struct {
 	float velocity_r;
 	float velocity_p;
 	float velocity_y;
+	float accel_r;
+	float accel_p;
+	float accel_y;
+	float gyro_r;
+	float gyro_p;
+	float gyro_y;
 	float predicted_apogee;
 	float airbrake_deployment;
+	float mag_r;
+	float mag_p;
+	float mag_y;
 } Telemetry_t;
 
 void init_dataFile();
