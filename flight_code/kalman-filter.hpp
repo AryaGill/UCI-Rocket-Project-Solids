@@ -1,51 +1,64 @@
-#include <ArduinoEigen.h>
-#include <ArduinoEigenDense.h>
-#include <ArduinoEigenSparse.h>
-
 #pragma once
-
-// ======================================================================
-// Eigen configuration for embedded / microcontroller builds
-// ======================================================================
-
-// Disable Eigen features that cause issues on ARM/Teensy
+#include <ArduinoEigen.h>
 #include <ArduinoEigenDense.h>
 
 using namespace Eigen;
 
-// ======================================================================
-// KalmanFilter class definition
-// ======================================================================
-
 class KalmanFilter {
 public:
-    KalmanFilter(
-        const Eigen::MatrixXf& A,
-        const Eigen::MatrixXf& B,
-        const Eigen::MatrixXf& C,
-        const Eigen::MatrixXf& Q,
-        const Eigen::MatrixXf& R,
-        const Eigen::MatrixXf& P);
+    // -------- Fixed sizes --------
+    static constexpr int n = 3;   // state dimension
+    static constexpr int m = 3;   // measurement dimension
+    static constexpr int c = 1;   // control dimension
 
+    using MatA = Matrix<float, n, n>;       // 3×3
+    using MatB = Matrix<float, n, c>;       // 3×1
+    using MatC = Matrix<float, m, n>;       // 3×3
+    using MatP = Matrix<float, n, n>;       // 3×3
+    using MatQ = Matrix<float, n, n>;       // 3×3
+    using MatR = Matrix<float, m, m>;       // 3×3
+    using MatK = Matrix<float, n, m>;       // 3×3
+    using VecX = Matrix<float, n, 1>;       // 3×1
+    using VecU = Matrix<float, c, 1>;       // 1×1
+    using VecY = Matrix<float, m, 1>;       // 3×1
+
+    // -------- Constructor --------
+    KalmanFilter(const MatA& A,
+                 const MatB& B,
+                 const MatC& C,
+                 const MatQ& Q,
+                 const MatR& R,
+                 const MatP& P0);
+
+    // Default constructor
     KalmanFilter();
 
-    void init(const Eigen::VectorXf& x0);
+    // -------- Initialization --------
+    void init(const VecX& x0);
     void init();
 
-    void predict(const Eigen::VectorXf& u);
-    void update(const Eigen::VectorXf& y);
+    // -------- Predict + Update --------
+    void predict(const VecU& u);
+    void update(const VecY& y);
 
-    void update_dynamics(const Eigen::MatrixXf& A);
-    void update_output(const Eigen::MatrixXf& C);
-    void update_process_noise(const Eigen::MatrixXf& Q_new);
+    void update_dynamics(const MatA& A_new);
+    void update_output(const MatC& C_new);
+    void update_process_noise(const MatQ& Q_new);
 
-    Eigen::VectorXf state() const { return x_hat; }
+    VecX state() const { return x_hat; }
 
 private:
-    Eigen::MatrixXf A, B, C, Q, R, P, K, P0;
-    int m, n, c;
-    bool initialized;
+    MatA A;
+    MatB B;
+    MatC C;
+    MatQ Q;
+    MatR R;
+    MatP P;
+    MatP P0;
+    MatP I;
+    MatK K;
 
-    Eigen::MatrixXf I;
-    Eigen::VectorXf x_hat;
+    VecX x_hat;
+
+    bool initialized;
 };

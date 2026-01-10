@@ -1,28 +1,41 @@
-/**
-* Implementation of KalmanFilter class.
-*
-* @author: Dhruv Shah, Hayk Martirosyan
-* @date: 07/03/2018
-*/
-
-#include <iostream>
 #include "kalman-filter.hpp"
+#include <Arduino.h>
 
-KalmanFilter::KalmanFilter(
-        const Eigen::MatrixXf& A,
-        const Eigen::MatrixXf& B,
-        const Eigen::MatrixXf& C,
-        const Eigen::MatrixXf& Q,
-        const Eigen::MatrixXf& R,
-        const Eigen::MatrixXf& P)
-    : A(A), B(B), C(C), Q(Q), R(R), P0(P),
-      m(C.rows()), n(A.rows()), c(B.cols()), initialized(false),
-      I(n, n), x_hat(n)
+// =====================================================
+//   Constructor
+// =====================================================
+KalmanFilter::KalmanFilter(const MatA& A,
+                           const MatB& B,
+                           const MatC& C,
+                           const MatQ& Q,
+                           const MatR& R,
+                           const MatP& P0)
+    : A(A), B(B), C(C), Q(Q), R(R), P0(P0), initialized(false)
 {
     I.setIdentity();
+    x_hat.setZero();
+    P = P0;
 }
 
-void KalmanFilter::init(const Eigen::VectorXf& x0) {
+// Default constructor (initialize to identity)
+KalmanFilter::KalmanFilter()
+    : initialized(false)
+{
+    A.setIdentity();
+    B.setZero();
+    C.setIdentity();
+    Q.setIdentity();
+    R.setIdentity();
+    P0.setIdentity();
+    P = P0;
+    I.setIdentity();
+    x_hat.setZero();
+}
+
+// =====================================================
+//   Initialization
+// =====================================================
+void KalmanFilter::init(const VecX& x0) {
     x_hat = x0;
     P = P0;
     initialized = true;
@@ -34,32 +47,50 @@ void KalmanFilter::init() {
     initialized = true;
 }
 
-void KalmanFilter::predict(const Eigen::VectorXf& u) {
-    if(!initialized) {
-        std::cout << "Filter is not initialized! Initializing with trivial state.";
-        init();
-    }
+// =====================================================
+//   Predict Step
+// =====================================================
+void KalmanFilter::predict(const VecU& u) {
+    if (!initialized) init();
 
+    // x̂ = A*x + B*u
     x_hat = A * x_hat + B * u;
+
+    // P = A P Aᵀ + Q
     P = A * P * A.transpose() + Q;
 }
 
-void KalmanFilter::update(const Eigen::VectorXf& y) {
-    float S = (C * P * C.transpose())(0,0) + R(0,0);
-    K = P * C.transpose() / S;
+// =====================================================
+//   Update Step
+// =====================================================
+void KalmanFilter::update(const VecY& y) {
+    // Innovation covariance S = C P Cᵀ + R   (3×3)
+    Matrix<float,3,3> S = C * P * C.transpose() + R;
 
-    x_hat += K * (y - C * x_hat);
+    // Kalman gain K = P Cᵀ S⁻¹    (3×3)
+    K = P * C.transpose() * S.inverse();
+
+    // Innovation
+    VecY innovation = y - C * x_hat;
+
+    // Updated state
+    x_hat += K * innovation;
+
+    // Updated covariance
     P = (I - K * C) * P;
 }
 
-void KalmanFilter::update_dynamics(const Eigen::MatrixXf& A) {
-    this->A = A;
+// =====================================================
+//   Matrix update functions
+// =====================================================
+void KalmanFilter::update_dynamics(const MatA& A_new) {
+    A = A_new;
 }
 
-void KalmanFilter::update_output(const Eigen::MatrixXf& C) {
-    this->C = C;
+void KalmanFilter::update_output(const MatC& C_new) {
+    C = C_new;
 }
 
-void KalmanFilter::update_process_noise(const Eigen::MatrixXf& Q_new) {
-    this->Q = Q_new;
+void KalmanFilter::update_process_noise(const MatQ& Q_new) {
+    Q = Q_new;
 }

@@ -148,18 +148,16 @@ float deltaT_coefficient = (TIME_PER_AIRBRAKE_CALL / WANTED_AIRBRAKE_ALG_TIME) /
 int deployment = 0;
 
 //Kalman State Variables
-typedef Eigen::Matrix<float,3,3,Eigen::DontAlign> Mat3f;
-typedef Eigen::Matrix<float,3,1,Eigen::DontAlign> Vec3f;
-typedef Eigen::RowVector3f Row3f;
-typedef Eigen::Matrix<float,1,1,Eigen::DontAlign> Mat1f;
+KalmanFilter::MatA Amatrix;
+KalmanFilter::MatQ Q;
+KalmanFilter::MatP P;
+KalmanFilter::MatB B;
+KalmanFilter::MatC C;
+KalmanFilter::MatR Rmatrix;
 
-Mat3f Amatrix, Q, P;
-Vec3f B;
-Eigen::Matrix<float,3,3> C;
-Eigen::Matrix<float,3,3> Rmatrix;
+KalmanFilter::VecX x;   // [alt, vel, bias]
 
 KalmanFilter kf(Amatrix, B, C, Q, Rmatrix, P);
-Vec3f x; // [alt, vel, bias]
 bool kf_initialized = false;
 unsigned long last_kf_time = 0;
 
@@ -293,10 +291,12 @@ void initialize_kalman_filter() {
   float dt = 0.02f;  // initial timestep estimate
 
   Amatrix << 1, dt, -0.5f * dt * dt,
-      0, 1,      -dt,
-      0, 0,       1;
+             0, 1,      -dt,
+             0, 0,       1;
 
-  B << 0.5f * dt * dt, dt, 0.0f;
+  B << 0.5f * dt * dt,
+       dt,
+       0.0f;
 
   // Observation matrix (3 measurements: altitude, vel_y, vel_y2)
   C << 1, 0, 0,
@@ -309,13 +309,13 @@ void initialize_kalman_filter() {
   Q(1,1) = sigma_a * sigma_a * powf(dt,2);
   Q(2,2) = q_bias * dt;
 
-  // Measurement noise (trust altitude most)
+  // Measurement noise
   Rmatrix.setZero();
   Rmatrix(0,0) = r_var;  // barometer
   Rmatrix(1,1) = 2.0f;   // velocity 1
   Rmatrix(2,2) = 2.0f;   // velocity 2
 
-  P = Mat3f::Identity() * 100.0f;
+  P = KalmanFilter::MatP::Identity() * 100.0f;
 
   // Initialize Kalman filter
   kf = KalmanFilter(Amatrix, B, C, Q, Rmatrix, P);
@@ -711,7 +711,7 @@ void log_data() {
   int voltage_right = analogRead(camera2_adc);
 
   // retrieve filtered states
-  Vec3f x_hat = kf.state();
+  KalmanFilter::VecX x_hat = kf.state();
   float Alt_KF = x_hat[0];
   float Vel_KF = x_hat[1];
   float Bias_KF = x_hat[2];
