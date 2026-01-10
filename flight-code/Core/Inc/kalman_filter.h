@@ -1,5 +1,5 @@
 #pragma once
 
-#include "telemetry.h"
+#include "main.h"
 
 void kalman_filter(Telemetry_t *telemetry);

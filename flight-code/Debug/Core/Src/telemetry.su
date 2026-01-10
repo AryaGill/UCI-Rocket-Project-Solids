@@ -1,0 +1,2 @@
+../Core/Src/telemetry.c:3:6:init_dataFile	4	static
+../Core/Src/telemetry.c:7:6:log_data	16	static

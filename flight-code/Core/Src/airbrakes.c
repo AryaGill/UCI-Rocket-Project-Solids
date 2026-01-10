@@ -15,6 +15,21 @@ float deltaT = 0.01;
 float A = pow(0.1016, 2) * M_PI;
 float deltaT_coefficient = (TIME_PER_AIRBRAKE_CALL / WANTED_AIRBRAKE_ALG_TIME) / g;
 
+// Deployment levels should be evenly spread between least and most deployment (inclusive)
+// Mach numbers should be evenly spread between 0 and 0.7 (inclusive)
+float air_brakes_drag_coefficient[NUM_RECORDED_DEPLOYMENT_LEVELS][NUM_RECORDED_MACH_NUMS] = {
+    {0.400, 0.400, 0.400, 0.400, 0.400, 0.400, 0.400, 0.400}, // deploy 0.0
+    {0.430, 0.460, 0.490, 0.520, 0.550, 0.580, 0.610, 0.640}, // deploy 0.1
+    {0.460, 0.490, 0.520, 0.550, 0.580, 0.610, 0.640, 0.670}, // deploy 0.2
+    {0.490, 0.520, 0.550, 0.580, 0.610, 0.640, 0.670, 0.700}, // deploy 0.3
+    {0.520, 0.550, 0.580, 0.610, 0.640, 0.670, 0.700, 0.730}, // deploy 0.4
+    {0.550, 0.580, 0.610, 0.640, 0.670, 0.700, 0.730, 0.760}, // deploy 0.5
+    {0.580, 0.610, 0.640, 0.670, 0.700, 0.730, 0.760, 0.790}, // deploy 0.6
+    {0.610, 0.640, 0.670, 0.700, 0.730, 0.760, 0.790, 0.820}, // deploy 0.7
+    {0.640, 0.670, 0.700, 0.730, 0.760, 0.790, 0.820, 0.850}, // deploy 0.8
+    {0.670, 0.700, 0.730, 0.760, 0.790, 0.820, 0.850, 0.880}, // deploy 0.9
+    {0.700, 0.730, 0.760, 0.790, 0.820, 0.850, 0.880, 0.910}  // deploy 1.0
+};
 
 float get_drag_coefficient(const int deployment_level, const float mach_number){
 	if (mach_number >= 0.7){
@@ -63,7 +78,7 @@ float get_mach_number(const float velocity, const float temp){
 float predict_apogee(Telemetry_t *telemetry, const int deployment_level){
 	deltaT = max(0.01, min(telemetry->velocity_r * deltaT_coefficient * cos(telemetry->angle_of_attack), 0.1));
 
-	float alt_sim = alt;
+	float alt_sim = telemetry->altitude;
 	float vz_sim = telemetry->velocity_r * cos(telemetry->angle_of_attack);
 	float vx_sim = telemetry->velocity_r * sin(telemetry->angle_of_attack);
 

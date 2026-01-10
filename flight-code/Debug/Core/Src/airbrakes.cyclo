@@ -1,0 +1,4 @@
+../Core/Src/airbrakes.c:34:7:get_drag_coefficient	3
+../Core/Src/airbrakes.c:72:7:get_mach_number	1
+../Core/Src/airbrakes.c:78:7:predict_apogee	3
+../Core/Src/airbrakes.c:115:6:set_optimal_deployment	7

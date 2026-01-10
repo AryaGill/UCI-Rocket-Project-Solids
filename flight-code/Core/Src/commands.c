@@ -23,22 +23,22 @@ void handle_rf_command(char *cmd) {
 	} else if (strcmp(cmd, "Fire Main S") == 0){
 //		Serial.println("Main Secondary");
 //		HWSERIAL.println("TEENSY Fired Main Secondary");
-		digitalWrite(main_2, HIGH);
+		HAL_GPIO_WritePin(Main_Parachute_2_GPIO_Port, Main_Parachute_2_Pin, GPIO_PIN_SET);
 		HAL_Delay(CHARGE_DELAY);
-		digitalWrite(main_2, LOW);
+		HAL_GPIO_WritePin(Main_Parachute_2_GPIO_Port, Main_Parachute_2_Pin, GPIO_PIN_RESET);
 	} else if (strcmp(cmd, "Fire Drogue P") == 0){
 //		Serial.println("Drogue Primary");
 //		HWSERIAL.println("TEENSY Fired Drogue Primary");
-		dataFile.println("Drouge Primary");
+//		dataFile.println("Drouge Primary");
 		HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_SET);
 		HAL_Delay(CHARGE_DELAY);
 		HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_RESET);
 	} else if (strcmp(cmd, "Fire Drogue S") == 0){
 //		Serial.println("Drogue Secondary");
 //		HWSERIAL.println("TEENSY Fired Drogue Secondary");
-		dataFile.println("Drouge Secondary");
+//		dataFile.println("Drouge Secondary");
 		HAL_GPIO_WritePin(Drogue_Parachute_2_GPIO_Port, Drogue_Parachute_2_Pin, GPIO_PIN_SET);
-		delay(charge_delay);
+		HAL_Delay(CHARGE_DELAY);
 		HAL_GPIO_WritePin(Drogue_Parachute_2_GPIO_Port, Drogue_Parachute_2_Pin, GPIO_PIN_RESET);
 	}  else if (strcmp(cmd, "CAM1ON") == 0){
 //		Serial.println("Camera1 On Recieved");

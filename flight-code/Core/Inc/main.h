@@ -37,6 +37,43 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
+typedef enum {
+  LAUNCH_PAD,
+  MOTOR_BURN,
+  GLIDING_ASCENT,
+  DROGUE_PRIMARY_DEPLOYING,
+  DROGUE_PRIMARY_DEPLOYED,
+  DROGUE_SECONDARY_DEPLOYING,
+  DROGUE_SECONDARY_DEPLOYED,
+  MAIN_PRIMARY_DEPLOYING,
+  MAIN_PRIMARY_DEPLOYED,
+  MAIN_SECONDARY_DEPLOYING,
+  MAIN_SECONDARY_DEPLOYED,
+  LANDED
+} FlightState_t;
+
+typedef struct {
+	float pressure;
+	float altitude;
+	float startAlt;
+	float temperature;
+	float angle_of_attack;
+	float velocity_r;
+	float velocity_p;
+	float velocity_y;
+	float accel_r;
+	float accel_p;
+	float accel_y;
+	float gyro_r;
+	float gyro_p;
+	float gyro_y;
+	float predicted_apogee;
+	float airbrake_deployment;
+	float mag_r;
+	float mag_p;
+	float mag_y;
+} Telemetry_t;
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -69,10 +106,10 @@ void Error_Handler(void);
 #define Baro_CS_GPIO_Port GPIOE
 #define IMU_CS_Pin GPIO_PIN_10
 #define IMU_CS_GPIO_Port GPIOB
-#define Droge_Parachute_2_Pin GPIO_PIN_10
-#define Droge_Parachute_2_GPIO_Port GPIOD
-#define Droge_Parachute_1_Pin GPIO_PIN_11
-#define Droge_Parachute_1_GPIO_Port GPIOD
+#define Drogue_Parachute_2_Pin GPIO_PIN_10
+#define Drogue_Parachute_2_GPIO_Port GPIOD
+#define Drogue_Parachute_1_Pin GPIO_PIN_11
+#define Drogue_Parachute_1_GPIO_Port GPIOD
 #define Mag_SDIO_Pin GPIO_PIN_6
 #define Mag_SDIO_GPIO_Port GPIOC
 #define Mag_CS_Pin GPIO_PIN_7

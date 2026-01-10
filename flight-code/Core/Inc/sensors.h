@@ -1,6 +1,5 @@
 #pragma once
 
-#include "telemetry.h"
 #include "main.h"
 
 // LSMDSL (IMU 1)
@@ -24,6 +23,14 @@
 #define IIS2M_CTRL_REG1  0x20
 #define IIS2M_OUTX_L    0x28
 
-void init_sensors();
+void init_sensors(SPI_HandleTypeDef *hspi);
 void read_sensors(Telemetry_t *telemetry);
-void read_bmp(Telemetry_t *telemetry);
+
+void LSM6DSL_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
+void LSM6DSL_Read(Telemetry_t *telemetry);
+void ICM45686_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
+void ICM45686_Read(Telemetry_t *telemetry);
+void LPS22HH_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
+void LPS22HH_Read(Telemetry_t *telemetry);
+void IIS2MDCTR_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
+void IIS2MDCTR_Read(Telemetry_t *telemetry);

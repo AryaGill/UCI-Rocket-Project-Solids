@@ -150,9 +150,9 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   init_dataFile();
-  init_sensors();
+  init_sensors(&hspi1);
   init_flight_state(&flight_state, &telemetry);
-  init_kalman_filter();
+//  init_kalman_filter();
 
   HAL_UART_Receive_IT(&huart4, &rf_rx_byte, 1);
 
@@ -166,9 +166,9 @@ int main(void)
 
 	  update_flight_state(&flight_state, &telemetry);
 
-	  kalman_filter(&telemetry);
+//	  kalman_filter(&telemetry);
 
-	  set_optimal_deployment(flight_state, &telemetry);
+//	  set_optimal_deployment(flight_state, &telemetry);
 
 	  log_data(&flight_state, &telemetry);
 
@@ -206,18 +206,19 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 32;
-  RCC_OscInitStruct.PLL.PLLN = 129;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 2;
+  RCC_OscInitStruct.PLL.PLLN = 12;
   RCC_OscInitStruct.PLL.PLLP = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 2;
+  RCC_OscInitStruct.PLL.PLLQ = 3;
   RCC_OscInitStruct.PLL.PLLR = 2;
-  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_1;
-  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
+  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_3;
+  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOMEDIUM;
   RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -233,7 +234,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV1;
   RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV1;
 
@@ -497,10 +498,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, IMU_2_CS_Pin|IMU_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, SD_CS_Pin|SD_CD_Pin|Baro_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, SD_CS_Pin|Baro_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, Droge_Parachute_2_Pin|Droge_Parachute_1_Pin|Buzzer_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, Drogue_Parachute_2_Pin|Drogue_Parachute_1_Pin|Buzzer_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, Mag_SDIO_Pin|Mag_CS_Pin, GPIO_PIN_RESET);
@@ -519,15 +520,21 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SD_CS_Pin SD_CD_Pin Baro_CS_Pin */
-  GPIO_InitStruct.Pin = SD_CS_Pin|SD_CD_Pin|Baro_CS_Pin;
+  /*Configure GPIO pins : SD_CS_Pin Baro_CS_Pin */
+  GPIO_InitStruct.Pin = SD_CS_Pin|Baro_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : Droge_Parachute_2_Pin Droge_Parachute_1_Pin Buzzer_Pin */
-  GPIO_InitStruct.Pin = Droge_Parachute_2_Pin|Droge_Parachute_1_Pin|Buzzer_Pin;
+  /*Configure GPIO pin : SD_CD_Pin */
+  GPIO_InitStruct.Pin = SD_CD_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(SD_CD_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : Drogue_Parachute_2_Pin Drogue_Parachute_1_Pin Buzzer_Pin */
+  GPIO_InitStruct.Pin = Drogue_Parachute_2_Pin|Drogue_Parachute_1_Pin|Buzzer_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

@@ -1,6 +1,5 @@
 #include "fsm.h"
 #include "stm32h7xx_hal.h"
-#include "telemetry.h"
 #include "sensors.h"
 #include "main.h"
 
@@ -24,8 +23,8 @@ float get_avg_alt_dif() {
 	float smallest = alt_dif_buffer[0];
 	for (int i = 0; i < ALT_DIF_BUF_SIZE; ++i){
 		sum += alt_dif_buffer[i];
-		largest = max(largest, alt_dif_buffer[i]);
-    	smallest = min (smallest, alt_dif_buffer[i]);
+		largest = fmax(largest, alt_dif_buffer[i]);
+    	smallest = fmin (smallest, alt_dif_buffer[i]);
 	}
   	return (sum - largest - smallest) / (ALT_DIF_BUF_SIZE - 2);
 }
@@ -56,10 +55,10 @@ void set_flight_state(FlightState_t new_state, FlightState_t *flight_state) {
 //	}
 }
 
-void initialize_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
+void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 	//possible start altitude after reset fix
 	for (int i = 0; i < ALT_DIF_BUF_SIZE + 1; ++i) {
-		read_bmp(telemetry);
+		LPS22HH_Read(telemetry);
 		if (telemetry->temperature != -999) {
 			telemetry->startAlt = telemetry->altitude;
 			update_alt_dif_buf(telemetry->startAlt - prev_alt);
@@ -150,7 +149,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case DROGUE_PRIMARY_DEPLOYED:
-    		if (HAL_GetTick() - drogue_primary_end_time >= backup_delay) {
+    		if (HAL_GetTick() - drogue_primary_end_time >= BACKUP_DELAY) {
     			HAL_GPIO_WritePin(Drogue_Parachute_2_GPIO_Port, Drogue_Parachute_2_Pin, GPIO_PIN_SET);
 //    			dataFile.println("Secondary Drogue Deployed");
 
@@ -181,7 +180,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case MAIN_PRIMARY_DEPLOYING:
-    		if(millis() - main_primary_start_time >= CHARGE_DELAY){
+    		if(HAL_GetTick() - main_primary_start_time >= CHARGE_DELAY){
     			HAL_GPIO_WritePin(Main_Parachute_1_GPIO_Port, Main_Parachute_1_Pin, GPIO_PIN_RESET);
     			main_primary_end_time = HAL_GetTick();
     			set_flight_state(MAIN_PRIMARY_DEPLOYED, flight_state);
@@ -220,46 +219,46 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 	prev_alt = telemetry->altitude;
 }
 
-String state_to_string(FlightState state) {
+void state_to_string(FlightState_t state, char* str) {
 	switch(state) {
     	case LAUNCH_PAD:
-    		return "LAUNCH_PAD";
+    		strcpy(str, "LAUNCH_PAD");
     		break;
     	case MOTOR_BURN:
-    		return "MOTOR_BURN";
+    		strcpy(str, "MOTOR_BURN");
     		break;
     	case GLIDING_ASCENT:
-    		return "GLIDING_ASCENT";
+    		strcpy(str, "GLIDING_ASCENT");
     		break;
     	case DROGUE_PRIMARY_DEPLOYING:
-    		return "DROGUE_PRIMARY_DEPLOYING";
+    		strcpy(str, "DROGUE_PRIMARY_DEPLOYING");
     		break;
     	case DROGUE_PRIMARY_DEPLOYED:
-    		return "DROGUE_PRIMARY_DEPLOYED";
+    		strcpy(str, "DROGUE_PRIMARY_DEPLOYED");
     		break;
     	case DROGUE_SECONDARY_DEPLOYING:
-    		return "DROGUE_SECONDARY_DEPLOYING";
+    		strcpy(str, "DROGUE_SECONDARY_DEPLOYING");
     		break;
     	case DROGUE_SECONDARY_DEPLOYED:
-    		return "DROGUE_SECONDARY_DEPLOYED";
+    		strcpy(str, "DROGUE_SECONDARY_DEPLOYED");
     		break;
     	case MAIN_PRIMARY_DEPLOYING:
-    		return "MAIN_PRIMARY_DEPLOYING";
+    		strcpy(str, "MAIN_PRIMARY_DEPLOYING");
     		break;
     	case MAIN_PRIMARY_DEPLOYED:
-    		return "MAIN_PRIMARY_DEPLOYED";
+    		strcpy(str, "MAIN_PRIMARY_DEPLOYED");
     		break;
     	case MAIN_SECONDARY_DEPLOYING:
-    		return "MAIN_SECONDARY_DEPLOYING";
+    		strcpy(str, "MAIN_SECONDARY_DEPLOYING");
     		break;
     	case MAIN_SECONDARY_DEPLOYED:
-    		return "MAIN_SECONDARY_DEPLOYED";
+    		strcpy(str, "MAIN_SECONDARY_DEPLOYED");
     		break;
     	case LANDED:
-    		return "LANDED";
+    		strcpy(str, "LANDED");
     		break;
     	default:
-    		return "UNKNOWN_STATE";
+    		strcpy(str, "UNKNOWN_STATE");
     		break;
 	}
 }
