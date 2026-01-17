@@ -1,6 +1,6 @@
 ################################################################################
 # Automatically-generated file. Do not edit!
-# Toolchain: GNU Tools for STM32 (12.3.rel1)
+# Toolchain: GNU Tools for STM32 (13.3.rel1)
 ################################################################################
 
 -include ../makefile.init
@@ -64,8 +64,8 @@ all: main-build
 main-build: flight-code.elf secondary-outputs
 
 # Tool invocations
-flight-code.elf flight-code.map: $(OBJS) $(USER_OBJS) C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\STM32H743VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "flight-code.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\STM32H743VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="flight-code.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+flight-code.elf flight-code.map: $(OBJS) $(USER_OBJS) /Users/aryagill/Documents/GitHub/UCI-Rocket-Project-Solids/flight-code/STM32H743VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "flight-code.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"/Users/aryagill/Documents/GitHub/UCI-Rocket-Project-Solids/flight-code/STM32H743VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="flight-code.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
