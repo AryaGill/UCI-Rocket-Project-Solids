@@ -51,19 +51,21 @@ void init_sensors(SPI_HandleTypeDef *hspi){
 	SPI_CS_HIGH(IMU_2_CS_GPIO_Port, IMU_2_CS_Pin);
 	SPI_CS_HIGH(Baro_CS_GPIO_Port, Baro_CS_Pin);
 	SPI_CS_HIGH(Mag_CS_GPIO_Port, Mag_CS_Pin);
+	SPI_CS_HIGH(Flash_CS_GPIO_Port, Flash_CS_Pin);
+	SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 
 	// Call init functions
 	LSM6DSL_Init(hspi, IMU_CS_GPIO_Port, IMU_CS_Pin);
 	ICM45686_Init(hspi, IMU_2_CS_GPIO_Port, IMU_2_CS_Pin);
 	LPS22HH_Init(hspi, Baro_CS_GPIO_Port, Baro_CS_Pin);
-	IIS2MDCTR_Init(hspi, Mag_CS_GPIO_Port, Mag_CS_Pin);
+//	IIS2MDCTR_Init(hspi, Mag_CS_GPIO_Port, Mag_CS_Pin);
 }
 
 void read_sensors(Telemetry_t *telemetry){
 	LSM6DSL_Read(telemetry);
 	ICM45686_Read(telemetry);
 	LPS22HH_Read(telemetry);
-	IIS2MDCTR_Read(telemetry);
+//	IIS2MDCTR_Read(telemetry);
 }
 
 void LSM6DSL_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin)

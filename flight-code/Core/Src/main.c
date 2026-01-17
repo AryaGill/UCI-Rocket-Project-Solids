@@ -162,6 +162,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+//	  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+//	  HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
+//	  HAL_Delay(1);
+//	  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+//	  HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);
+
 	  read_sensors(&telemetry);
 
 	  update_flight_state(&flight_state, &telemetry);
@@ -176,6 +182,8 @@ int main(void)
 		  rf_cmd_ready = 0;
 		  handle_rf_command(rf_rx_buf);
 	  }
+
+	  HAL_Delay(10);
 
     /* USER CODE END WHILE */
 
@@ -485,11 +493,14 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, LED_Pin|Mag_SDIO_Pin|Mag_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, Flash_CS_Pin|Main_Parachute_2_Pin|Main_Parachute_1_Pin, GPIO_PIN_RESET);
@@ -503,8 +514,12 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, Drogue_Parachute_2_Pin|Drogue_Parachute_1_Pin|Buzzer_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, Mag_SDIO_Pin|Mag_CS_Pin, GPIO_PIN_RESET);
+  /*Configure GPIO pins : LED_Pin Mag_SDIO_Pin Mag_CS_Pin */
+  GPIO_InitStruct.Pin = LED_Pin|Mag_SDIO_Pin|Mag_CS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : Flash_CS_Pin Main_Parachute_2_Pin Main_Parachute_1_Pin */
   GPIO_InitStruct.Pin = Flash_CS_Pin|Main_Parachute_2_Pin|Main_Parachute_1_Pin;
@@ -539,13 +554,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : Mag_SDIO_Pin Mag_CS_Pin */
-  GPIO_InitStruct.Pin = Mag_SDIO_Pin|Mag_CS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
