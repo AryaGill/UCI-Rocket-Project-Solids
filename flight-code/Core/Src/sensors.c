@@ -1,5 +1,7 @@
 #include "sensors.h"
 
+#define LSM6DSL_WHO_AM_I 0x0F //temp remove later
+
 GPIO_TypeDef *LSM6DSL_port;
 uint16_t LSM6DSL_pin;
 SPI_HandleTypeDef *LSM6DSL_hspi;
@@ -275,3 +277,98 @@ void IIS2MDCTR_Read(Telemetry_t *telemetry) {
     telemetry->mag_p = my * 0.15f;
     telemetry->mag_y = mz * 0.15f;
 }
+
+uint8_t LSM6DSL_WhoAmI(void)
+{
+    uint8_t id = 0;
+    SPI_Read(LSM6DSL_hspi,
+             LSM6DSL_port,
+             LSM6DSL_pin,
+             LSM6DSL_WHO_AM_I,
+             &id,
+             1);
+    return id;
+}
+uint8_t LSM6DSL_ReadReg(uint8_t reg)
+{
+    uint8_t val = 0;
+    SPI_Read(LSM6DSL_hspi,
+             LSM6DSL_port,
+             LSM6DSL_pin,
+             reg,
+             &val,
+             1);
+    return val;
+}
+uint8_t LPS22HH_ReadReg(uint8_t reg)
+{
+    uint8_t val = 0;
+    SPI_Read(LPS22HH_hspi,
+             LPS22HH_port,
+             LPS22HH_pin,
+             reg,
+             &val,
+             1);
+    return val;
+}
+
+void LPS22HH_TestRead(float *pressure_hpa)
+{
+    uint8_t buf[3];
+    int32_t raw_p;
+
+    // Pressure output registers start at 0x28 (XL, L, H)
+    SPI_Read(LPS22HH_hspi,
+             LPS22HH_port,
+             LPS22HH_pin,
+             LPS22HH_PRESS_OUT,
+             buf,
+             3);
+
+    raw_p = (int32_t)(buf[2] << 16 | buf[1] << 8 | buf[0]);
+
+    // Datasheet: pressure = raw / 4096 hPa
+    *pressure_hpa = raw_p / 4096.0f;
+}
+void ICM45686_TestRead(int16_t *ax, int16_t *ay, int16_t *az)
+{
+    uint8_t buf[6];
+
+    // Read accel X/Y/Z (first 6 bytes of data block)
+    SPI_Read(ICM45686_hspi,
+             ICM45686_port,
+             ICM45686_pin,
+             ICM_DATA_START,
+             buf,
+             6);
+
+    *ax = (int16_t)(buf[1] << 8 | buf[0]);
+    *ay = (int16_t)(buf[3] << 8 | buf[2]);
+    *az = (int16_t)(buf[5] << 8 | buf[4]);
+}
+void IIS2MDCTR_TestRead(int16_t *mx, int16_t *my, int16_t *mz)
+{
+    uint8_t buf[6];
+
+    for (uint8_t i = 0; i < 6; i++) {
+        buf[i] = MAG_ReadReg(IIS2MDCTR_hspi,
+                             IIS2MDCTR_port,
+                             IIS2MDCTR_pin,
+                             IIS2M_OUTX_L + i);
+    }
+
+    *mx = (int16_t)(buf[1] << 8 | buf[0]);
+    *my = (int16_t)(buf[3] << 8 | buf[2]);
+    *mz = (int16_t)(buf[5] << 8 | buf[4]);
+}
+
+
+void LSM6DSL_WriteReg(uint8_t reg, uint8_t val)
+{
+    SPI_Write(LSM6DSL_hspi,
+              LSM6DSL_port,
+              LSM6DSL_pin,
+              reg,
+              val);
+}
+
