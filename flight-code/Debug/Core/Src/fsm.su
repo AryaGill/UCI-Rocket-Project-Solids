@@ -3,4 +3,4 @@
 ../Core/Src/fsm.c:43:6:set_flight_state	16	static
 ../Core/Src/fsm.c:58:6:init_flight_state	24	static
 ../Core/Src/fsm.c:105:6:update_flight_state	16	static
-../Core/Src/fsm.c:222:6:state_to_string	24	static
+../Core/Src/fsm.c:224:6:state_to_string	24	static

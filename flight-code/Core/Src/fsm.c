@@ -6,10 +6,10 @@
 float alt_dif_buffer[ALT_DIF_BUF_SIZE];
 int alt_dif_buffer_idx = 0;
 int prev_alt_time = 0;
-float prev_alt;
+float prev_alt = 0;
 
 // Time variables
-unsigned long launch_start_time = 0;
+uint32_t launch_start_time = 0;
 unsigned long drogue_primary_start_time = 0;
 unsigned long drogue_primary_end_time = 0;
 unsigned long drogue_secondary_start_time = 0;
@@ -168,6 +168,8 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     			set_flight_state(DROGUE_SECONDARY_DEPLOYED, flight_state);
     		}
 
+    		break;
+
     	case DROGUE_SECONDARY_DEPLOYED:
     		// Wait for main deployment
     		if (telemetry->altitude - telemetry->startAlt < 229 && telemetry->altitude - telemetry->startAlt > 77){
@@ -206,7 +208,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case MAIN_SECONDARY_DEPLOYED:
-    		if (get_avg_alt_dif() > LANDED_THRESHOLD){ // Change condition
+    		if (get_avg_alt_dif() > LANDED_THRESHOLD){ // Change condition // TODO Needs to be switched according to chat?
     			set_flight_state(LANDED, flight_state);
     		}
     		break;

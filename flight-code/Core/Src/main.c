@@ -19,6 +19,8 @@
 
 #include "fatfs.h"
 
+#include "fsm.h"
+
 
 /* Private includes ----------------------------------------------------------*/
 
@@ -52,11 +54,15 @@ Telemetry_t telemetry = {0};
 
 // Debug variables for Live Expressions
 
-volatile float debug_pressure = 0.0f; // hPa (mbar)
+volatile float pressure = 0.0f; // hPa (mbar)
 
-volatile float debug_temperature = 0.0f; // °C
+volatile float temperature = 0.0f; // °C
 
-volatile float debug_altitude = 0.0f; // meters (calculated)
+volatile float altitude = 0.0f; // meters (calculated)
+
+// Flight State
+FlightState_t flight_state = LAUNCH_PAD;
+char state_str[32] = "UNKNOWN";
 
 
 // NEW: IMU Debug Variables
@@ -73,20 +79,11 @@ volatile float icm_gyro_x, icm_gyro_y, icm_gyro_z;
 
 // WHO_AM_I and status
 
-volatile uint8_t whoami = 0; // Should be 0xB3 for LPS22HH
+volatile uint8_t lps_whoami = 0; // Should be 0xB3 for LPS22HH
 
 volatile uint8_t lsm_whoami = 0; // Should be 0x6A
 
 volatile uint8_t icm_whoami = 0;
-
-volatile uint8_t status_reg = 0;
-
-volatile uint8_t ctrl_reg1 = 0;
-
-
-// Counter
-
-volatile uint32_t read_counter = 0;
 
 
 /* USER CODE END PV */
@@ -105,6 +102,9 @@ static void MX_SPI1_Init(void);
 static void MX_USART3_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
+void Verify_Sensors(void);
+void Success_pattern(void);
+void Error_pattern(void);
 
 float Calculate_Altitude(float pressure_hPa);
 
@@ -134,6 +134,82 @@ return altitude;
 
 }
 
+
+// Success: 3 quick LED blinks + 2 distinct buzzer tones
+void Success_Pattern(void)
+{
+
+    // 3 quick LED blinks
+	for(int i = 0; i < 3; i++) {
+	        HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+	        HAL_Delay(150);  // Slightly longer ON
+	        HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+	        HAL_Delay(150);
+	    }
+
+    HAL_Delay(1000); //  pause
+
+    // 2 distinct quick beeps
+    for(int i = 0; i < 2; i++) {
+        HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
+        HAL_Delay(150);
+        HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);
+        HAL_Delay(150);
+    }
+
+    // Turn buzzer ON and keep it on
+    	HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
+}
+
+// Error: Rapid LED flashing + continuous buzzer beeps, system halts
+void Error_Pattern(void)
+{
+    while(1) {
+        // Rapid LED flashing (50ms on/off)
+        HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+        HAL_Delay(50);
+        HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+        HAL_Delay(50);
+
+        // Continuous beeping (200ms beep, 200ms pause)
+        HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
+        HAL_Delay(200);
+        HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);
+        HAL_Delay(200);
+    }
+    // System halts here - never returns
+}
+
+
+void Verify_Sensors(void){
+	uint8_t  sensors_ok = 1; // Assume all good
+
+	// Check Barometer
+	lps_whoami = LPS22HH_WhoAmI();
+	if (lps_whoami != 0xB3){
+		sensors_ok = 0;
+	}
+
+	// Check LSM6DSL IMU
+	lsm_whoami = LSM6DSL_WhoAmI();
+	if (lsm_whoami != 0x6a){
+		sensors_ok = 0;
+	}
+	// TODO CURRENTLY NOT WORKING. CHANGE AFTER
+
+	// Check ICM45686 IMU
+//	icm_whoami = ICM45686_WhoAmI();
+//	if (icm_whoami != 0xE9){
+//		sensors_ok = 0;
+//	}
+
+	if (sensors_ok){
+		Success_Pattern();
+	} else {
+		Error_Pattern();
+	}
+
+}
 
 /* USER CODE END 0 */
 
@@ -180,41 +256,23 @@ MX_FATFS_Init();
 
 /* USER CODE BEGIN 2 */
 
-
-// Startup LED blink
-
-for(int i = 0; i < 3; i++) {
-
-HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-
-HAL_Delay(100);
-
-HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-
-HAL_Delay(100);
-
-}
-
-
-// Initialize LPS22HHTR barometer
-
+// Initialize all sensors
 init_sensors(&hspi1);
-
 HAL_Delay(100);
 
+// Verify all sensors work
+Verify_Sensors();
+HAL_Delay(500);
 
-// Verify sensor communication
+// Turn buzzer and LED ON for normal operation
+HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
+HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);  // LED stays ON
 
-whoami = LPS22HH_WhoAmI(); // Should be 0xB3 (179 decimal)
+// Initialize flight state machine
+init_flight_state(&flight_state, &telemetry);
 
-lsm_whoami = LSM6DSL_WhoAmI(); // 0x6A
-
-HAL_Delay(10);
-
-
-// Read control register to verify configuration
-
-ctrl_reg1 = LPS22HH_ReadReg(LPS22HH_CTRL_REG1);
+// Get Inital state string
+state_to_string(flight_state, state_str);
 
 
 /* USER CODE END 2 */
@@ -235,9 +293,9 @@ read_sensors(&telemetry);
 
 // Update debug variables for Live Expressions
 
-debug_pressure = telemetry.pressure;
+pressure = telemetry.pressure;
 
-debug_temperature = telemetry.temperature;
+temperature = telemetry.temperature;
 
 
 // 3. Map IMU values (LSM6DSL)
@@ -272,31 +330,12 @@ icm_gyro_z = telemetry.icm_gyro_y;
 
 // Calculate altitude from pressure
 
-debug_altitude = Calculate_Altitude(debug_pressure);
+telemetry.altitude = Calculate_Altitude(pressure);
+altitude = telemetry.altitude;
 
-
-// Read status register periodically
-
-if(read_counter % 10 == 0) {
-
-status_reg = LPS22HH_ReadReg(LPS22HH_STATUS_REG);
-
-whoami = LPS22HH_WhoAmI();
-
-lsm_whoami = LSM6DSL_WhoAmI();
-
-icm_whoami = ICM45686_WhoAmI();
-
-}
-
-
-read_counter++;
-
-
-// Blink LED to show loop is running
-
-HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-
+// Update FSM and state string
+update_flight_state(&flight_state, &telemetry);
+state_to_string(flight_state, state_str);
 
 HAL_Delay(100); // 10 Hz update rate
 
@@ -582,6 +621,23 @@ HAL_GPIO_WritePin(GPIOB, IMU_CS_Pin, GPIO_PIN_SET); // PB10
 HAL_GPIO_WritePin(GPIOB, IMU_2_CS_Pin, GPIO_PIN_SET); // PB2
 
 
+/* Configure LED Pin - PC0 */
+HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+GPIO_InitStruct.Pin = LED_Pin;
+GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+GPIO_InitStruct.Pull = GPIO_NOPULL;
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
+
+/* Configure Buzzer Pin - PD0 */
+__HAL_RCC_GPIOD_CLK_ENABLE();  // Enable Port D clock first
+HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);
+GPIO_InitStruct.Pin = Buzzer_Pin;
+GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+GPIO_InitStruct.Pull = GPIO_NOPULL;
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+HAL_GPIO_Init(Buzzer_GPIO_Port, &GPIO_InitStruct);
+
 /* Configure IMU_CS_Pin (LSM6DSL) - PB10 */
 
 GPIO_InitStruct.Pin = IMU_CS_Pin;
@@ -612,6 +668,7 @@ HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
 
 /* USER CODE BEGIN 4 */
+
 
 /* USER CODE END 4 */
 
