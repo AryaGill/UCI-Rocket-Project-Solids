@@ -4,6 +4,14 @@ GPIO_TypeDef *LPS22HH_port;
 uint16_t LPS22HH_pin;
 SPI_HandleTypeDef *LPS22HH_hspi;
 
+GPIO_TypeDef *LSM_port;
+uint16_t LSM_pin;
+SPI_HandleTypeDef *LSM_hspi;
+
+GPIO_TypeDef *ICM45_port;
+uint16_t ICM45_pin;
+SPI_HandleTypeDef *ICM45_hspi;
+
 // SPI Helper Functions
 static inline void SPI_CS_LOW(GPIO_TypeDef *port, uint16_t pin)
 {
@@ -37,18 +45,30 @@ static void SPI_Write(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
 // Sensor Initialization
 void init_sensors(SPI_HandleTypeDef *hspi)
 {
-    // Set CS pin high (inactive)
-    SPI_CS_HIGH(Baro_CS_GPIO_Port, Baro_CS_Pin);
-    HAL_Delay(10);
+    // Force all CS HIGH immediately
+    HAL_GPIO_WritePin(GPIOE, Baro_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, IMU_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, IMU_2_CS_Pin, GPIO_PIN_SET);
+    HAL_Delay(100);
 
-    // Initialize LPS22HHTR
+    // Initialize Baro
     LPS22HH_Init(hspi, Baro_CS_GPIO_Port, Baro_CS_Pin);
+    HAL_Delay(20);
+
+    // Initialize LSM
+    LSM6DSL_Init(hspi, IMU_2_CS_GPIO_Port, IMU_2_CS_Pin);
+    HAL_Delay(20);
+
+    // Initialize ICM - Use the correct IMU_2 defines
+    ICM45686_Init(hspi, IMU_CS_GPIO_Port, IMU_CS_Pin);
 }
 
 // Sensor Reading
 void read_sensors(Telemetry_t *telemetry)
 {
     LPS22HH_Read(telemetry);
+    LSM6DSL_Read(telemetry);
+    ICM45686_Read(telemetry);
 }
 
 // LPS22HHTR Functions
@@ -126,4 +146,124 @@ void LPS22HH_WriteReg(uint8_t reg, uint8_t val)
               LPS22HH_pin,
               reg,
               val);
+}
+
+void LSM6DSL_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin) {
+    LSM_port = cs_port;
+    LSM_pin = cs_pin;
+    LSM_hspi = hspi;
+
+    // 1. Software Reset
+    SPI_Write(hspi, cs_port, cs_pin, LSM6DSL_CTRL3_C, 0x01);
+    HAL_Delay(50);
+
+    // 2. Enable Block Data Update (BDU) and Auto-Increment
+    // CTRL3_C: BDU=1 (0x40), IF_INC=1 (0x04) -> 0x44
+    SPI_Write(hspi, cs_port, cs_pin, LSM6DSL_CTRL3_C, 0x44);
+
+    // 3. Configure Accelerometer: 104Hz, +/- 4g
+    // CTRL1_XL: 0100 (104Hz), 10 (4g) -> 0x48
+    SPI_Write(hspi, cs_port, cs_pin, LSM6DSL_CTRL1_XL, 0x48);
+
+    // 4. Configure Gyroscope: 104Hz, 2000 dps
+    // CTRL2_G: 0100 (104Hz), 11 (2000dps) -> 0x4C
+    SPI_Write(hspi, cs_port, cs_pin, LSM6DSL_CTRL2_G, 0x4C);
+}
+
+void LSM6DSL_Read(Telemetry_t *telemetry) {
+    uint8_t buf[12];
+    // Read 12 bytes starting from Gyro X_L all the way through Accel Z_H
+    SPI_Read(LSM_hspi, LSM_port, LSM_pin, LSM6DSL_OUTX_L_G, buf, 12);
+
+    // Raw values (Little Endian)
+    int16_t gx = (int16_t)((buf[1] << 8) | buf[0]);
+    int16_t gy = (int16_t)((buf[3] << 8) | buf[2]);
+    int16_t gz = (int16_t)((buf[5] << 8) | buf[4]);
+    int16_t ax = (int16_t)((buf[7] << 8) | buf[6]);
+    int16_t ay = (int16_t)((buf[9] << 8) | buf[8]);
+    int16_t az = (int16_t)((buf[11] << 8) | buf[10]);
+
+    // Conversion Factors (Based on +/- 4g and 2000dps)
+    // Accel: 4g range = 0.122 mg/LSB. 0.122 * 9.81 / 1000 = 0.001197 m/s^2
+    telemetry->lsm_accel_r = ax * 0.001197f;
+    telemetry->lsm_accel_p = ay * 0.001197f;
+    telemetry->lsm_accel_y = az * 0.001197f;
+
+    // Gyro: 2000dps range = 70 mdps/LSB. 70 * (PI/180) / 1000 = 0.0012217 rad/s
+    telemetry->lsm_gyro_r = gx * 0.0012217f;
+    telemetry->lsm_gyro_p = gy * 0.0012217f;
+    telemetry->lsm_gyro_y = gz * 0.0012217f;
+}
+
+uint8_t LSM6DSL_WhoAmI(void) {
+    uint8_t id = 0;
+    SPI_Read(LSM_hspi, LSM_port, LSM_pin, LSM6DSL_WHO_AM_I, &id, 1);
+    return id;
+}
+
+void ICM45686_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin) {
+    ICM45_port = cs_port;
+    ICM45_pin = cs_pin;
+    ICM45_hspi = hspi;
+
+    // 1. Ensure we are in Bank 0
+    SPI_Write(hspi, cs_port, cs_pin, ICM45_REG_REG_BANK_SEL, 0x00);
+    HAL_Delay(10);
+
+    // 2. Soft Reset (Toggle bit in DEVICE_CONFIG or similar)
+    // For ICM45 series, a power management wake-up is usually enough
+
+    // 3. Set PWR_MGMT0: Enable Accel and Gyro in Low Noise (LN) Mode
+    // Bits [3:2] Gyro: 11 (LN), Bits [1:0] Accel: 11 (LN) -> 0x0F
+    SPI_Write(hspi, cs_port, cs_pin, ICM45_REG_PWR_MGMT0, 0x0F);
+    HAL_Delay(50); // Wait for sensors to stabilize
+}
+
+uint8_t ICM45686_WhoAmI(void) {
+    uint8_t id = 0;
+    uint8_t bank_reg = 0x76; // REG_BANK_SEL is usually 0x76 or 0x00 depending on variant
+    uint8_t bank0 = 0x00;
+    uint8_t who_am_i_reg = 0x75 | 0x80; // 0x75 with Read Bit
+
+    SPI_CS_LOW(GPIOB, IMU_2_CS_Pin);
+    // Ensure we are in Bank 0
+    HAL_SPI_Transmit(ICM45_hspi, &bank_reg, 1, 10);
+    HAL_SPI_Transmit(ICM45_hspi, &bank0, 1, 10);
+    SPI_CS_HIGH(GPIOB, IMU_2_CS_Pin);
+
+    HAL_Delay(1);
+
+    SPI_CS_LOW(GPIOB, IMU_2_CS_Pin);
+    HAL_SPI_Transmit(ICM45_hspi, &who_am_i_reg, 1, 10);
+    HAL_SPI_Receive(ICM45_hspi, &id, 1, 10);
+    SPI_CS_HIGH(GPIOB, IMU_2_CS_Pin);
+
+    return id;
+}
+
+void ICM45686_Read(Telemetry_t *telemetry) {
+    uint8_t buf[12];
+    // ICM-45686 data registers are usually 20-bit or 16-bit.
+    // We will read 12 bytes starting at Accel X
+    SPI_Read(ICM45_hspi, ICM45_port, ICM45_pin, ICM45_REG_ACCEL_DATA_X1, buf, 12);
+
+    // Raw 16-bit values (Big Endian usually for InvenSense!)
+    // Note: Check your specific variant, but most ICMs are Big Endian
+    int16_t ax = (int16_t)((buf[0] << 8) | buf[1]);
+    int16_t ay = (int16_t)((buf[2] << 8) | buf[3]);
+    int16_t az = (int16_t)((buf[4] << 8) | buf[5]);
+
+    int16_t gx = (int16_t)((buf[6] << 8) | buf[7]);
+    int16_t gy = (int16_t)((buf[8] << 8) | buf[9]);
+    int16_t gz = (int16_t)((buf[10] << 8) | buf[11]);
+
+    // Simple Scaling (Assuming default +/- 8g and 2000 dps)
+    telemetry->icm_accel_r = ax * (8.0f / 32768.0f);
+    telemetry->icm_accel_p = ay * (8.0f / 32768.0f);
+    telemetry->icm_accel_y = az * (8.0f / 32768.0f);
+
+    telemetry->icm_gyro_r  = gx * (2000.0f / 32768.0f);
+    telemetry->icm_gyro_p  = gy * (2000.0f / 32768.0f);
+    telemetry->icm_gyro_y  = gz * (2000.0f / 32768.0f);
+
 }
