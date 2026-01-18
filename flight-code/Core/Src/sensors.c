@@ -12,6 +12,34 @@ GPIO_TypeDef *ICM45_port;
 uint16_t ICM45_pin;
 SPI_HandleTypeDef *ICM45_hspi;
 
+volatile uint8_t lps_whoami = 0; // Should be 0xB3 for LPS22HH
+volatile uint8_t lsm_whoami = 0; // Should be 0x6A
+volatile uint8_t icm_whoami = 0;
+
+uint8_t Verify_Sensors(void){
+	// Check Barometer
+	lps_whoami = LPS22HH_WhoAmI();
+	if (lps_whoami != 0xB3){
+		return 1;
+	}
+
+	// Check LSM6DSL IMU
+	lsm_whoami = LSM6DSL_WhoAmI();
+	if (lsm_whoami != 0x6a){
+		return 1;
+	}
+	// TODO CURRENTLY NOT WORKING. CHANGE AFTER
+
+	// Check ICM45686 IMU
+//	icm_whoami = ICM45686_WhoAmI();
+//	if (icm_whoami != 0xE9){
+//		return 1;
+//	}
+
+	return 0;
+
+}
+
 // SPI Helper Functions
 static inline void SPI_CS_LOW(GPIO_TypeDef *port, uint16_t pin)
 {
@@ -46,9 +74,10 @@ static void SPI_Write(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
 void init_sensors(SPI_HandleTypeDef *hspi)
 {
     // Force all CS HIGH immediately
-    HAL_GPIO_WritePin(GPIOE, Baro_CS_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOB, IMU_CS_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOB, IMU_2_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(Baro_CS_GPIO_Port, Baro_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(IMU_2_CS_GPIO_Port, IMU_2_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(Mag_CS_GPIO_Port, Mag_CS_Pin, GPIO_PIN_SET);
     HAL_Delay(100);
 
     // Initialize Baro
@@ -60,7 +89,8 @@ void init_sensors(SPI_HandleTypeDef *hspi)
     HAL_Delay(20);
 
     // Initialize ICM - Use the correct IMU_2 defines
-    ICM45686_Init(hspi, IMU_CS_GPIO_Port, IMU_CS_Pin);
+//    ICM45686_Init(hspi, IMU_CS_GPIO_Port, IMU_CS_Pin);
+//    HAL_Delay(20);
 }
 
 // Sensor Reading
@@ -68,7 +98,20 @@ void read_sensors(Telemetry_t *telemetry)
 {
     LPS22HH_Read(telemetry);
     LSM6DSL_Read(telemetry);
-    ICM45686_Read(telemetry);
+//    ICM45686_Read(telemetry);
+}
+
+// Calculate altitude from pressure (standard atmosphere model)
+
+float Calculate_Altitude(float pressure_hPa)
+{
+	const float sea_level_pressure = 1013.25f; // hPa at sea level
+
+	// Barometric formula: h = 44330 * (1 - (P/P0)^(1/5.255))
+	float ratio = pressure_hPa / sea_level_pressure;
+	float altitude = 44330.0f * (1.0f - powf(ratio, 0.1903f));
+
+	return altitude;
 }
 
 // LPS22HHTR Functions
@@ -113,6 +156,7 @@ void LPS22HH_Read(Telemetry_t *telemetry)
     // Convert to metric units
     telemetry->pressure = raw_p / 4096.0f;      // hPa (mbar)
     telemetry->temperature = raw_t / 100.0f;     // °C
+    telemetry->altitude = Calculate_Altitude(telemetry->pressure);
 }
 
 uint8_t LPS22HH_WhoAmI(void)
@@ -265,5 +309,4 @@ void ICM45686_Read(Telemetry_t *telemetry) {
     telemetry->icm_gyro_r  = gx * (2000.0f / 32768.0f);
     telemetry->icm_gyro_p  = gy * (2000.0f / 32768.0f);
     telemetry->icm_gyro_y  = gz * (2000.0f / 32768.0f);
-
 }

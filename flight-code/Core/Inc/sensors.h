@@ -28,10 +28,13 @@
 #define ICM45_REG_GYRO_DATA_X1      0x09
 
 // Function Declarations
+uint8_t Verify_Sensors(void);
+
 void init_sensors(SPI_HandleTypeDef *hspi);
 void read_sensors(Telemetry_t *telemetry);
 
 // LPS22HHTR Functions
+float Calculate_Altitude(float pressure_hPa);
 void LPS22HH_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
 void LPS22HH_Read(Telemetry_t *telemetry);
 
@@ -44,6 +47,10 @@ uint8_t LSM6DSL_WhoAmI(void);
 void ICM45686_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
 void ICM45686_Read(Telemetry_t *telemetry);
 uint8_t ICM45686_WhoAmI(void);
+
+// IIS2MDCTR Functions
+void IIS2MDCTR_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin, GPIO_TypeDef *sdio_port, uint16_t sdio_pin);
+void IIS2MDCTR_Read(Telemetry_t *telemetry);
 
 // Test/Debug Functions
 uint8_t LPS22HH_WhoAmI(void);
