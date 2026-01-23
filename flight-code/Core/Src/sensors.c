@@ -159,6 +159,11 @@ void LPS22HH_Read(Telemetry_t *telemetry)
     telemetry->altitude = Calculate_Altitude(telemetry->pressure);
 }
 
+void set_start_alt(Telemetry_t *telemetry){
+	LPS22HH_Read(telemetry);
+	telemetry->startAlt = telemetry->altitude;
+}
+
 uint8_t LPS22HH_WhoAmI(void)
 {
     uint8_t id = 0;

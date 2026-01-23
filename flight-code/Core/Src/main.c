@@ -26,6 +26,7 @@
 #include "sensors.h"
 #include "telemetry.h"
 #include "fsm.h"
+#include "rf.h"
 #include <string.h>
 #include <math.h>
 
@@ -194,8 +195,14 @@ int main(void)
 	init_flight_state(&flight_state, &telemetry);
 	state_to_string(flight_state, state_str);
 
+	// Init rf
+	RF_Init(&huart4);
+
 	// Get Inital state string
 	init_data_file(&hspi1);
+
+	// Set starting altitude
+	set_start_alt(&telemetry);
 
   /* USER CODE END 2 */
 
@@ -210,6 +217,9 @@ int main(void)
 		// Update FSM and state string
 		update_flight_state(&flight_state, &telemetry);
 		state_to_string(flight_state, state_str);
+
+		// Send RF data
+		RF_Transmit(&telemetry);
 
 		// Log telemetry
 		log_data(state_str, &telemetry);
@@ -348,7 +358,7 @@ static void MX_UART4_Init(void)
 
   /* USER CODE END UART4_Init 1 */
   huart4.Instance = UART4;
-  huart4.Init.BaudRate = 115200;
+  huart4.Init.BaudRate = 57600;
   huart4.Init.WordLength = UART_WORDLENGTH_8B;
   huart4.Init.StopBits = UART_STOPBITS_1;
   huart4.Init.Parity = UART_PARITY_NONE;

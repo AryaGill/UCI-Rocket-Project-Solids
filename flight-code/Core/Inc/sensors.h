@@ -37,6 +37,7 @@ void read_sensors(Telemetry_t *telemetry);
 float Calculate_Altitude(float pressure_hPa);
 void LPS22HH_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
 void LPS22HH_Read(Telemetry_t *telemetry);
+void set_start_alt(Telemetry_t *telemetry);
 
 // LSM6DSL Functions
 void LSM6DSL_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);

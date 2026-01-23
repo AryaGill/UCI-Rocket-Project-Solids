@@ -1,0 +1,2 @@
+../Core/Src/rf.c:7:6:RF_Init	1
+../Core/Src/rf.c:12:6:RF_Transmit	1

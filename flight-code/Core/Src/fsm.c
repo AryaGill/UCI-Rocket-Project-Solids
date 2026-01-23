@@ -8,14 +8,8 @@ int alt_dif_buffer_idx = 0;
 int prev_alt_time = 0;
 float prev_alt = 0;
 
-// Time variables
-uint32_t launch_start_time = 0;
-unsigned long drogue_primary_start_time = 0;
-unsigned long drogue_primary_end_time = 0;
-unsigned long drogue_secondary_start_time = 0;
-unsigned long main_primary_start_time = 0;
-unsigned long main_primary_end_time = 0;
-unsigned long main_secondary_start_time = 0;
+// Some states need to know the time that the state started
+unsigned long state_start_time = 0;
 
 float get_avg_alt_dif() {
 	float sum = 0;
@@ -64,9 +58,7 @@ void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 			update_alt_dif_buf(telemetry->startAlt - prev_alt);
 			prev_alt = telemetry->startAlt;
 		}
-		else {
-//			Serial.println("Failed to get BPM390 data");
-		}
+		HAL_Delay(10);
 	}
 
 	// Open rocket state file
@@ -110,8 +102,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     	case LAUNCH_PAD:
     		// Detect if launched
     		if (get_avg_alt_dif() > LAUNCH_THRESHOLD) {
-//    			dataFile.println("LAUNCHED");
-    			launch_start_time = HAL_GetTick();
+    			state_start_time = HAL_GetTick();
     			set_flight_state(MOTOR_BURN, flight_state);
     		}
 
@@ -119,7 +110,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 
     	case MOTOR_BURN:
     		// Add logic: wait for certain delay or for acceleration to change
-    		if (HAL_GetTick() - launch_start_time > 1500){
+    		if (HAL_GetTick() - state_start_time > MOTOR_BURN_TIME){
     			set_flight_state(GLIDING_ASCENT, flight_state);
     		}
 
@@ -129,19 +120,18 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		if (get_avg_alt_dif() < APOGEE_THRESHOLD) {
     			set_flight_state(DROGUE_PRIMARY_DEPLOYING, flight_state);
     			HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_SET);
-//    			dataFile.println("Primary Drogue Deployed");
     			//drogue primary starts firing and the time this starts is stored
-    			drogue_primary_start_time = HAL_GetTick();
+    			state_start_time = HAL_GetTick();
     		}
 
     		break;
 
     	case DROGUE_PRIMARY_DEPLOYING:
-    		if (HAL_GetTick() - drogue_primary_start_time >= CHARGE_DELAY) {
+    		if (HAL_GetTick() - state_start_time >= CHARGE_DELAY) {
     			HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_RESET);
 
     			//time that primary finishes is stored and bool is set to true so this state does not run again
-    			drogue_primary_end_time = HAL_GetTick();
+    			state_start_time = HAL_GetTick();
 
     			set_flight_state(DROGUE_PRIMARY_DEPLOYED, flight_state);
     		}
@@ -149,12 +139,11 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case DROGUE_PRIMARY_DEPLOYED:
-    		if (HAL_GetTick() - drogue_primary_end_time >= BACKUP_DELAY) {
+    		if (HAL_GetTick() - state_start_time >= BACKUP_DELAY) {
     			HAL_GPIO_WritePin(Drogue_Parachute_2_GPIO_Port, Drogue_Parachute_2_Pin, GPIO_PIN_SET);
-//    			dataFile.println("Secondary Drogue Deployed");
 
     			//time when secondary finishes is stored and bools set so this state does not run again
-    			drogue_secondary_start_time = HAL_GetTick();
+    			state_start_time = HAL_GetTick();
 
     			set_flight_state(DROGUE_SECONDARY_DEPLOYING, flight_state);
     		}
@@ -162,7 +151,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case DROGUE_SECONDARY_DEPLOYING:
-    		if (HAL_GetTick() - drogue_secondary_start_time >= CHARGE_DELAY){
+    		if (HAL_GetTick() - state_start_time >= CHARGE_DELAY){
     			HAL_GPIO_WritePin(Drogue_Parachute_2_GPIO_Port, Drogue_Parachute_2_Pin, GPIO_PIN_RESET);
 
     			set_flight_state(DROGUE_SECONDARY_DEPLOYED, flight_state);
@@ -172,36 +161,34 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 
     	case DROGUE_SECONDARY_DEPLOYED:
     		// Wait for main deployment
-    		if (telemetry->altitude - telemetry->startAlt < 229 && telemetry->altitude - telemetry->startAlt > 77){
+    		if (telemetry->altitude - telemetry->startAlt < MAIN_DEPLOY_MAX_ALT && telemetry->altitude - telemetry->startAlt > MAIN_DEPLOY_MIN_ALT){
     			HAL_GPIO_WritePin(Main_Parachute_1_GPIO_Port, Main_Parachute_1_Pin, GPIO_PIN_SET);
-//    			dataFile.println("Primary Main Deployed");
-    			main_primary_start_time = HAL_GetTick();
+    			state_start_time = HAL_GetTick();
     			set_flight_state(MAIN_PRIMARY_DEPLOYING, flight_state);
     		}
 
     		break;
 
     	case MAIN_PRIMARY_DEPLOYING:
-    		if(HAL_GetTick() - main_primary_start_time >= CHARGE_DELAY){
+    		if(HAL_GetTick() - state_start_time >= CHARGE_DELAY){
     			HAL_GPIO_WritePin(Main_Parachute_1_GPIO_Port, Main_Parachute_1_Pin, GPIO_PIN_RESET);
-    			main_primary_end_time = HAL_GetTick();
+    			state_start_time = HAL_GetTick();
     			set_flight_state(MAIN_PRIMARY_DEPLOYED, flight_state);
     		}
 
     		break;
 
     	case MAIN_PRIMARY_DEPLOYED:
-    		if(HAL_GetTick() - main_primary_end_time >= BACKUP_DELAY){
+    		if(HAL_GetTick() - state_start_time >= BACKUP_DELAY){
     			HAL_GPIO_WritePin(Main_Parachute_2_GPIO_Port, Main_Parachute_2_Pin, GPIO_PIN_SET);
-//    			dataFile.println("Secondary Main Deployed");
-    			main_secondary_start_time = HAL_GetTick();
+    			state_start_time = HAL_GetTick();
     			set_flight_state(MAIN_SECONDARY_DEPLOYING, flight_state);
     		}
 
     		break;
 
     	case MAIN_SECONDARY_DEPLOYING:
-    		if(HAL_GetTick() - main_secondary_start_time >= CHARGE_DELAY){
+    		if(HAL_GetTick() - state_start_time >= CHARGE_DELAY){
     			HAL_GPIO_WritePin(Main_Parachute_2_GPIO_Port, Main_Parachute_2_Pin, GPIO_PIN_RESET);
     			set_flight_state(MAIN_SECONDARY_DEPLOYED, flight_state);
     		}
