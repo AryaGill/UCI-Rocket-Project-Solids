@@ -1,9 +1,18 @@
 #pragma once
 
 #include "stm32h7xx_hal.h"
+#include "fatfs.h"
 
-void mount_sd();
-void write_sd(char* file_name, char* data);
-void read_sd(char* file_name, uint32_t line_number, char* RW_buffer, size_t buffer_size);
-void delete_file(char* file_name);
-void unmount_sd(char* file_name);
+//void mount_sd();
+//void write_sd(char* file_name, char* data);
+//void read_sd(char* file_name, uint32_t line_number, char* RW_buffer, size_t buffer_size);
+//void delete_file(char* file_name);
+//void unmount_sd(char* file_name);
+
+
+
+
+
+void init_sd(SPI_HandleTypeDef *hspi);
+FRESULT write_sd(const char *filename, const char *line);
+FRESULT read_sd_line(const char *filename, char *buffer, UINT buffer_size);

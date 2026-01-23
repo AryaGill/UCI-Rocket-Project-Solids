@@ -1,5 +1,5 @@
-../Core/Src/sd_card.c:13:6:mount_sd	2
-../Core/Src/sd_card.c:25:6:write_sd	3
-../Core/Src/sd_card.c:49:6:read_sd	10
-../Core/Src/sd_card.c:89:6:delete_file	2
-../Core/Src/sd_card.c:96:6:unmount_sd	2
+../Core/Src/sd_card.c:124:20:SPI_CS_HIGH	1
+../Core/Src/sd_card.c:129:6:SD_SendDummyClocks	2
+../Core/Src/sd_card.c:141:6:init_sd	1
+../Core/Src/sd_card.c:146:9:write_sd	4
+../Core/Src/sd_card.c:179:9:read_sd_line	3

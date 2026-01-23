@@ -129,6 +129,9 @@ void Error_Pattern(void)
     // System halts here - never returns
 }
 
+FRESULT sd_res;
+char line[128];
+
 /* USER CODE END 0 */
 
 /**
@@ -189,9 +192,10 @@ int main(void)
 
 	// Initialize flight state machine
 	init_flight_state(&flight_state, &telemetry);
+	state_to_string(flight_state, state_str);
 
 	// Get Inital state string
-	state_to_string(flight_state, state_str);
+	init_data_file(&hspi1);
 
   /* USER CODE END 2 */
 
@@ -206,6 +210,9 @@ int main(void)
 		// Update FSM and state string
 		update_flight_state(&flight_state, &telemetry);
 		state_to_string(flight_state, state_str);
+
+		// Log telemetry
+		log_data(state_str, &telemetry);
 
 		HAL_Delay(100); // 10 Hz update rate
 
