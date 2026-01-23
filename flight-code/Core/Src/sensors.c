@@ -234,14 +234,14 @@ void LSM6DSL_Read(Telemetry_t *telemetry) {
 
     // Conversion Factors (Based on +/- 4g and 2000dps)
     // Accel: 4g range = 0.122 mg/LSB. 0.122 * 9.81 / 1000 = 0.001197 m/s^2
-    telemetry->lsm_accel_r = ax * 0.001197f;
-    telemetry->lsm_accel_p = ay * 0.001197f;
+    telemetry->lsm_accel_r = ay * 0.001197f;
+    telemetry->lsm_accel_p = -ax * 0.001197f;
     telemetry->lsm_accel_y = az * 0.001197f;
 
     // Gyro: 2000dps range = 70 mdps/LSB. 70 * (PI/180) / 1000 = 0.0012217 rad/s
-    telemetry->lsm_gyro_r = gx * 0.0012217f;
-    telemetry->lsm_gyro_p = gy * 0.0012217f;
-    telemetry->lsm_gyro_y = gz * 0.0012217f;
+    telemetry->lsm_gyro_r = -gy * 0.0012217f;
+    telemetry->lsm_gyro_p = gx * 0.0012217f;
+    telemetry->lsm_gyro_y = -gz * 0.0012217f;
 }
 
 uint8_t LSM6DSL_WhoAmI(void) {
