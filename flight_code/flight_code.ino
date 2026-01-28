@@ -82,6 +82,7 @@ const int backup_delay = 500; //2500
 bool launch_flag = 0;
 
 // Time variables
+long launch_accel_detected_time = -1;
 unsigned long launch_start_time = 0;
 unsigned long drogue_primary_start_time = 0;
 unsigned long drogue_primary_end_time = 0;
@@ -104,6 +105,9 @@ unsigned long current_time = 0;
 
 
 // Altitude Filtering for Flight State
+#define LAUNCH_ACCEL_THRESHOLD 2.5
+#define RAIL_DELAY_TIME 2500
+#define LAUNCH_EVAL_PERIOD_TIME 2500
 #define LAUNCH_THRESHOLD 10
 #define APOGEE_THRESHOLD -0.5
 #define LANDED_THRESHOLD -0.2
@@ -518,10 +522,34 @@ void update_flight_state() {
   switch(flight_state) {
     case LAUNCH_PAD:
       // Detect if launched
-      if (get_avg_alt_dif() > LAUNCH_THRESHOLD) {
-        dataFile.println("LAUNCHED");
-        launch_start_time = millis();
-        set_flight_state(MOTOR_BURN);
+
+      // Old logic
+      // if (get_avg_alt_dif() > LAUNCH_THRESHOLD) {
+        // dataFile.println("LAUNCHED");
+        // launch_start_time = millis();
+        // set_flight_state(MOTOR_BURN);
+      // }
+
+      if (launch_accel_detected_time == -1){
+        // Acceleration not detected yet
+        if (Accel_z > LAUNCH_ACCEL_THRESHOLD){
+          // Positive acceleration detected. Begin period of waiting to get off rail.
+          launch_accel_detected_time = millis();
+        }
+      }
+      else if (millis() - launch_accel_detected_time > RAIL_DELAY_TIME){
+        // In evaluation period. Monitor for any negative acceleration value.
+        // If detected, reset the system and begin again.
+        if (millis() - launch_accel_detected_time > RAIL_DELAY_TIME + LAUNCH_EVAL_PERIOD_TIME){
+          // Enough time passed without negative acceleration. Launch detected
+          dataFile.println("LAUNCHED");
+          launch_start_time = millis();
+          set_flight_state(MOTOR_BURN);
+        }
+        else if (Accel_z < 0){
+          // Negative acceleration detected. Reset system.
+          launch_accel_detected_time = -1;
+        }
       }
 
       break;
