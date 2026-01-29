@@ -151,24 +151,44 @@ float A = pow(0.1016, 2) * M_PI;
 float deltaT_coefficient = (TIME_PER_AIRBRAKE_CALL / WANTED_AIRBRAKE_ALG_TIME) / g;
 int deployment = 0;
 
+//Complimentary Filter variables
+float vel_baro = 0.0f;
+float vel_imu = 0.0f;
+float vel_baro_averaged = 0.0f; //from 1 second moving average
+float vel_fused = 0.0f;
+
+float alt_cf = 0.0f;
+float alt_fused = 0.0f;
+
+float prev_alt_cf = 0.0f;
+unsigned long prev_cf_time = 0;
+
+const float VEL_IMU_W   = 0.99f;
+const float VEL_BARO_W  = 0.01f;
+
+const float ALT_CF_W  = 0.95f;
+const float ALT_BARO_W = 0.05f;
+
+const float BARO_TAU = 1.0f;
+
 //Kalman State Variables
-KalmanFilter::MatA Amatrix;
-KalmanFilter::MatQ Q;
-KalmanFilter::MatP P;
-KalmanFilter::MatB B;
-KalmanFilter::MatC C;
-KalmanFilter::MatR Rmatrix;
+// KalmanFilter::MatA Amatrix;
+// KalmanFilter::MatQ Q;
+// KalmanFilter::MatP P;
+// KalmanFilter::MatB B;
+// KalmanFilter::MatC C;
+// KalmanFilter::MatR Rmatrix;
 
-KalmanFilter::VecX x;   // [alt, vel, bias]
+// KalmanFilter::VecX x;   // [alt, vel, bias]
 
-KalmanFilter kf(Amatrix, B, C, Q, Rmatrix, P);
-bool kf_initialized = false;
-unsigned long last_kf_time = 0;
+// KalmanFilter kf(Amatrix, B, C, Q, Rmatrix, P);
+// bool kf_initialized = false;
+// unsigned long last_kf_time = 0;
 
-// Kalman filter tuning
-float r_var = 1.8f;     // barometer noise (trust less if high)
-float sigma_a = 0.3f;   // accelerometer noise (m/s^2)
-float q_bias = 1e-5f;   // bias drift
+// // Kalman filter tuning
+// float r_var = 1.8f;     // barometer noise (trust less if high)
+// float sigma_a = 0.3f;   // accelerometer noise (m/s^2)
+// float q_bias = 1e-5f;   // bias drift
 
 float get_drag_coefficient(const int& deployment_level, const float& mach_number){
   if (mach_number >= 0.7){
@@ -285,51 +305,87 @@ void initialize_dataFile() {
   }
 
   //data headers
-  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Alt_KF,Vel_kf,Bias_KF,Vel_x,Vel_y,Vel_z,Vel_x2,Vel_y2,Vel_z2,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Time,State,Deployment,Predicted_Apogee";
+  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Vel_x,Vel_y,Vel_z,Vel_x2,Vel_y2,Vel_z2,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Time,State,Deployment,Predicted_Apogee";
   dataFile.println(dataString);
   dataFile.flush();
 }
 
-void initialize_kalman_filter() {
-  // Initialize Kalman filter
-  float dt = 0.02f;  // initial timestep estimate
+// void initialize_kalman_filter() {
+//   // Initialize Kalman filter
+//   float dt = 0.02f;  // initial timestep estimate
 
-  Amatrix << 1, dt, -0.5f * dt * dt,
-             0, 1,      -dt,
-             0, 0,       1;
+//   Amatrix << 1, dt, -0.5f * dt * dt,
+//              0, 1,      -dt,
+//              0, 0,       1;
 
-  B << 0.5f * dt * dt,
-       dt,
-       0.0f;
+//   B << 0.5f * dt * dt,
+//        dt,
+//        0.0f;
 
-  // Observation matrix (3 measurements: altitude, vel_y, vel_y2)
-  C << 1, 0, 0,
-       0, 1, 0,
-       0, 1, 0;
+//   // Observation matrix (3 measurements: altitude, vel_y, vel_y2)
+//   C << 1, 0, 0,
+//        0, 1, 0,
+//        0, 1, 0;
 
-  // Process noise
-  Q.setZero();
-  Q(0,0) = 0.25f * sigma_a * sigma_a * powf(dt,4);
-  Q(1,1) = sigma_a * sigma_a * powf(dt,2);
-  Q(2,2) = q_bias * dt;
+//   // Process noise
+//   Q.setZero();
+//   Q(0,0) = 0.25f * sigma_a * sigma_a * powf(dt,4);
+//   Q(1,1) = sigma_a * sigma_a * powf(dt,2);
+//   Q(2,2) = q_bias * dt;
 
-  // Measurement noise
-  Rmatrix.setZero();
-  Rmatrix(0,0) = r_var;  // barometer
-  Rmatrix(1,1) = 2.0f;   // velocity 1
-  Rmatrix(2,2) = 2.0f;   // velocity 2
+//   // Measurement noise
+//   Rmatrix.setZero();
+//   Rmatrix(0,0) = r_var;  // barometer
+//   Rmatrix(1,1) = 2.0f;   // velocity 1
+//   Rmatrix(2,2) = 2.0f;   // velocity 2
 
-  P = KalmanFilter::MatP::Identity() * 100.0f;
+//   P = KalmanFilter::MatP::Identity() * 100.0f;
 
-  // Initialize Kalman filter
-  kf = KalmanFilter(Amatrix, B, C, Q, Rmatrix, P);
-  x << startAlt, 0.0f, 0.0f;
-  kf.init(x);
-  kf_initialized = true;
+//   // Initialize Kalman filter
+//   kf = KalmanFilter(Amatrix, B, C, Q, Rmatrix, P);
+//   x << startAlt, 0.0f, 0.0f;
+//   kf.init(x);
+//   kf_initialized = true;
 
-  last_kf_time = millis();
-  prev_vel_time = millis();
-  current_time = millis();
+//   last_kf_time = millis();
+//   prev_vel_time = millis();
+//   current_time = millis();
+// }
+
+//complimentary filter
+void complementary_filter() {
+  unsigned long now = millis();
+
+  if (prev_cf_time == 0) {
+    prev_cf_time = now;
+    prev_alt_cf = Alt;
+    alt_cf = Alt;
+    alt_fused = Alt;
+    vel_baro_averaged = 0.0f;
+    vel_fused = 0.0f;
+    return;
+  }
+
+  float dt = (now - prev_cf_time) / 1000.0f;
+  prev_cf_time = now;
+
+  if (dt <= 0.0f || dt > 0.2f) return;
+  vel_imu = 0.5f * (Vel_y + Vel_y2);
+
+  vel_baro = (Alt - prev_alt_cf) / dt;
+  prev_alt_cf = Alt;
+
+  //1 secon moving average baro velocity (low pass)
+  float alpha = dt / (BARO_TAU + dt);
+  vel_baro_averaged += alpha * (vel_baro - vel_baro_averaged);
+
+  //Velocity calculation 99-1 ratio then alt conversion
+  vel_fused = VEL_IMU_W * vel_imu + VEL_BARO_W * vel_baro_averaged;
+
+  alt_cf += vel_fused * dt;
+
+  //final filtered alt
+  alt_fused = ALT_CF_W * alt_cf + ALT_BARO_W * Alt;
 }
 
 void initialize_sensors() {
@@ -516,7 +572,7 @@ void initialize_flight_state() {
 }
 
 void update_flight_state() {
-  update_alt_dif_buf(Alt - pre_alt);
+  update_alt_dif_buf(alt_fused - pre_alt);
 
   // Determine Next State
   switch(flight_state) {
@@ -653,42 +709,42 @@ void update_flight_state() {
       break;
   }
 
-  pre_alt = Alt;
+  pre_alt = alt_fused;
 }
 
-void kalman_filter() {
-  // === Kalman Filter Update ===
-  unsigned long now = millis();
-  float dt = (now - last_kf_time) / 1000.0f;
-  if (dt < 1e-4f) dt = 1e-4f;    // min timestep
-  if (dt > 0.1f)  dt = 0.1f;     // max timestep
-  last_kf_time = now;
+// void kalman_filter() {
+//   // === Kalman Filter Update ===
+//   unsigned long now = millis();
+//   float dt = (now - last_kf_time) / 1000.0f;
+//   if (dt < 1e-4f) dt = 1e-4f;    // min timestep
+//   if (dt > 0.1f)  dt = 0.1f;     // max timestep
+//   last_kf_time = now;
 
-  // update matrices (only A, Q depend on dt)
-  Amatrix << 1, dt, -0.5f*dt*dt,
-      0, 1,      -dt,
-      0, 0,       1;
-  B << 0.5f*dt*dt, dt, 0.0f;
-  Q.setZero();
-  Q(0,0) = 0.25f * sigma_a*sigma_a * powf(dt,4);
-  Q(1,1) = sigma_a*sigma_a * powf(dt,2);
-  Q(2,2) = q_bias * dt;
-  kf.update_dynamics(Amatrix);
-  kf.update_process_noise(Q);
+//   // update matrices (only A, Q depend on dt)
+//   Amatrix << 1, dt, -0.5f*dt*dt,
+//       0, 1,      -dt,
+//       0, 0,       1;
+//   B << 0.5f*dt*dt, dt, 0.0f;
+//   Q.setZero();
+//   Q(0,0) = 0.25f * sigma_a*sigma_a * powf(dt,4);
+//   Q(1,1) = sigma_a*sigma_a * powf(dt,2);
+//   Q(2,2) = q_bias * dt;
+//   kf.update_dynamics(Amatrix);
+//   kf.update_process_noise(Q);
 
-  // set measurement (baro) and control (accel + gravity)
-  float fused_accel_y = 0.5f * (Accel_y + Accel_y2);  // fuse both Y accelerations
-  Eigen::Matrix<float,1,1> u;
-  u << fused_accel_y + g;
+//   // set measurement (baro) and control (accel + gravity)
+//   float fused_accel_y = 0.5f * (Accel_y + Accel_y2);  // fuse both Y accelerations
+//   Eigen::Matrix<float,1,1> u;
+//   u << fused_accel_y + g;
 
-  // measurement vector (altitude + two Y velocities)
-  Eigen::Matrix<float,3,1> y;
-  y << Alt, Vel_y, Vel_y2;
+//   // measurement vector (altitude + two Y velocities)
+//   Eigen::Matrix<float,3,1> y;
+//   y << Alt, Vel_y, Vel_y2;
 
-  // predict + update
-  kf.predict(u);
-  kf.update(y);
-}
+//   // predict + update
+//   kf.predict(u);
+//   kf.update(y);
+// }
 
 String state_to_string(FlightState state) {
   switch(state) {
@@ -739,10 +795,10 @@ void log_data() {
   int voltage_right = analogRead(camera2_adc);
 
   // retrieve filtered states
-  KalmanFilter::VecX x_hat = kf.state();
-  float Alt_KF = x_hat[0];
-  float Vel_KF = x_hat[1];
-  float Bias_KF = x_hat[2];
+  // KalmanFilter::VecX x_hat = kf.state();
+  // float Alt_KF = x_hat[0];
+  // float Vel_KF = x_hat[1];
+  // float Bias_KF = x_hat[2];
 // Print combined data
 
   // String dataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
@@ -754,9 +810,9 @@ void log_data() {
   //               String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
   //               String(millis()) + "," + state_to_string(flight_state) + "," + String(deployment, 7);
 
-  String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," +
+  String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," + String(alt_fused, 7) + ","
                 String(Accel_x2, 7) + "," + String(Accel_y2, 7) + "," + String(Accel_z2, 7) + "," +
-                String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," + String(Alt_KF, 7) + "," + String(Vel_KF, 7) + "," + String(Bias_KF, 7) + "," +
+                String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," +
                 String(Vel_x, 7) + "," + String(Vel_y, 7) + "," + String(Vel_z, 7) + "," +
                 String(Vel_x2, 7) + "," + String(Vel_y2, 7) + "," + String(Vel_z2, 7) + "," +
                 String(Gyro_x, 7) + "," + String(Gyro_y, 7) + "," + String(Gyro_z, 7) + "," +
@@ -890,15 +946,17 @@ void setup() {
   //comment out for actual launch
   // digitalWrite(buzzer, LOW);
 
-  initialize_kalman_filter();
+  // initialize_kalman_filter();
 }
 
 void loop(){
   read_sensors();
 
+  complementary_filter();
+
   update_flight_state();
 
-  kalman_filter();
+  // kalman_filter();
 
   // Run Air Brakes Alg
   if (flight_state == GLIDING_ASCENT){ // ADD: && get_mach_number(velocity, Temp) < 0.7 && angle of attack < 30 deg
