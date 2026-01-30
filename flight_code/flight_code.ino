@@ -121,6 +121,7 @@ int write_count=0;
 
 // Flight State Variables
 enum FlightState {
+  DISARMED,
   LAUNCH_PAD,
   MOTOR_BURN,
   GLIDING_ASCENT,
@@ -538,44 +539,57 @@ void initialize_flight_state() {
     }
   }
 
-  // Open rocket state file
-  stateFile = SD.open("rocket_state.csv", FILE_READ);
+  set_flight_state(DISARMED);
 
-  if (stateFile) {
-    if (stateFile.size() > 0) {
-        float read_alt = startAlt;
-        // File exists and has data
-        startAlt = stateFile.readStringUntil('\n').trim().toFloat();
-        Serial.print("startAlt loaded from file: ");
-        Serial.println(startAlt);
+  // // Open rocket state file
+  // stateFile = SD.open("rocket_state.csv", FILE_READ);
 
-        if (read_alt - startAlt > 183){
-          flight_state = static_cast<FlightState>(stateFile.readStringUntil('\n').trim().toInt());
-          Serial.print("Flight state loaded from file: ");
-          Serial.println((int)flight_state);
-        }
-        else{
-          set_flight_state(LAUNCH_PAD);
-        }
+  // if (stateFile) {
+  //   if (stateFile.size() > 0) {
+  //       float read_alt = startAlt;
+  //       // File exists and has data
+  //       startAlt = stateFile.readStringUntil('\n').trim().toFloat();
+  //       Serial.print("startAlt loaded from file: ");
+  //       Serial.println(startAlt);
 
-    } else {
-        // File exists but empty, close previous read mode
-        Serial.println("Writing starting altitude.");
-        stateFile.close();
-        set_flight_state(LAUNCH_PAD);
-    }
-  } else {
-    // File doesn't exist 
-    Serial.println("Creating and writing starting altitude.");
-    set_flight_state(LAUNCH_PAD);
-  }
+  //       if (read_alt - startAlt > 183){
+  //         flight_state = static_cast<FlightState>(stateFile.readStringUntil('\n').trim().toInt());
+  //         Serial.print("Flight state loaded from file: ");
+  //         Serial.println((int)flight_state);
+  //       }
+  //       else{
+  //         set_flight_state(LAUNCH_PAD);
+  //       }
+
+  //   } else {
+  //       // File exists but empty, close previous read mode
+  //       Serial.println("Writing starting altitude.");
+  //       stateFile.close();
+  //       set_flight_state(LAUNCH_PAD);
+  //   }
+  // } else {
+  //   // File doesn't exist 
+  //   Serial.println("Creating and writing starting altitude.");
+  //   set_flight_state(LAUNCH_PAD);
+  // }
 }
 
 void update_flight_state() {
+  // Used for old logic
   update_alt_dif_buf(alt_fused - pre_alt);
 
   // Determine Next State
   switch(flight_state) {
+    case DISARMED:
+      // Rocket Disarmed.
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+      analogWriteFrequency(buzzer, 4500);
+      analogWrite(buzzer, 128);
+      delay(100);
+      digitalWrite(LED_BUILTIN, HIGH);
+      analogWrite(buzzer, 0);
+      delay(100);
+      break;
     case LAUNCH_PAD:
       // Detect if launched
 
@@ -900,6 +914,15 @@ void handle_rf_commands() {
       Serial.println("Camera2 Off Recieved");
       HWSERIAL.println("TEENSY Camera2 OFF");
       digitalWrite(camera2,LOW);
+    } else if (receivedData == "ARM"){
+      Serial.println("Arm Command Recieved");
+      HWSERIAL.println("Arm Command Recieved");
+      set_flight_state(LAUNCH_PAD);
+      // turn off disarmed indicators
+      digitalWrite(LED_BUILTIN, HIGH);
+      analogWrite(buzzer, 0); // Uncomment for testing
+      // analogWriteFrequency(buzzer, 4500); // Uncomment for flight
+      // analogWrite(buzzer, 128); // Uncomment for flight
     }
   }
 }
