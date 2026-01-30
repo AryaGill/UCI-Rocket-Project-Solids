@@ -762,44 +762,47 @@ void update_flight_state() {
 
 String state_to_string(FlightState state) {
   switch(state) {
+    case DISARMED:
+      return "0";
+      break;
     case LAUNCH_PAD:
-      return "LAUNCH_PAD";
+      return "1";
       break;
     case MOTOR_BURN:
-      return "MOTOR_BURN";
+      return "2";
       break;
     case GLIDING_ASCENT:
-      return "GLIDING_ASCENT";
+      return "3";
       break;
     case DROGUE_PRIMARY_DEPLOYING:
-      return "DROGUE_PRIMARY_DEPLOYING";
+      return "4";
       break;
     case DROGUE_PRIMARY_DEPLOYED:
-      return "DROGUE_PRIMARY_DEPLOYED";
+      return "5";
       break;
     case DROGUE_SECONDARY_DEPLOYING:
-      return "DROGUE_SECONDARY_DEPLOYING";
+      return "6";
       break;
     case DROGUE_SECONDARY_DEPLOYED:
-      return "DROGUE_SECONDARY_DEPLOYED";
+      return "7";
       break;
     case MAIN_PRIMARY_DEPLOYING:
-      return "MAIN_PRIMARY_DEPLOYING";
+      return "8";
       break;
     case MAIN_PRIMARY_DEPLOYED:
-      return "MAIN_PRIMARY_DEPLOYED";
+      return "9";
       break;
     case MAIN_SECONDARY_DEPLOYING:
-      return "MAIN_SECONDARY_DEPLOYING";
+      return "10";
       break;
     case MAIN_SECONDARY_DEPLOYED:
-      return "MAIN_SECONDARY_DEPLOYED";
+      return "11";
       break;
     case LANDED:
-      return "LANDED";
+      return "12";
       break;
     default:
-      return "UNKNOWN_STATE";
+      return "13";
       break;
   }
 }
@@ -842,7 +845,7 @@ void log_data() {
   String dataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt, 1) + "," +
                 String(Accel_x2, 1) + "," + String(Accel_y2, 1) + "," + String(Accel_z2, 1) + "," +
                 String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1) + "," +
-                String(Gyro_x, 1) + "," + String(Gyro_y, 1) + "," + String(Gyro_z, 1) + "," + String(stage);             
+                String(Gyro_x, 1) + "," + String(Gyro_y, 1) + "," + String(Gyro_z, 1) + "," + state_to_string(flight_state);             
 
   if(millis() - prev_time > 500){
     HWSERIAL.println(dataString);
