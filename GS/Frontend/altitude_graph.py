@@ -22,6 +22,7 @@ class AltitudeGraph(QWidget):
         self.figure = Figure(figsize=(8, 5), facecolor='#1e1e1e')
         self.canvas = FigureCanvas(self.figure)
         self.axes = self.figure.add_subplot(111)
+        self.figure.subplots_adjust(left=0.2, bottom=0.15)
         self.axes.set_facecolor('#2d2d2d')
         
         # Configure the plot with modern styling

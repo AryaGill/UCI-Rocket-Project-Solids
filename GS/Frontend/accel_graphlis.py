@@ -4,7 +4,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 
-class TempGraph(QWidget):
+class AccelGraphLIS(QWidget):
     """
     Reusable widget for displaying temperature data with modern styling.
     """
@@ -13,7 +13,9 @@ class TempGraph(QWidget):
         super().__init__(parent)
         
         self.time_data = []
-        self.temp_data = []
+        self.accel_x = []
+        self.accel_y = []
+        self.accel_z = []
         
         # Use dark background style
         plt.style.use('dark_background')
@@ -26,18 +28,22 @@ class TempGraph(QWidget):
         self.axes.set_facecolor('#2d2d2d')
         
         # Configure the plot with modern styling
-        self.axes.set_title('Temperature', fontsize=16, fontweight='bold', 
-                           color='#ff6b35', pad=15)
-        self.axes.set_xlabel('Time (s)', fontsize=12, color='#b0b0b0')
-        self.axes.set_ylabel('Temperature (°C)', fontsize=12, color='#b0b0b0')
+        self.axes.set_title('Acceleration vs Time (LIS)', fontsize=16, fontweight='bold', 
+                           color="#00b71f", pad=15)
+        self.axes.set_xlabel('Time (LIS)', fontsize=12, color='#b0b0b0')
+        self.axes.set_ylabel('Acceleration (m/s^2)', fontsize=12, color='#b0b0b0')
         self.axes.grid(True, alpha=0.2, linestyle='--', linewidth=0.5)
         
         # Stylish line plot with warm color for temperature
-        self.line, = self.axes.plot([], [], color='#ff6b35', linewidth=2.5, 
-                                    label='Temperature', antialiased=True)
+        self.line_x, = self.axes.plot([], [], color='#ff6b35', linewidth=2.5, 
+                                    label='X', antialiased=True)
+        self.line_y, = self.axes.plot([], [], color="#28dc5e", linewidth=2.5, 
+                                    label='Y', antialiased=True)
+        self.line_z, = self.axes.plot([], [], color="#357fff", linewidth=2.5, 
+                                    label='Z', antialiased=True)
         
         # Style the legend
-        legend = self.axes.legend(facecolor='#2d2d2d', edgecolor='#ff6b35', 
+        legend = self.axes.legend(facecolor='#2d2d2d', edgecolor='#00b71f', 
                                  fontsize=10)
         legend.get_texts()[0].set_color('#b0b0b0')
         
@@ -55,23 +61,32 @@ class TempGraph(QWidget):
         layout.setContentsMargins(5, 5, 5, 5)
         self.setLayout(layout)
         
-    def update_data(self, time_value, temp_value):
+    def update_data(self, t, x, y, z):
         """Update the graph with new data point."""
-        self.time_data.append(time_value)
-        self.temp_data.append(temp_value)
-        
-        self.line.set_xdata(self.time_data)
-        self.line.set_ydata(self.temp_data)
-        
+        self.time_data.append(t)
+        self.accel_x.append(x)
+        self.accel_y.append(y)
+        self.accel_z.append(z)
+
+        self.line_x.set_xdata(self.time_data); self.line_x.set_ydata(self.accel_x)
+        self.line_y.set_xdata(self.time_data); self.line_y.set_ydata(self.accel_y)
+        self.line_z.set_xdata(self.time_data); self.line_z.set_ydata(self.accel_z)
+
         self.axes.relim()
         self.axes.autoscale_view(True, True, True)
-        
         self.canvas.draw()
         
     def clear_data(self):
-        """Clear all data from the graph."""
-        self.time_data = []
-        self.temp_data = []
-        self.line.set_xdata([])
-        self.line.set_ydata([])
-        self.canvas.draw()
+        """Clear all buffers and reset plot."""
+        self.time_data.clear()
+        self.accel_x.clear()
+        self.accel_y.clear()
+        self.accel_z.clear()
+
+        self.line_x.set_data([], [])
+        self.line_y.set_data([], [])
+        self.line_z.set_data([], [])
+
+        self.axes.relim()
+        self.axes.autoscale_view(True, True, True)
+        self.canvas.draw_idle()
