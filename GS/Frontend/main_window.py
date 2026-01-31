@@ -24,11 +24,9 @@ class GroundStationWindow(QMainWindow):
     
     def setup_ui(self):
         """Setup the main user interface."""
-        # Central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         
-        # Main layout
         main_layout = QVBoxLayout(central_widget)
         
         # Control bar at top
@@ -36,6 +34,38 @@ class GroundStationWindow(QMainWindow):
         self.status_label = QLabel("Status: Initializing...")
         control_layout.addWidget(self.status_label)
         control_layout.addStretch()
+        
+        # Add Flight State Display
+        try:
+            from Frontend.flight_state_display import FlightStateDisplay
+            self.flight_state_display = FlightStateDisplay()
+            control_layout.addWidget(self.flight_state_display)
+        except ImportError as e:
+            print(f"Warning: Could not import flight state display: {e}")
+        
+        # ARM button with safety lock
+        self.arm_btn = QPushButton("🔒 ARM ROCKET")
+        self.arm_btn.setMinimumHeight(40)
+        self.arm_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #ff0000;
+                color: #ffffff;
+                border: 3px solid #ff0000;
+                padding: 8px 20px;
+                font-weight: bold;
+                font-size: 14px;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #ff3333;
+                border: 3px solid #ff3333;
+            }
+            QPushButton:pressed {
+                background-color: #cc0000;
+            }
+        """)
+        self.arm_btn.clicked.connect(self.arm_rocket)
+        control_layout.addWidget(self.arm_btn)
         
         # Pyro Charges button
         self.pyro_btn = QPushButton("Pyro Charges")
@@ -79,7 +109,7 @@ class GroundStationWindow(QMainWindow):
         self.camera_btn.clicked.connect(self.open_camera_panel)
         control_layout.addWidget(self.camera_btn)
         
-        # Add Clear All button
+        # Clear All button
         self.clear_btn = QPushButton("Clear All")
         self.clear_btn.setStyleSheet("""
             QPushButton {
@@ -120,6 +150,7 @@ class GroundStationWindow(QMainWindow):
         
         # Status bar at bottom
         self.statusBar().showMessage("Ready")
+
     
     def create_graphs(self, layout):
         """Create all graphs in a grid layout on one tab."""
@@ -234,6 +265,10 @@ class GroundStationWindow(QMainWindow):
         Time, Temp, Pressure, Alt, Gyro_X, Gyro_Y, Gyro_Z,
         Accel_X1, Accel_Y1, Accel_Z1, Accel_X2, Accel_Y2, Accel_Z2, flight_state
         """
+        # Update flight state display
+        if hasattr(self, 'flight_state_display') and data.get('flight_state') is not None:
+            self.flight_state_display.update_state(data.get('flight_state'))
+        
         # Update altitude graph
         if hasattr(self, 'altitude_graph') and data.get('Time') is not None and data.get('Alt') is not None:
             self.altitude_graph.update_data(data.get('Time'), data.get('Alt'))
@@ -261,6 +296,7 @@ class GroundStationWindow(QMainWindow):
                     data.get('Accel_Y2'),
                     data.get('Accel_Z2')
                 )
+
     
     def update_status(self, message):
         """Update status label and status bar with messages."""
@@ -298,3 +334,62 @@ class GroundStationWindow(QMainWindow):
             self.streamer.stop()
             self.streamer.wait(1000)  # Wait up to 1 second for thread to finish
         event.accept()
+
+    def arm_rocket(self):
+        """Send ARM command with safety confirmation."""
+        from PyQt6.QtWidgets import QMessageBox
+        
+        # First confirmation
+        reply1 = QMessageBox.warning(
+            self,
+            "⚠️ ARM ROCKET - FIRST CONFIRMATION",
+            "You are about to ARM the rocket.\n\n"
+            "This will enable pyrotechnic charges and prepare the flight computer for launch.\n\n"
+            "Are you sure you want to continue?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply1 != QMessageBox.StandardButton.Yes:
+            return
+        
+        # Second confirmation
+        reply2 = QMessageBox.critical(
+            self,
+            "🚀 ARM ROCKET - FINAL CONFIRMATION",
+            "FINAL WARNING!\n\n"
+            "Arming the rocket will:\n"
+            "• Enable all pyrotechnic circuits\n"
+            "• Activate flight detection algorithms\n"
+            "• Begin autonomous flight operations\n\n"
+            "Confirm ARM command?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply2 == QMessageBox.StandardButton.Yes:
+            if self.streamer and self.streamer.isRunning():
+                self.streamer.write_command("ARM")
+                self.update_status("🚀 ARM command sent - ROCKET ARMED")
+                
+                # Change button appearance after arming
+                self.arm_btn.setText("✓ ARMED")
+                self.arm_btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #28dc5e;
+                        color: #1e1e1e;
+                        border: 3px solid #28dc5e;
+                        padding: 8px 20px;
+                        font-weight: bold;
+                        font-size: 14px;
+                        border-radius: 5px;
+                    }
+                """)
+                self.arm_btn.setEnabled(False)  # Disable after arming
+            else:
+                self.update_status("Error: No serial connection active")
+                QMessageBox.warning(
+                    self,
+                    "Connection Error",
+                    "Cannot send ARM command: Serial connection is not active"
+                )
