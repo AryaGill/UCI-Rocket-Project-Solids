@@ -107,12 +107,14 @@ class GroundStationWindow(QMainWindow):
             from Frontend.temp_graph import TempGraph
             from Frontend.accel_graphlis import AccelGraphLIS
             from Frontend.accel_graphlsm import AccelGraphLSM
+            from Frontend.ang_graph import AngGraph
             
             # Create graph instances
             self.altitude_graph = AltitudeGraph()
             self.temp_graph = TempGraph()
             self.accel_lis_graph = AccelGraphLIS()
             self.accel_lsm_graph = AccelGraphLSM()
+            self.ang_graph = AngGraph()
             
             # Add to grid layout (2x2 grid)
             # Row 0: Altitude (left), Temperature (right)
@@ -121,6 +123,7 @@ class GroundStationWindow(QMainWindow):
             layout.addWidget(self.temp_graph, 0, 1)
             layout.addWidget(self.accel_lis_graph, 1, 0)
             layout.addWidget(self.accel_lsm_graph, 1, 1)
+            layout.addWidget(self.ang_graph, 1, 2)
             
         except ImportError as e:
             print(f"Warning: Could not import graph widgets: {e}")
@@ -129,6 +132,7 @@ class GroundStationWindow(QMainWindow):
             layout.addWidget(QLabel("Temperature Graph - Import Failed"), 0, 1)
             layout.addWidget(QLabel("Accel LIS - Import Failed"), 1, 0)
             layout.addWidget(QLabel("Accel LSM - Import Failed"), 1, 1)
+            layout.addWidget(QLabel("Angular Velocity - Import Failed"), 1, 2)
     
     def open_pyro_panel(self):
         """Open the pyro charges control panel."""
@@ -165,6 +169,8 @@ class GroundStationWindow(QMainWindow):
             self.accel_lis_graph.clear_data()
         if hasattr(self, 'accel_lsm_graph'):
             self.accel_lsm_graph.clear_data()
+        if hasattr(self, 'ang_graph'):
+            self.ang_graph.clear_data()
         self.update_status("All graphs cleared")
     
     def start_serial_connection(self):
@@ -213,6 +219,16 @@ class GroundStationWindow(QMainWindow):
                     data.get('Accel_X2'),
                     data.get('Accel_Y2'),
                     data.get('Accel_Z2')
+                )
+    
+        # Update Angular Velocity Graph (Ang_X, Y, Z)
+        if hasattr(self, 'ang_graph'):
+            if all(data.get(k) is not None for k in ['Time', 'Ang_X2', 'Ang_Y2', 'Ang_Z2']):
+                self.ang_graph.update_data(
+                    data.get('Time'),
+                    data.get('Ang_X2'),
+                    data.get('Ang_Y2'),
+                    data.get('Ang_Z2')
                 )
     
     def update_status(self, message):
