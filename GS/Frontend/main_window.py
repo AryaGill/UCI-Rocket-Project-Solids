@@ -12,6 +12,7 @@ class GroundStationWindow(QMainWindow):
         super().__init__(parent)
         self.selected_port = port
         self.streamer = None
+        self.pyro_panel = None  # Will hold PyroPanel instance
         self.setWindowTitle("Ground Station - Rocket Telemetry")
         self.setGeometry(100, 100, 1400, 900)
         self.setup_ui()
@@ -35,9 +36,9 @@ class GroundStationWindow(QMainWindow):
         control_layout.addWidget(self.status_label)
         control_layout.addStretch()
         
-        # Add Clear All button
-        self.clear_btn = QPushButton("Clear All")
-        self.clear_btn.setStyleSheet("""
+        # Pyro Charges button
+        self.pyro_btn = QPushButton("Pyro Charges")
+        self.pyro_btn.setStyleSheet("""
             QPushButton {
                 background-color: #ff6b35;
                 color: #1e1e1e;
@@ -51,6 +52,27 @@ class GroundStationWindow(QMainWindow):
             }
             QPushButton:pressed {
                 background-color: #e55525;
+            }
+        """)
+        self.pyro_btn.clicked.connect(self.open_pyro_panel)
+        control_layout.addWidget(self.pyro_btn)
+        
+        # Add Clear All button
+        self.clear_btn = QPushButton("Clear All")
+        self.clear_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #00d4ff;
+                color: #1e1e1e;
+                border: none;
+                padding: 5px 15px;
+                font-weight: bold;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #33ddff;
+            }
+            QPushButton:pressed {
+                background-color: #00bbdd;
             }
         """)
         self.clear_btn.clicked.connect(self.clear_all_graphs)
@@ -107,6 +129,31 @@ class GroundStationWindow(QMainWindow):
             layout.addWidget(QLabel("Temperature Graph - Import Failed"), 0, 1)
             layout.addWidget(QLabel("Accel LIS - Import Failed"), 1, 0)
             layout.addWidget(QLabel("Accel LSM - Import Failed"), 1, 1)
+    
+    def open_pyro_panel(self):
+        """Open the pyro charges control panel."""
+        if self.pyro_panel is None:
+            from Frontend.pyro_panel import PyroPanel
+            self.pyro_panel = PyroPanel(self)
+            self.pyro_panel.command_signal.connect(self.send_pyro_command)
+        
+        self.pyro_panel.show()
+        self.pyro_panel.raise_()
+        self.pyro_panel.activateWindow()
+    
+    def send_pyro_command(self, command):
+        """Send pyro command via serial."""
+        if self.streamer and self.streamer.isRunning():
+            self.streamer.write_command(command)
+            self.update_status(f"Pyro command sent: {command}")
+        else:
+            self.update_status("Error: No serial connection active")
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self,
+                "Connection Error",
+                "Cannot send command: Serial connection is not active"
+            )
     
     def clear_all_graphs(self):
         """Clear data from all graphs."""
