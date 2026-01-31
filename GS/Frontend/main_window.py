@@ -13,6 +13,7 @@ class GroundStationWindow(QMainWindow):
         self.selected_port = port
         self.streamer = None
         self.pyro_panel = None  # Will hold PyroPanel instance
+        self.camera_panel = None  # Will hold CameraPanel instance
         self.setWindowTitle("Ground Station - Rocket Telemetry")
         self.setGeometry(100, 100, 1400, 900)
         self.setup_ui()
@@ -56,6 +57,27 @@ class GroundStationWindow(QMainWindow):
         """)
         self.pyro_btn.clicked.connect(self.open_pyro_panel)
         control_layout.addWidget(self.pyro_btn)
+        
+        # Camera button
+        self.camera_btn = QPushButton("Camera")
+        self.camera_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #fffb00;
+                color: #1e1e1e;
+                border: none;
+                padding: 5px 15px;
+                font-weight: bold;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #ffff33;
+            }
+            QPushButton:pressed {
+                background-color: #e6e200;
+            }
+        """)
+        self.camera_btn.clicked.connect(self.open_camera_panel)
+        control_layout.addWidget(self.camera_btn)
         
         # Add Clear All button
         self.clear_btn = QPushButton("Clear All")
@@ -141,11 +163,36 @@ class GroundStationWindow(QMainWindow):
         self.pyro_panel.raise_()
         self.pyro_panel.activateWindow()
     
+    def open_camera_panel(self):
+        """Open the camera control panel."""
+        if self.camera_panel is None:
+            from Frontend.camera_panel import CameraPanel
+            self.camera_panel = CameraPanel(self)
+            self.camera_panel.command_signal.connect(self.send_camera_command)
+        
+        self.camera_panel.show()
+        self.camera_panel.raise_()
+        self.camera_panel.activateWindow()
+    
     def send_pyro_command(self, command):
         """Send pyro command via serial."""
         if self.streamer and self.streamer.isRunning():
             self.streamer.write_command(command)
             self.update_status(f"Pyro command sent: {command}")
+        else:
+            self.update_status("Error: No serial connection active")
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self,
+                "Connection Error",
+                "Cannot send command: Serial connection is not active"
+            )
+    
+    def send_camera_command(self, command):
+        """Send camera command via serial."""
+        if self.streamer and self.streamer.isRunning():
+            self.streamer.write_command(command)
+            self.update_status(f"Camera command sent: {command}")
         else:
             self.update_status("Error: No serial connection active")
             from PyQt6.QtWidgets import QMessageBox
