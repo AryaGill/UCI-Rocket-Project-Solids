@@ -845,7 +845,10 @@ void log_data() {
   String dataString = String(millis()) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt, 1) + "," +
                 String(Gyro_x, 1) + "," + String(Gyro_y, 1) + "," + String(Gyro_z, 1) + "," + 
                 String(Accel_x2, 1) + "," + String(Accel_y2, 1) + "," + String(Accel_z2, 1) + "," +
-                String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1)+ "," + state_to_string(flight_state);        
+                String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1)+ "," + 
+                String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
+                String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
+                state_to_string(flight_state);        
 
   if(millis() - prev_time > 1){ // CHANGE BACK TO 500
     HWSERIAL.println(dataString);
@@ -871,23 +874,27 @@ void handle_rf_commands() {
       HWSERIAL.println("TEENSY Camera on");
       digitalWrite(camera1,HIGH);
       digitalWrite(camera2,HIGH);
+
     }else if (receivedData == "OFF"){
       Serial.println("Camera Off Recieved");
       HWSERIAL.println("TEENSY Camera off");
       digitalWrite(camera1, LOW);
       digitalWrite(camera2, LOW);
+
     }else if (receivedData == "Fire Main P"){
       Serial.println("Main Primary"); 
       HWSERIAL.println("TEENSY Fired Main Primary");
       digitalWrite(main_1, HIGH);
       delay(charge_delay);
       digitalWrite(main_1, LOW);
+
     } else if (receivedData == "Fire Main S"){
       Serial.println("Main Secondary"); 
       HWSERIAL.println("TEENSY Fired Main Secondary");
       digitalWrite(main_2, HIGH);
       delay(charge_delay);
       digitalWrite(main_2, LOW);
+
     } else if (receivedData == "Fire Drogue P"){
       Serial.println("Drogue Primary"); 
       HWSERIAL.println("TEENSY Fired Drogue Primary");
@@ -895,29 +902,35 @@ void handle_rf_commands() {
       digitalWrite(drogue_1, HIGH);
       delay(charge_delay);
       digitalWrite(drogue_1, LOW);
+
     } else if (receivedData == "Fire Drogue S"){
       Serial.println("Drogue Secondary"); 
       HWSERIAL.println("TEENSY Fired Drogue Secondary");
-      dataFile.println("Drouge Secondary");
+      dataFile.println("Drogue Secondary");
       digitalWrite(drogue_2, HIGH);
       delay(charge_delay);
       digitalWrite(drogue_2, LOW); 
+
     }  else if (receivedData == "CAM1ON"){
       Serial.println("Camera1 On Recieved");
       HWSERIAL.println("TEENSY Camera1 on");
       digitalWrite(camera1,HIGH);
+
     } else if (receivedData == "CAM2ON"){
       Serial.println("Camera2 On Recieved");
       HWSERIAL.println("TEENSY Camera2 on");
       digitalWrite(camera2,HIGH);
+
     } else if (receivedData == "CAM1OFF"){
       Serial.println("Camera1 Off Recieved");
       HWSERIAL.println("TEENSY Camera1 OFF");
       digitalWrite(camera1,LOW);
+
     } else if (receivedData == "CAM2OFF"){
       Serial.println("Camera2 Off Recieved");
       HWSERIAL.println("TEENSY Camera2 OFF");
       digitalWrite(camera2,LOW);
+
     } else if (receivedData == "ARM"){
       Serial.println("Arm Command Recieved");
       HWSERIAL.println("Arm Command Recieved");
@@ -957,7 +970,7 @@ void setup() {
 
   initialize_sensors();
 
-  algo.begin(200);
+  algo.begin(500);
 
   if (!SD.begin(BUILTIN_SDCARD)) {
     Serial.println("SD card failed or not present.");
