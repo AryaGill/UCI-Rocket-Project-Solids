@@ -584,7 +584,7 @@ void update_flight_state() {
       // Rocket Disarmed.
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
       analogWriteFrequency(buzzer, 4500);
-      analogWrite(buzzer, 128);
+      analogWrite(buzzer, 0);
       delay(100);
       digitalWrite(LED_BUILTIN, HIGH);
       analogWrite(buzzer, 0);
@@ -827,7 +827,7 @@ void log_data() {
   //               String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
   //               String(millis()) + "," + state_to_string(flight_state) + "," + String(deployment, 7);
 
-  String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," + String(alt_fused, 7) + ","
+  String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," + String(alt_fused, 7) + ","+
                 String(Accel_x2, 7) + "," + String(Accel_y2, 7) + "," + String(Accel_z2, 7) + "," +
                 String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," +
                 String(Vel_x, 7) + "," + String(Vel_y, 7) + "," + String(Vel_z, 7) + "," +
@@ -842,13 +842,14 @@ void log_data() {
   dataFile.println(storageDataString);
   write_count++;
 
-  String dataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt, 1) + "," +
+  String dataString = String(millis()) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt, 1) + "," +
+                String(Gyro_x, 1) + "," + String(Gyro_y, 1) + "," + String(Gyro_z, 1) + "," + 
                 String(Accel_x2, 1) + "," + String(Accel_y2, 1) + "," + String(Accel_z2, 1) + "," +
-                String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1) + "," +
-                String(Gyro_x, 1) + "," + String(Gyro_y, 1) + "," + String(Gyro_z, 1) + "," + state_to_string(flight_state);             
+                String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1)+ "," + state_to_string(flight_state);        
 
-  if(millis() - prev_time > 500){
+  if(millis() - prev_time > 1){ // CHANGE BACK TO 500
     HWSERIAL.println(dataString);
+    Serial.println(dataString);
     prev_time = millis();
   }
 
