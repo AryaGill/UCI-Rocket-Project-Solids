@@ -88,6 +88,10 @@ class SerialStreamer(QThread):
         "Accel_X2",
         "Accel_Y2",
         "Accel_Z2",
+        "Quaternion_W",
+        "Quaternion_X",
+        "Quaternion_Y",
+        "Quaternion_Z",
         "flight_state"
     ]
 
