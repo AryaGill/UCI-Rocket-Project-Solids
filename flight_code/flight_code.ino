@@ -51,6 +51,7 @@ float Temp = 0;
 float Press = 0;
 float Alt = 0;
 float startAlt = 0;
+
 float Accel_x2 = 0;
 float Accel_y2 = 0;
 float Accel_z2 = 0;
@@ -102,12 +103,12 @@ int prev_time;
 int prev_alt_time = 0;
 unsigned long prev_vel_time = 0;
 unsigned long current_time = 0;
-
+unsigned int negative_accel_counter = 0;
 
 // Altitude Filtering for Flight State
-#define LAUNCH_ACCEL_THRESHOLD 2.5
-#define RAIL_DELAY_TIME 2500
-#define LAUNCH_EVAL_PERIOD_TIME 2500
+#define LAUNCH_ACCEL_THRESHOLD 24.5
+#define RAIL_DELAY_TIME 250
+#define LAUNCH_EVAL_PERIOD_TIME 250
 #define LAUNCH_THRESHOLD 10
 #define APOGEE_THRESHOLD -0.5
 #define LANDED_THRESHOLD -0.2
@@ -165,10 +166,8 @@ float prev_alt_cf = 0.0f;
 unsigned long prev_cf_time = 0;
 
 const float VEL_IMU_W   = 0.99f;
-const float VEL_BARO_W  = 0.01f;
 
 const float ALT_CF_W  = 0.95f;
-const float ALT_BARO_W = 0.05f;
 
 const float BARO_TAU = 1.0f;
 
@@ -371,7 +370,7 @@ void complementary_filter() {
   prev_cf_time = now;
 
   if (dt <= 0.0f || dt > 0.2f) return;
-  vel_imu = 0.5f * (Vel_y + Vel_y2);
+  vel_imu = 0.5f * (Vel_z + Vel_z2);
 
   vel_baro = (Alt - prev_alt_cf) / dt;
   prev_alt_cf = Alt;
@@ -381,12 +380,12 @@ void complementary_filter() {
   vel_baro_averaged += alpha * (vel_baro - vel_baro_averaged);
 
   //Velocity calculation 99-1 ratio then alt conversion
-  vel_fused = VEL_IMU_W * vel_imu + VEL_BARO_W * vel_baro_averaged;
+  vel_fused = VEL_IMU_W * vel_imu + (1-VEL_IMU_W) * vel_baro_averaged;
 
   alt_cf += vel_fused * dt;
 
   //final filtered alt
-  alt_fused = ALT_CF_W * alt_cf + ALT_BARO_W * Alt;
+  alt_fused = ALT_CF_W * alt_cf + (1-ALT_CF_W) * Alt;
 }
 
 void initialize_sensors() {
@@ -428,7 +427,7 @@ void read_sensors() {
   if (LIS3DH_data.accel_x != -999 && LIS3DH_data.accel_y != -999 && LIS3DH_data.accel_z != -999){
     Accel_x2 = LIS3DH_data.accel_x;
     Accel_y2 = -LIS3DH_data.accel_z;
-    Accel_z2 = -LIS3DH_data.accel_y;
+    Accel_z2 = LIS3DH_data.accel_y;
   }
   else {
     Serial.println("Failed to get LIS3DH data");
@@ -443,11 +442,11 @@ void read_sensors() {
         
         Accel_x = -LSM9DS1_data.accel_x;
         Accel_y = -LSM9DS1_data.accel_z;
-        Accel_z = -LSM9DS1_data.accel_y;
+        Accel_z = LSM9DS1_data.accel_y;
 
         Gyro_x = -LSM9DS1_data.gyro_x + .0448;
         Gyro_y = -LSM9DS1_data.gyro_z -.0283;
-        Gyro_z = -LSM9DS1_data.gyro_y + .0956;
+        Gyro_z = LSM9DS1_data.gyro_y + .0956;
 
         Mag_x = -LSM9DS1_data.mag_x;
         Mag_y = -LSM9DS1_data.mag_z;
@@ -605,6 +604,7 @@ void update_flight_state() {
         if (Accel_z > LAUNCH_ACCEL_THRESHOLD){
           // Positive acceleration detected. Begin period of waiting to get off rail.
           launch_accel_detected_time = millis();
+          negative_accel_counter = 0;
         }
       }
       else if (millis() - launch_accel_detected_time > RAIL_DELAY_TIME){
@@ -618,7 +618,9 @@ void update_flight_state() {
         }
         else if (Accel_z < 0){
           // Negative acceleration detected. Reset system.
-          launch_accel_detected_time = -1;
+          if (++negative_accel_counter >= 5){
+            launch_accel_detected_time = -1;
+          }
         }
       }
 
@@ -626,7 +628,7 @@ void update_flight_state() {
 
     case MOTOR_BURN:
       // Add logic: wait for certain delay or for acceleration to change
-      if (millis() - launch_start_time > 1500){
+      if (millis() - launch_start_time > 4500){
         set_flight_state(GLIDING_ASCENT);
       }
 
@@ -827,7 +829,7 @@ void log_data() {
   //               String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
   //               String(millis()) + "," + state_to_string(flight_state) + "," + String(deployment, 7);
 
-  String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt, 7) + "," + String(alt_fused, 7) + ","+
+  String storageDataString = String(voltage_left) + "," + String(voltage_right) + "," + String(Temp, 7) + "," + String(Press, 7) + "," + String(Alt-startAlt, 7) + "," + String(alt_fused, 7) + ","+
                 String(Accel_x2, 7) + "," + String(Accel_y2, 7) + "," + String(Accel_z2, 7) + "," +
                 String(Accel_x, 7) + "," + String(Accel_y, 7) + "," + String(Accel_z, 7) + "," +
                 String(Vel_x, 7) + "," + String(Vel_y, 7) + "," + String(Vel_z, 7) + "," +
@@ -842,15 +844,20 @@ void log_data() {
   dataFile.println(storageDataString);
   write_count++;
 
-  String dataString = String(millis()) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt, 1) + "," +
-                String(Gyro_x, 1) + "," + String(Gyro_y, 1) + "," + String(Gyro_z, 1) + "," + 
-                String(Accel_x2, 1) + "," + String(Accel_y2, 1) + "," + String(Accel_z2, 1) + "," +
-                String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1)+ "," + 
-                String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
-                String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
-                state_to_string(flight_state);        
 
-  if(millis() - prev_time > 1){ // CHANGE BACK TO 500
+
+  // String dataString = String(millis()) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt - startAlt, 1) + "," +
+  //               String(Gyro_x, 1) + "," + String(Gyro_y, 1) + "," + String(Gyro_z, 1) + "," + 
+  //               String(Accel_x2, 1) + "," + String(Accel_y2, 1) + "," + String(Accel_z2, 1) + "," +
+  //               String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1)+ "," + 
+  //               String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
+  //               String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
+
+  //               state_to_string(flight_state);       
+
+  String dataString = String(millis()) + "," + String(Alt - startAlt, 1) + "," + String(alt_fused-startAlt);
+
+  if(millis() - prev_time > 50){ // CHANGE BACK TO 500
     HWSERIAL.println(dataString);
     Serial.println(dataString);
     prev_time = millis();
