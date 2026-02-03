@@ -112,7 +112,7 @@ unsigned int negative_accel_counter = 0;
 #define RAIL_DELAY_TIME 250
 #define LAUNCH_EVAL_PERIOD_TIME 250
 #define LAUNCH_THRESHOLD 10
-#define APOGEE_THRESHOLD -0.5
+#define APOGEE_THRESHOLD -0.1
 #define LANDED_THRESHOLD -0.2
 #define ALT_DIF_BUF_SIZE 10
 float alt_dif_buffer[ALT_DIF_BUF_SIZE];
@@ -318,7 +318,7 @@ void initialize_dataFile() {
   }
 
   //data headers
-  String dataString = "Cam1,Cam2,Temp,Press,Alt,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Vel_x,Vel_y,Vel_z,Vel_x2,Vel_y2,Vel_z2,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,Time,State,Deployment,Predicted_Apogee";
+  String dataString = "Cam1,Cam2,Temp,Press,Alt,alt_fused,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Vel_x,Vel_y,Vel_z,Vel_x2,Vel_y2,Vel_z2,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,accel_world_z,Time,State,Deployment,Predicted_Apogee";
   dataFile.println(dataString);
   dataFile.flush();
 }
@@ -492,6 +492,14 @@ void initialize_sensors() {
   if (!LSM9DS1Module.begin()){
     Serial.println("Could not find a valid LSM9DS1 sensor");
   }
+
+  delay(100);
+
+  // Read accel
+  LSM9DS1_SensorData LSM9DS1_data = LSM9DS1Module.readData();
+  Accel_x = -LSM9DS1_data.accel_x;
+  Accel_y = LSM9DS1_data.accel_z;
+  Accel_z = -LSM9DS1_data.accel_y;
 }
 
 void read_sensors() {
@@ -541,10 +549,12 @@ void read_sensors() {
         float dt = (cur_time - prev_mag_filter_time) * 1e-6f;
         prev_mag_filter_time = cur_time;
 
-        Madgwick_Update(Gyro_x, Gyro_y, Gyro_z,
+        if (dt > 0){
+          Madgwick_Update(Gyro_x, Gyro_y, Gyro_z,
                         Accel_x, Accel_y, Accel_z,
                         Mag_x, Mag_y, Mag_z,
                         dt);
+        }
 
         // algo.update(Gyro_x, Gyro_y, Gyro_z,
         //             Accel_x, Accel_y, Accel_z,
@@ -599,7 +609,7 @@ float get_avg_alt_dif() {
 
 void update_alt_dif_buf(float new_alt_dif) {
   float cur_time = millis();
-  if (cur_time == prev_time){
+  if (cur_time == prev_alt_time){
     return;
   }
   alt_dif_buffer[alt_dif_buffer_idx] = new_alt_dif / (cur_time - prev_alt_time) * 1000;
@@ -673,7 +683,7 @@ void initialize_flight_state() {
 
 void update_flight_state() {
   // Used for old logic
-  update_alt_dif_buf(alt_fused - pre_alt);
+  update_alt_dif_buf(Alt - pre_alt);
 
   // Determine Next State
   switch(flight_state) {
@@ -773,7 +783,7 @@ void update_flight_state() {
     
     case DROGUE_SECONDARY_DEPLOYED:
       // Wait for main deployment
-      if (Alt - startAlt < 229 && Alt - startAlt > 77){
+      if (Alt - startAlt < 305 && Alt - startAlt > 77){
         digitalWrite(main_1, HIGH);
         dataFile.println("Primary Main Deployed");
         main_primary_start_time = millis();
@@ -931,29 +941,29 @@ void log_data() {
                 String(Gyro_x, 7) + "," + String(Gyro_y, 7) + "," + String(Gyro_z, 7) + "," +
                 String(Mag_x, 7) + "," + String(Mag_y, 7) + "," + String(Mag_z, 7) + "," +
                 String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
-                String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
+                String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," + String(accel_world_z) + "," +
                 String(millis()) + "," + state_to_string(flight_state) + "," + String(deployment) + "," +
                 String(predict_apogee(Alt - startAlt, Temp, Press, 0 /*angle of attack*/, 0 /*velocity*/, deployment), 7);
+
+
+  
 
   dataFile.println(storageDataString);
   write_count++;
 
 
 
-  // String dataString = String(millis()) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt - startAlt, 1) + "," +
-  //               String(Gyro_x, 1) + "," + String(Gyro_y, 1) + "," + String(Gyro_z, 1) + "," + 
-  //               String(Accel_x2, 1) + "," + String(Accel_y2, 1) + "," + String(Accel_z2, 1) + "," +
-  //               String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1)+ "," + 
-  //               String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
-  //               String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
+  String dataString = String(millis()) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt - startAlt, 1) + "," + String(alt_fused-startAlt) + "," +
+                String(Gyro_x, 1) + "," + String(Gyro_y, 1) + "," + String(Gyro_z, 1) + "," + 
+                String(Accel_x2, 1) + "," + String(Accel_y2, 1) + "," + String(Accel_z2, 1) + "," +
+                String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1)+ "," + 
+                String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
+                String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
+                state_to_string(flight_state);       
 
-  //               state_to_string(flight_state);       
-
-  String dataString =String(Alt - startAlt) + "," + String(alt_fused) + "," + String(accel_world_z) + "," + String(Accel_z); //String(Quaternion_1) + "," + String(Quaternion_2) + "," + String(Quaternion_3) + "," + String(Quaternion_4);
-
-  if(millis() - prev_time > 50){ // CHANGE BACK TO 500
+  if(millis() - prev_time > 500){ // CHANGE BACK TO 500
     HWSERIAL.println(dataString);
-    Serial.println(dataString);
+    // Serial.println(dataString);
     prev_time = millis();
   }
 
@@ -1072,7 +1082,6 @@ void setup() {
   initialize_sensors();
 
   // algo.begin(500);
-  read_sensors();
   Madgwick_Init(&Quaternion_1, &Quaternion_2, &Quaternion_3, &Quaternion_4, Accel_x, Accel_y, Accel_z, 0.1f);
 
   if (!SD.begin(BUILTIN_SDCARD)) {
