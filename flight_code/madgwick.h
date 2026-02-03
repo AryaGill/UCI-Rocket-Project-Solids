@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 /* Initialization */
-void Madgwick_Init(float *q0, float *q1, float *q2, float *q3, float b);
+void Madgwick_Init(float *q0, float *q1, float *q2, float *q3, float ax, float ay, float az, float b);
 
 
 /* Full AHRS update (gyro + accel + mag) */

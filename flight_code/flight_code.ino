@@ -441,8 +441,8 @@ void transform_accel_to_world() {
 
 //complimentary filter
 void complementary_filter() {
-  unsigned long now = millis();
-  float dt = (now - prev_cf_time) / 1000.0f;
+  unsigned long now = micros();
+  float dt = (now - prev_cf_time) * 1e-6f;
   
   if (dt <= 0.0f) return;  // safety check
   
@@ -450,8 +450,8 @@ void complementary_filter() {
   
   // STAGE 1: Velocity Fusion
   // Use gravity-compensated, tilt-corrected vertical acceleration
-  // float velocity_imu = velocity_fused + accel_world_z * dt;
-  float velocity_imu = velocity_fused + (-Accel_z - 9.81f) * dt;
+  float velocity_imu = velocity_fused + accel_world_z * dt;
+  // float velocity_imu = velocity_fused + (-Accel_z - 9.81f) * dt;
   
   // Calculate barometric velocity
   float baro_alt = Alt - startAlt;
@@ -565,9 +565,9 @@ void read_sensors() {
   else {
     Serial.println("Failed to get LSM9DS1 data");
   }
-  current_time = millis();
+  current_time = micros();
 
-  float dt_vel = (current_time - prev_vel_time) / 1000.0f;
+  float dt_vel = (current_time - prev_vel_time) * 1e-6f;
 
   if (dt_vel > 0) {
 
@@ -949,7 +949,7 @@ void log_data() {
 
   //               state_to_string(flight_state);       
 
-  String dataString =String(Alt - startAlt, 1) + "," + String(alt_fused) + "," + String(accel_world_z) + "," + String(Accel_z); //String(Quaternion_1) + "," + String(Quaternion_2) + "," + String(Quaternion_3) + "," + String(Quaternion_4);
+  String dataString =String(Alt - startAlt) + "," + String(alt_fused) + "," + String(accel_world_z) + "," + String(Accel_z); //String(Quaternion_1) + "," + String(Quaternion_2) + "," + String(Quaternion_3) + "," + String(Quaternion_4);
 
   if(millis() - prev_time > 50){ // CHANGE BACK TO 500
     HWSERIAL.println(dataString);
@@ -1072,7 +1072,8 @@ void setup() {
   initialize_sensors();
 
   // algo.begin(500);
-  Madgwick_Init(&Quaternion_1, &Quaternion_2, &Quaternion_3, &Quaternion_4, 0.1f);
+  read_sensors();
+  Madgwick_Init(&Quaternion_1, &Quaternion_2, &Quaternion_3, &Quaternion_4, Accel_x, Accel_y, Accel_z, 0.1f);
 
   if (!SD.begin(BUILTIN_SDCARD)) {
     Serial.println("SD card failed or not present.");
@@ -1084,6 +1085,10 @@ void setup() {
   // analogWriteFrequency(buzzer, 4500);
   // analogWrite(buzzer, 128);
   prev_time = millis();
+  prev_cf_time = micros();
+  prev_alt_time = millis();
+  prev_mag_filter_time = micros();
+  prev_vel_time = micros();
 
   //comment out for actual launch
   // digitalWrite(buzzer, LOW);

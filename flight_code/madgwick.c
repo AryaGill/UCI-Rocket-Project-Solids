@@ -14,7 +14,7 @@ static float invSqrt(float x)
 }
 
 
-void Madgwick_Init(float *q0, float *q1, float *q2, float *q3, float b)
+void Madgwick_Init(float *q0, float *q1, float *q2, float *q3, float ax, float ay, float az, float b)
 {
     beta = b;
 
@@ -23,11 +23,31 @@ void Madgwick_Init(float *q0, float *q1, float *q2, float *q3, float b)
     Q2 = q2;
     Q3 = q3;
 
-    *Q0 = 1.0f;
-    *Q1 = 0.0f;
-    *Q2 = 0.0f;
-    *Q3 = 0.0f;
+    // Normalize accel
+    float norm = sqrtf(ax*ax + ay*ay + az*az);
+    ax /= norm;
+    ay /= norm;
+    az /= norm;
 
+    // Compute roll & pitch
+    float roll  = atan2f(ay, az);
+    float pitch = atan2f(-ax, sqrtf(ay*ay + az*az));
+
+    // Convert to quaternion (yaw = 0)
+    float cr = cosf(roll * 0.5f);
+    float sr = sinf(roll * 0.5f);
+    float cp = cosf(pitch * 0.5f);
+    float sp = sinf(pitch * 0.5f);
+
+    *Q0 = cr * cp;
+    *Q1 = sr * cp;
+    *Q2 = cr * sp;
+    *Q3 = sr * sp;
+
+    // *Q0 = 1.0f;
+    // *Q1 = 0.0f;
+    // *Q2 = 0.0f;
+    // *Q3 = 0.0f;
 }
 
 
