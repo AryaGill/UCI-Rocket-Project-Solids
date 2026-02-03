@@ -91,6 +91,7 @@ unsigned long drogue_secondary_start_time = 0;
 unsigned long main_primary_start_time = 0;
 unsigned long main_primary_end_time = 0;
 unsigned long main_secondary_start_time = 0;
+unsigned long prev_mag_filter_time = 0;
 
 //drogue and main cooldown variables
 unsigned long cooldown_time = 10000; //set to how long cooldown should be (10s)
@@ -154,22 +155,33 @@ float deltaT_coefficient = (TIME_PER_AIRBRAKE_CALL / WANTED_AIRBRAKE_ALG_TIME) /
 int deployment = 0;
 
 //Complimentary Filter variables
-float vel_baro = 0.0f;
-float vel_imu = 0.0f;
-float vel_baro_averaged = 0.0f; //from 1 second moving average
-float vel_fused = 0.0f;
+// float vel_baro = 0.0f;
+// float vel_imu = 0.0f;
+// float vel_baro_averaged = 0.0f; //from 1 second moving average
+// float vel_fused = 0.0f;
 
-float alt_cf = 0.0f;
-float alt_fused = 0.0f;
+// float alt_cf = 0.0f;
+// float alt_fused = 0.0f;
 
-float prev_alt_cf = 0.0f;
+// float prev_alt_cf = 0.0f;
 unsigned long prev_cf_time = 0;
 
-const float VEL_IMU_W   = 0.99f;
+// const float VEL_IMU_W   = 0.99f;
 
-const float ALT_CF_W  = 0.95f;
+// const float ALT_CF_W  = 0.95f;
 
-const float BARO_TAU = 1.0f;
+// const float BARO_TAU = 1.0f;
+
+// float velocity = 0.0f;   // vertical velocity (m/s)
+// float alpha = 0.95f;
+
+float alt_fused = 0.0f;      // fused altitude (m)
+float velocity_fused = 0.0f; // fused vertical velocity (m/s)
+float prev_baro_alt = 0.0f;  // previous barometer altitude for velocity calculation
+ 
+// Complementary filter weights
+float alpha_velocity = 0.99f;  // 99% IMU integrated velocity
+float alpha_altitude = 0.95f;  // 95% integrated fused velocity
 
 //Kalman State Variables
 // KalmanFilter::MatA Amatrix;
@@ -351,42 +363,113 @@ void initialize_dataFile() {
 //   prev_vel_time = millis();
 //   current_time = millis();
 // }
+// Add these global variables at top with other globals
+float accel_world_z = 0.0f;  // gravity-compensated vertical acceleration
+
+// Add this function to transform accelerometer to world frame
+void transform_accel_to_world() {
+  // // Average the two IMU accelerations (body frame)
+  // float ax_body = 0.5f * (Accel_x + Accel_x2);
+  // float ay_body = 0.5f * (Accel_y + Accel_y2);
+  // float az_body = 0.5f * (Accel_z + Accel_z2);
+  
+  // // Get quaternion from your AHRS filter
+  // float qw = Quaternion_1;
+  // float qx = Quaternion_2;
+  // float qy = Quaternion_3;
+  // float qz = Quaternion_4;
+  
+  // // Rotate acceleration vector from body frame to world frame using quaternion
+  // // Formula: v' = q * v * q^(-1)
+  // // Simplified for acceleration vector [ax, ay, az]:
+  
+  // float t2 = qw * qx;
+  // float t3 = qw * qy;
+  // float t4 = qw * qz;
+  // float t5 = -qx * qx;
+  // float t6 = qx * qy;
+  // float t7 = qx * qz;
+  // float t8 = -qy * qy;
+  // float t9 = qy * qz;
+  // float t10 = -qz * qz;
+  
+  // float ax_world = 2.0f * ((t8 + t10) * ax_body + (t6 - t4) * ay_body + (t3 + t7) * az_body) + ax_body;
+  // float ay_world = 2.0f * ((t4 + t6) * ax_body + (t5 + t10) * ay_body + (t9 - t2) * az_body) + ay_body;
+  // float az_world = 2.0f * ((t7 - t3) * ax_body + (t2 + t9) * ay_body + (t5 + t8) * az_body) + az_body;
+  
+  // // Remove gravity from vertical axis (world frame Z points up, gravity is -9.81 m/s²)
+  // accel_world_z = az_world - 9.81f;
+
+
+
+
+  // Average IMUs (body frame)
+  float ax = 0.5f * (Accel_x  + Accel_x2);
+  float ay = 0.5f * (Accel_y  + Accel_y2);
+  float az = 0.5f * (Accel_z  + Accel_z2);
+
+  // Quaternion (w, x, y, z)
+  float qw = Quaternion_1;
+  float qx = Quaternion_2;
+  float qy = Quaternion_3;
+  float qz = Quaternion_4;
+
+  // Rotation matrix (body → world)
+  float R11 = 1.0f - 2.0f*(qy*qy + qz*qz);
+  float R12 = 2.0f*(qx*qy - qz*qw);
+  float R13 = 2.0f*(qx*qz + qy*qw);
+
+  float R21 = 2.0f*(qx*qy + qz*qw);
+  float R22 = 1.0f - 2.0f*(qx*qx + qz*qz);
+  float R23 = 2.0f*(qy*qz - qx*qw);
+
+  float R31 = 2.0f*(qx*qz - qy*qw);
+  float R32 = 2.0f*(qy*qz + qx*qw);
+  float R33 = 1.0f - 2.0f*(qx*qx + qy*qy);
+
+  // Rotate acceleration into world frame
+  float ax_world = R11*ax + R12*ay + R13*az;
+  float ay_world = R21*ax + R22*ay + R23*az;
+  float az_world = R31*ax + R32*ay + R33*az;
+
+  // Remove gravity (see section below!)
+  // accel_world_x = ax_world;
+  // accel_world_y = ay_world;
+  accel_world_z = az_world - 9.81f;
+}
 
 //complimentary filter
 void complementary_filter() {
   unsigned long now = millis();
-
-  if (prev_cf_time == 0) {
-    prev_cf_time = now;
-    prev_alt_cf = Alt;
-    alt_cf = Alt;
-    alt_fused = Alt;
-    vel_baro_averaged = 0.0f;
-    vel_fused = 0.0f;
-    return;
-  }
-
   float dt = (now - prev_cf_time) / 1000.0f;
+  
+  if (dt <= 0.0f) return;  // safety check
+  
   prev_cf_time = now;
-
-  if (dt <= 0.0f || dt > 0.2f) return;
-  vel_imu = 0.5f * (Vel_z + Vel_z2);
-
-  vel_baro = (Alt - prev_alt_cf) / dt;
-  prev_alt_cf = Alt;
-
-  //1 secon moving average baro velocity (low pass)
-  float alpha = dt / (BARO_TAU + dt);
-  vel_baro_averaged += alpha * (vel_baro - vel_baro_averaged);
-
-  //Velocity calculation 99-1 ratio then alt conversion
-  vel_fused = VEL_IMU_W * vel_imu + (1-VEL_IMU_W) * vel_baro_averaged;
-
-  alt_cf += vel_fused * dt;
-
-  //final filtered alt
-  alt_fused = ALT_CF_W * alt_cf + (1-ALT_CF_W) * Alt;
+  
+  // STAGE 1: Velocity Fusion
+  // Use gravity-compensated, tilt-corrected vertical acceleration
+  // float velocity_imu = velocity_fused + accel_world_z * dt;
+  float velocity_imu = velocity_fused + (-Accel_z - 9.81f) * dt;
+  
+  // Calculate barometric velocity
+  float baro_alt = Alt - startAlt;
+  float velocity_baro = (baro_alt - prev_baro_alt) / dt;
+  prev_baro_alt = baro_alt;
+  
+  // Fuse velocities: 99% IMU, 1% barometer
+  velocity_fused = alpha_velocity * velocity_imu
+                 + (1.0f - alpha_velocity) * velocity_baro;
+  
+  // STAGE 2: Altitude Fusion
+  // Integrate fused velocity to get altitude prediction
+  float alt_from_velocity = alt_fused + velocity_fused * dt;
+  
+  // Fuse altitudes: 95% integrated velocity, 5% raw barometer
+  alt_fused = alpha_altitude * alt_from_velocity
+            + (1.0f - alpha_altitude) * baro_alt;
 }
+
 
 void initialize_sensors() {
   // BPM390 Setup
@@ -426,8 +509,8 @@ void read_sensors() {
   LIS3DH_SensorData LIS3DH_data = LIS3DHModule.readData();
   if (LIS3DH_data.accel_x != -999 && LIS3DH_data.accel_y != -999 && LIS3DH_data.accel_z != -999){
     Accel_x2 = LIS3DH_data.accel_x;
-    Accel_y2 = -LIS3DH_data.accel_z;
-    Accel_z2 = LIS3DH_data.accel_y;
+    Accel_y2 = LIS3DH_data.accel_z;
+    Accel_z2 = -LIS3DH_data.accel_y;
   }
   else {
     Serial.println("Failed to get LIS3DH data");
@@ -446,23 +529,32 @@ void read_sensors() {
 
         Gyro_x = -LSM9DS1_data.gyro_x + .0448;
         Gyro_y = -LSM9DS1_data.gyro_z -.0283;
-        Gyro_z = LSM9DS1_data.gyro_y + .0956;
+        Gyro_z = -LSM9DS1_data.gyro_y + .0956;
 
         Mag_x = -LSM9DS1_data.mag_x;
         Mag_y = -LSM9DS1_data.mag_z;
         Mag_z = -LSM9DS1_data.mag_y;
 
-        algo.update(Gyro_x, Gyro_y, Gyro_z, Accel_x, Accel_y, Accel_z, Mag_x, Mag_y, Mag_z);
+        unsigned long cur_time = micros();
+
+        float dt = (cur_time - prev_mag_filter_time) * 1e-6f;
+        prev_mag_filter_time = cur_time;
+
+        algo.update(Gyro_x, Gyro_y, Gyro_z,
+                    Accel_x, Accel_y, Accel_z,
+                    Mag_x, Mag_y, Mag_z,
+                    dt);
+        // algo.updateIMU(Gyro_x, Gyro_y, Gyro_z,
+        //             Accel_x, Accel_y, Accel_z,
+        //             dt);
 
         float qw, qx, qy, qz;
         algo.getQuaternion(&qw, &qx, &qy, &qz);
 
-        // Store quaternion values
         Quaternion_1 = qw;
         Quaternion_2 = qx;
         Quaternion_3 = qy;
         Quaternion_4 = qz;
-
       }
   else {
     Serial.println("Failed to get LSM9DS1 data");
@@ -471,17 +563,17 @@ void read_sensors() {
 
   float dt_vel = (current_time - prev_vel_time) / 1000.0f;
 
-  if (dt_vel > 0 && dt_vel < 0.2f) {
+  if (dt_vel > 0) {
 
       // Integrate LSM9DS1
       Vel_x  += Accel_x  * dt_vel;
       Vel_y  += Accel_y  * dt_vel;
-      Vel_z  += Accel_z  * dt_vel;
+      Vel_z  += (Accel_z)  * dt_vel;
 
       // Integrate LIS3DH
       Vel_x2 += Accel_x2 * dt_vel;
       Vel_y2 += Accel_y2 * dt_vel;
-      Vel_z2 += Accel_z2 * dt_vel;
+      Vel_z2 += (Accel_z2) * dt_vel;
   }
 
   prev_vel_time = current_time;
@@ -582,12 +674,8 @@ void update_flight_state() {
     case DISARMED:
       // Rocket Disarmed.
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-      analogWriteFrequency(buzzer, 4500);
       analogWrite(buzzer, 0);
-      delay(100);
-      digitalWrite(LED_BUILTIN, HIGH);
-      analogWrite(buzzer, 0);
-      delay(100);
+      digitalWrite(LED_BUILTIN, LOW);
       break;
     case LAUNCH_PAD:
       // Detect if launched
@@ -855,7 +943,7 @@ void log_data() {
 
   //               state_to_string(flight_state);       
 
-  String dataString = String(millis()) + "," + String(Alt - startAlt, 1) + "," + String(alt_fused-startAlt);
+  String dataString =String(Alt - startAlt, 1) + "," + String(alt_fused) + "," + String(accel_world_z) + "," + String(Accel_z) + "," + String(Quaternion_4);
 
   if(millis() - prev_time > 50){ // CHANGE BACK TO 500
     HWSERIAL.println(dataString);
@@ -998,7 +1086,7 @@ void setup() {
 
 void loop(){
   read_sensors();
-
+  transform_accel_to_world();
   complementary_filter();
 
   update_flight_state();
