@@ -14,7 +14,8 @@
 #include "LSM9DS1_Module.h"
 // #include <MadgwickAHRS.h>
 #include <Adafruit_Sensor_Calibration.h>
-#include <Adafruit_AHRS.h>
+// #include <Adafruit_AHRS.h>
+#include "madgwick.h"
 
 #include "air_brakes_drag.h"
 
@@ -30,7 +31,7 @@
 
 #define HWSERIAL Serial7 // Hardware Serial Needed for RF
 
-#include "kalman-filter.hpp" //Kalman Filter setup
+// #include "kalman-filter.hpp" //Kalman Filter setup
 
 Adafruit_BMP3XX bmp;
 BPM390_Module bmpModule(bmp);
@@ -40,7 +41,7 @@ Adafruit_LSM9DS1 lsm = Adafruit_LSM9DS1();
 LSM9DS1_Module LSM9DS1Module(lsm);
 
 // Madgwick filter;
-Adafruit_Mahony algo;
+// Adafruit_Mahony algo;
 
 //CSV File Declaration
 File dataFile;
@@ -107,7 +108,7 @@ unsigned long current_time = 0;
 unsigned int negative_accel_counter = 0;
 
 // Altitude Filtering for Flight State
-#define LAUNCH_ACCEL_THRESHOLD 24.5
+#define LAUNCH_ACCEL_THRESHOLD 40
 #define RAIL_DELAY_TIME 250
 #define LAUNCH_EVAL_PERIOD_TIME 250
 #define LAUNCH_THRESHOLD 10
@@ -524,15 +525,15 @@ void read_sensors() {
       LSM9DS1_data.mag_x != -999 && LSM9DS1_data.mag_y != -999 && LSM9DS1_data.mag_z != -999){
         
         Accel_x = -LSM9DS1_data.accel_x;
-        Accel_y = -LSM9DS1_data.accel_z;
-        Accel_z = LSM9DS1_data.accel_y;
+        Accel_y = LSM9DS1_data.accel_z;
+        Accel_z = -LSM9DS1_data.accel_y;
 
         Gyro_x = -LSM9DS1_data.gyro_x + .0448;
-        Gyro_y = -LSM9DS1_data.gyro_z -.0283;
+        Gyro_y = LSM9DS1_data.gyro_z -.0283;
         Gyro_z = -LSM9DS1_data.gyro_y + .0956;
 
         Mag_x = -LSM9DS1_data.mag_x;
-        Mag_y = -LSM9DS1_data.mag_z;
+        Mag_y = LSM9DS1_data.mag_z;
         Mag_z = -LSM9DS1_data.mag_y;
 
         unsigned long cur_time = micros();
@@ -540,21 +541,26 @@ void read_sensors() {
         float dt = (cur_time - prev_mag_filter_time) * 1e-6f;
         prev_mag_filter_time = cur_time;
 
-        algo.update(Gyro_x, Gyro_y, Gyro_z,
-                    Accel_x, Accel_y, Accel_z,
-                    Mag_x, Mag_y, Mag_z,
-                    dt);
+        Madgwick_Update(Gyro_x, Gyro_y, Gyro_z,
+                        Accel_x, Accel_y, Accel_z,
+                        Mag_x, Mag_y, Mag_z,
+                        dt);
+
+        // algo.update(Gyro_x, Gyro_y, Gyro_z,
+        //             Accel_x, Accel_y, Accel_z,
+        //             Mag_x, Mag_y, Mag_z,
+        //             dt);
         // algo.updateIMU(Gyro_x, Gyro_y, Gyro_z,
         //             Accel_x, Accel_y, Accel_z,
         //             dt);
 
-        float qw, qx, qy, qz;
-        algo.getQuaternion(&qw, &qx, &qy, &qz);
+        // float qw, qx, qy, qz;
+        // algo.getQuaternion(&qw, &qx, &qy, &qz);
 
-        Quaternion_1 = qw;
-        Quaternion_2 = qx;
-        Quaternion_3 = qy;
-        Quaternion_4 = qz;
+        // Quaternion_1 = qw;
+        // Quaternion_2 = qx;
+        // Quaternion_3 = qy;
+        // Quaternion_4 = qz;
       }
   else {
     Serial.println("Failed to get LSM9DS1 data");
@@ -943,7 +949,7 @@ void log_data() {
 
   //               state_to_string(flight_state);       
 
-  String dataString =String(Alt - startAlt, 1) + "," + String(alt_fused) + "," + String(accel_world_z) + "," + String(Accel_z) + "," + String(Quaternion_4);
+  String dataString =String(Alt - startAlt, 1) + "," + String(alt_fused) + "," + String(accel_world_z) + "," + String(Accel_z); //String(Quaternion_1) + "," + String(Quaternion_2) + "," + String(Quaternion_3) + "," + String(Quaternion_4);
 
   if(millis() - prev_time > 50){ // CHANGE BACK TO 500
     HWSERIAL.println(dataString);
@@ -1065,7 +1071,8 @@ void setup() {
 
   initialize_sensors();
 
-  algo.begin(500);
+  // algo.begin(500);
+  Madgwick_Init(&Quaternion_1, &Quaternion_2, &Quaternion_3, &Quaternion_4, 0.1f);
 
   if (!SD.begin(BUILTIN_SDCARD)) {
     Serial.println("SD card failed or not present.");
@@ -1094,7 +1101,7 @@ void loop(){
   // kalman_filter();
 
   // Run Air Brakes Alg
-  if (flight_state == GLIDING_ASCENT){ // ADD: && get_mach_number(velocity, Temp) < 0.7 && angle of attack < 30 deg
+  if (flight_state == GLIDING_ASCENT){ // ADD:  && get_mach_number(velocity, Temp) < 0.7 && angle of attack < 30 deg
     deployment = optimal_deployment(Alt - startAlt, Temp, Press, 0 /*angle of attack*/, 0 /*velocity of roll axis*/);
   }
   else {
