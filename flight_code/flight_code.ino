@@ -318,7 +318,7 @@ void initialize_dataFile() {
   }
 
   //data headers
-  String dataString = "Cam1,Cam2,Temp,Press,Alt,alt_fused,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Vel_x,Vel_y,Vel_z,Vel_x2,Vel_y2,Vel_z2,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,accel_world_z,Time,State,Deployment,Predicted_Apogee";
+  String dataString = "Cam1,Cam2,Temp,Press,Alt,alt_fused,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Vel_x,Vel_y,Vel_z,Vel_x2,Vel_y2,Vel_z2,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,accel_world_x,accel_world_y,accel_world_z,Time,State,Deployment,Predicted_Apogee";
   dataFile.println(dataString);
   dataFile.flush();
 }
@@ -365,8 +365,9 @@ void initialize_dataFile() {
 //   current_time = millis();
 // }
 // Add these global variables at top with other globals
-float accel_world_z = 0.0f;  // gravity-compensated vertical acceleration
-
+float accel_world_x = 0.0f;  // gravity-compensated vertical acceleration
+float accel_world_y = 0.0f;
+float accel_world_z = 0.0f;
 // Add this function to transform accelerometer to world frame
 void transform_accel_to_world() {
   // // Average the two IMU accelerations (body frame)
@@ -434,8 +435,8 @@ void transform_accel_to_world() {
   float az_world = R31*ax + R32*ay + R33*az;
 
   // Remove gravity (see section below!)
-  // accel_world_x = ax_world;
-  // accel_world_y = ay_world;
+  accel_world_x = ax_world;
+  accel_world_y = ay_world;
   accel_world_z = az_world - 9.81f;
 }
 
@@ -941,7 +942,8 @@ void log_data() {
                 String(Gyro_x, 7) + "," + String(Gyro_y, 7) + "," + String(Gyro_z, 7) + "," +
                 String(Mag_x, 7) + "," + String(Mag_y, 7) + "," + String(Mag_z, 7) + "," +
                 String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
-                String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," + String(accel_world_z) + "," +
+                String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
+                String(accel_world_x, 7) + "," + String(accel_world_y, 7) + "," + String(accel_world_z) + "," +
                 String(millis()) + "," + state_to_string(flight_state) + "," + String(deployment) + "," +
                 String(predict_apogee(Alt - startAlt, Temp, Press, 0 /*angle of attack*/, 0 /*velocity*/, deployment), 7);
 
@@ -953,9 +955,9 @@ void log_data() {
 
 
 
-  String dataString = String(millis()) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt - startAlt, 1) + "," + String(alt_fused-startAlt) + "," +
+  String dataString = String(millis()) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt - startAlt, 1) + "," + String(alt_fused, 1) + "," +
                 String(Gyro_x, 1) + "," + String(Gyro_y, 1) + "," + String(Gyro_z, 1) + "," + 
-                String(Accel_x2, 1) + "," + String(Accel_y2, 1) + "," + String(Accel_z2, 1) + "," +
+                String(accel_world_x, 1) + "," + String(accel_world_y, 1) + "," + String(accel_world_z, 1) + "," +
                 String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1)+ "," + 
                 String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
                 String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
@@ -963,7 +965,7 @@ void log_data() {
 
   if(millis() - prev_time > 500){ // CHANGE BACK TO 500
     HWSERIAL.println(dataString);
-    // Serial.println(dataString);
+    Serial.println(dataString);
     prev_time = millis();
   }
 
