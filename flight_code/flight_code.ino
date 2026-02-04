@@ -306,7 +306,7 @@ int optimal_deployment(const float& alt, const float& temp0, const float& pressu
 }
 
 void initialize_dataFile() {
-  dataFile = SD.open("rocket.csv", FILE_APPEND);
+  dataFile = SD.open("rocket.csv", FILE_WRITE);
 
   // if (!dataFile) {
   //   // File doesn't exist 
@@ -622,15 +622,15 @@ void set_flight_state(FlightState new_state) {
   flight_state = new_state;
 
   // Write flight state to state file
-  stateFile = SD.open("rocket_state.csv", FILE_WRITE);
-  if (stateFile) {
-      stateFile.println(String(startAlt, 8));
-      stateFile.flush();
-      stateFile.println((int)flight_state);
-      stateFile.flush();
-  } else {
-      Serial.println("Failed to create state file");
-  }
+  // stateFile = SD.open("rocket_state.csv", FILE_WRITE);
+  // if (stateFile) {
+  //     stateFile.println(String(startAlt, 8));
+  //     stateFile.flush();
+  //     stateFile.println((int)flight_state);
+  //     stateFile.flush();
+  // } else {
+  //     Serial.println("Failed to create state file");
+  // }
 }
 
 void initialize_flight_state() {
@@ -830,7 +830,7 @@ void update_flight_state() {
       break;
   }
 
-  pre_alt = alt_fused;
+  pre_alt = Alt;
 }
 
 // void kalman_filter() {
@@ -1097,7 +1097,6 @@ void setup() {
   // analogWrite(buzzer, 128);
   prev_time = millis();
   prev_cf_time = micros();
-  prev_alt_time = millis();
   prev_mag_filter_time = micros();
   prev_vel_time = micros();
 
