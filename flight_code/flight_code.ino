@@ -819,8 +819,8 @@ void log_data() {
 
   String dataString = String(millis()) + "," + String(Temp, 1) + "," + String(Press, 1) + "," + String(Alt - startAlt, 1) + "," + String(alt_fused, 1) + "," +
                 String(Gyro_x, 1) + "," + String(Gyro_y, 1) + "," + String(Gyro_z, 1) + "," + 
-                String(accel_world_x, 1) + "," + String(accel_world_y, 1) + "," + String(accel_world_z, 1) + "," +
                 String(Accel_x, 1) + "," + String(Accel_y, 1) + "," + String(Accel_z, 1)+ "," + 
+                String(accel_world_x, 1) + "," + String(accel_world_y, 1) + "," + String(accel_world_z, 1) + "," +
                 String(Quaternion_1, 7) + "," + String(Quaternion_2, 7) + "," + 
                 String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
                 state_to_string(flight_state);       
