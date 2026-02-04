@@ -141,7 +141,7 @@ enum FlightState {
 FlightState flight_state = LAUNCH_PAD;
 
 // Air Brakes variables
-#define TARGET_APOGEE_FT 3500
+#define TARGET_APOGEE_FT 6561
 #define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
 #define GAMMA 1.4
 #define R 287.05287
@@ -691,7 +691,9 @@ void update_flight_state() {
     case DISARMED:
       // Rocket Disarmed.
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-      analogWrite(buzzer, 0);
+      // analogWrite(buzzer, 0); // Uncomment for testing
+      analogWriteFrequency(buzzer, 2500); // Uncomment for flight
+      analogWrite(buzzer, 128); // Uncomment for flight
       break;
     case LAUNCH_PAD:
       // Detect if launched
@@ -706,7 +708,7 @@ void update_flight_state() {
       if (launch_accel_detected_time == -1){
         // Acceleration not detected yet
         //changed to < for vacuum testing
-        if (Accel_z < LAUNCH_ACCEL_THRESHOLD){
+        if (Accel_z > LAUNCH_ACCEL_THRESHOLD){
           // Positive acceleration detected. Begin period of waiting to get off rail.
           launch_accel_detected_time = millis();
           negative_accel_counter = 0;
@@ -1050,9 +1052,9 @@ void handle_rf_commands() {
       set_flight_state(LAUNCH_PAD);
       // turn off disarmed indicators
       digitalWrite(LED_BUILTIN, HIGH);
-      analogWrite(buzzer, 0); // Uncomment for testing
-      // analogWriteFrequency(buzzer, 4500); // Uncomment for flight
-      // analogWrite(buzzer, 128); // Uncomment for flight
+      // analogWrite(buzzer, 0); // Uncomment for testing
+      analogWriteFrequency(buzzer, 4500); // Uncomment for flight
+      analogWrite(buzzer, 128); // Uncomment for flight
     }
   }
 }
@@ -1064,8 +1066,6 @@ void setup() {
   
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
-  // analogWriteFrequency(buzzer, 4500);
-  // analogWrite(buzzer, 128);
 
   HWSERIAL.begin(57600);
 
@@ -1093,8 +1093,6 @@ void setup() {
   initialize_dataFile();
 
   delay(1000);
-  // analogWriteFrequency(buzzer, 4500);
-  // analogWrite(buzzer, 128);
   prev_time = millis();
   prev_cf_time = micros();
   prev_mag_filter_time = micros();
