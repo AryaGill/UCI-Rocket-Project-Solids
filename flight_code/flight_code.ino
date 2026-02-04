@@ -306,16 +306,16 @@ int optimal_deployment(const float& alt, const float& temp0, const float& pressu
 }
 
 void initialize_dataFile() {
-  dataFile = SD.open("rocket.csv", FILE_READ);
+  dataFile = SD.open("rocket.csv", FILE_APPEND);
 
-  if (!dataFile) {
-    // File doesn't exist 
-    Serial.println("Creating data file.");
-    dataFile = SD.open("rocket.csv", FILE_WRITE);
-    if (!dataFile) {
-        Serial.println("Failed to create file");
-    }
-  }
+  // if (!dataFile) {
+  //   // File doesn't exist 
+  //   Serial.println("Creating data file.");
+  //   dataFile = SD.open("rocket.csv", FILE_WRITE);
+  //   if (!dataFile) {
+  //       Serial.println("Failed to create file");
+  //   }
+  // }
 
   //data headers
   String dataString = "Cam1,Cam2,Temp,Press,Alt,alt_fused,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Vel_x,Vel_y,Vel_z,Vel_x2,Vel_y2,Vel_z2,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,accel_world_x,accel_world_y,accel_world_z,Time,State,Deployment,Predicted_Apogee";
@@ -692,7 +692,6 @@ void update_flight_state() {
       // Rocket Disarmed.
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
       analogWrite(buzzer, 0);
-      digitalWrite(LED_BUILTIN, LOW);
       break;
     case LAUNCH_PAD:
       // Detect if launched
@@ -706,7 +705,8 @@ void update_flight_state() {
 
       if (launch_accel_detected_time == -1){
         // Acceleration not detected yet
-        if (Accel_z > LAUNCH_ACCEL_THRESHOLD){
+        //changed to < for vacuum testing
+        if (Accel_z < LAUNCH_ACCEL_THRESHOLD){
           // Positive acceleration detected. Begin period of waiting to get off rail.
           launch_accel_detected_time = millis();
           negative_accel_counter = 0;
@@ -740,7 +740,7 @@ void update_flight_state() {
       break;
 
     case GLIDING_ASCENT:
-      if (get_avg_alt_dif() < APOGEE_THRESHOLD) {
+      if (get_avg_alt_dif() < APOGEE_THRESHOLD && (Alt - startAlt) > 100) {
         set_flight_state(DROGUE_PRIMARY_DEPLOYING);
         digitalWrite(drogue_1, HIGH);
         dataFile.println("Primary Drogue Deployed");
