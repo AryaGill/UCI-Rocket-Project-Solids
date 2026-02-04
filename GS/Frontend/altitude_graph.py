@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 class AltitudeGraph(QWidget):
     """
-    Reusable widget for displaying altitude data with modern styling.
+    Reusable widget for displaying altitude data from two sensors with modern styling.
     """
     
     def __init__(self, parent=None):
@@ -14,6 +14,7 @@ class AltitudeGraph(QWidget):
         
         self.time_data = []
         self.altitude_data = []
+        self.filtered_altitude_data = []
         
         # Use dark background style for matplotlib
         plt.style.use('dark_background')
@@ -32,14 +33,17 @@ class AltitudeGraph(QWidget):
         self.axes.set_ylabel('Altitude (m)', fontsize=12, color='#b0b0b0')
         self.axes.grid(True, alpha=0.2, linestyle='--', linewidth=0.5)
         
-        # Stylish line plot with gradient-like color
-        self.line, = self.axes.plot([], [], color='#00d4ff', linewidth=2.5, 
-                                    label='Altitude', antialiased=True)
+        # Two line plots with different colors
+        self.line_raw, = self.axes.plot([], [], color='#00d4ff', linewidth=2.5, 
+                                        label='Raw Alt', antialiased=True)
+        self.line_filtered, = self.axes.plot([], [], color='#ff6b35', linewidth=2.5, 
+                                             label='Filtered Alt', antialiased=True)
         
         # Style the legend
         legend = self.axes.legend(facecolor='#2d2d2d', edgecolor='#00d4ff', 
                                  fontsize=10)
-        legend.get_texts()[0].set_color('#b0b0b0')
+        for text in legend.get_texts():
+            text.set_color('#b0b0b0')
         
         # Style tick labels
         self.axes.tick_params(colors='#b0b0b0', labelsize=10)
@@ -55,13 +59,19 @@ class AltitudeGraph(QWidget):
         layout.setContentsMargins(5, 5, 5, 5)
         self.setLayout(layout)
         
-    def update_data(self, time_value, altitude_value):
-        """Update the graph with new data point."""
+    def update_data(self, time_value, altitude_value, filtered_altitude_value):
+        """Update the graph with new data points from both sensors."""
         self.time_data.append(time_value)
         self.altitude_data.append(altitude_value)
+        self.filtered_altitude_data.append(filtered_altitude_value)
         
-        self.line.set_xdata(self.time_data)
-        self.line.set_ydata(self.altitude_data)
+        # Update raw altitude line
+        self.line_raw.set_xdata(self.time_data)
+        self.line_raw.set_ydata(self.altitude_data)
+        
+        # Update filtered altitude line
+        self.line_filtered.set_xdata(self.time_data)
+        self.line_filtered.set_ydata(self.filtered_altitude_data)
         
         self.axes.relim()
         self.axes.autoscale_view(True, True, True)
@@ -72,6 +82,9 @@ class AltitudeGraph(QWidget):
         """Clear all data from the graph."""
         self.time_data = []
         self.altitude_data = []
-        self.line.set_xdata([])
-        self.line.set_ydata([])
-        self.canvas.draw()
+        self.filtered_altitude_data = []
+        self.line_raw.set_data([], [])
+        self.line_filtered.set_data([], [])
+        self.axes.relim()
+        self.axes.autoscale_view(True, True, True)
+        self.canvas.draw_idle()

@@ -159,14 +159,14 @@ class GroundStationWindow(QMainWindow):
             from Frontend.altitude_graph import AltitudeGraph
             from Frontend.temp_graph import TempGraph
             from Frontend.accel_graphlis import AccelGraphLIS
-            from Frontend.accel_graphlsm import AccelGraphLSM
+            from Frontend.accel_graphworld import AccelGraphWorld
             from Frontend.ang_graph import AngGraph
             
             # Create graph instances
             self.altitude_graph = AltitudeGraph()
             self.temp_graph = TempGraph()
             self.accel_lis_graph = AccelGraphLIS()
-            self.accel_lsm_graph = AccelGraphLSM()
+            self.accel_world_graph = AccelGraphWorld()
             self.ang_graph = AngGraph()
             
             # Add to grid layout (2x2 grid)
@@ -175,7 +175,7 @@ class GroundStationWindow(QMainWindow):
             layout.addWidget(self.altitude_graph, 0, 0)
             layout.addWidget(self.temp_graph, 0, 1)
             layout.addWidget(self.accel_lis_graph, 1, 0)
-            layout.addWidget(self.accel_lsm_graph, 1, 1)
+            layout.addWidget(self.accel_world_graph, 1, 1)
             layout.addWidget(self.ang_graph, 1, 2)
             
         except ImportError as e:
@@ -245,8 +245,8 @@ class GroundStationWindow(QMainWindow):
             self.temp_graph.clear_data()
         if hasattr(self, 'accel_lis_graph'):
             self.accel_lis_graph.clear_data()
-        if hasattr(self, 'accel_lsm_graph'):
-            self.accel_lsm_graph.clear_data()
+        if hasattr(self, 'accel_world_graph'):
+            self.accel_world_graph.clear_data()
         if hasattr(self, 'ang_graph'):
             self.ang_graph.clear_data()
         self.update_status("All graphs cleared")
@@ -277,7 +277,7 @@ class GroundStationWindow(QMainWindow):
         
         # Update altitude graph
         if hasattr(self, 'altitude_graph') and data.get('Time') is not None and data.get('Alt') is not None:
-            self.altitude_graph.update_data(data.get('Time'), data.get('Alt'))
+            self.altitude_graph.update_data(data.get('Time'), data.get('Alt'), data.get('Filtered_Alt'))
         
         # Update temperature graph
         if hasattr(self, 'temp_graph') and data.get('Time') is not None and data.get('Temp') is not None:
@@ -292,26 +292,26 @@ class GroundStationWindow(QMainWindow):
                     data.get('Accel_Y1'),
                     data.get('Accel_Z1')
                 )
-        
-        # Update LSM accelerometer graph (Accel_X2, Y2, Z2)
-        if hasattr(self, 'accel_lsm_graph'):
-            if all(data.get(k) is not None for k in ['Time', 'Accel_X2', 'Accel_Y2', 'Accel_Z2']):
-                self.accel_lsm_graph.update_data(
+
+        # Update world accel graph (Accel_world_x, Accel_world_y, Accel_world_z)
+        if hasattr(self, 'accel_world_graph'):
+            if all(data.get(k) is not None for k in ['Time', 'Accel_world_x', 'Accel_world_y', 'Accel_world_z']):
+                self.accel_world_graph.update_data(
                     data.get('Time'),
-                    data.get('Accel_X2'),
-                    data.get('Accel_Y2'),
-                    data.get('Accel_Z2')
+                    data.get('Accel_world_x'),
+                    data.get('Accel_world_y'),
+                    data.get('Accel_world_z')
                 )
 
     
         # Update Angular Velocity Graph (Ang_X, Y, Z)
         if hasattr(self, 'ang_graph'):
-            if all(data.get(k) is not None for k in ['Time', 'Ang_X2', 'Ang_Y2', 'Ang_Z2']):
+            if all(data.get(k) is not None for k in ['Time', 'Gyro_X', 'Gyro_Y', 'Gyro_Z']):
                 self.ang_graph.update_data(
                     data.get('Time'),
-                    data.get('Ang_X2'),
-                    data.get('Ang_Y2'),
-                    data.get('Ang_Z2')
+                    data.get('Gyro_X'),
+                    data.get('Gyro_Y'),
+                    data.get('Gyro_Z')
                 )
     
     def update_status(self, message):

@@ -4,7 +4,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 
-class AccelGraphLSM(QWidget):
+class AccelGraphWorld(QWidget):
     """
     Reusable widget for displaying temperature data with modern styling.
     """
@@ -28,7 +28,7 @@ class AccelGraphLSM(QWidget):
         self.axes.set_facecolor('#2d2d2d')
         
         # Configure the plot with modern styling
-        self.axes.set_title('Acceleration vs Time(LSM)', fontsize=16, fontweight='bold', 
+        self.axes.set_title('Acceleration vs Time(World)', fontsize=16, fontweight='bold', 
                            color="#00b71f", pad=15)
         self.axes.set_xlabel('Time (LSM)', fontsize=12, color='#b0b0b0')
         self.axes.set_ylabel('Acceleration (m/s^2)', fontsize=12, color='#b0b0b0')

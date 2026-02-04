@@ -2,7 +2,7 @@
 import sys, time, random
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import QTimer
-from Frontend.accel_graphlsm import AccelGraphLSM
+from GS.Frontend.accel_graphworld import AccelGraphLSM
 
 app = QApplication(sys.argv)
 w = AccelGraphLSM()
