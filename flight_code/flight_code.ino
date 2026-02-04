@@ -692,8 +692,9 @@ void update_flight_state() {
       // Rocket Disarmed.
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
       // analogWrite(buzzer, 0); // Uncomment for testing
-      analogWriteFrequency(buzzer, 2500); // Uncomment for flight
-      analogWrite(buzzer, 128); // Uncomment for flight
+      // analogWriteFrequency(buzzer, 4000); // Uncomment for flight
+      // analogWrite(buzzer, 128); // Uncomment for flight
+      // pinMode(buzzer, OUTPUT);
       break;
     case LAUNCH_PAD:
       // Detect if launched
@@ -1066,6 +1067,9 @@ void setup() {
   
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
+  // pinMode(buzzer, OUTPUT);
+  analogWriteFrequency(buzzer, 3500); // Uncomment for flight
+  analogWrite(buzzer, 128); // Uncomment for flight
 
   HWSERIAL.begin(57600);
 
@@ -1073,7 +1077,7 @@ void setup() {
   pinMode(main_2, OUTPUT);
   pinMode(drogue_1, OUTPUT);
   pinMode(drogue_2, OUTPUT);
-  pinMode(buzzer, OUTPUT);
+  // pinMode(buzzer, OUTPUT);
   pinMode(camera1, OUTPUT);
   pinMode(camera2, OUTPUT);
 
@@ -1100,6 +1104,8 @@ void setup() {
 
   //comment out for actual launch
   // digitalWrite(buzzer, LOW);
+  // analogWriteFrequency(buzzer, 4500); // Uncomment for flight
+  // analogWrite(buzzer, 128); // Uncomment for flight
 
   // initialize_kalman_filter();
 }
