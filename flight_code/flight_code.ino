@@ -948,6 +948,15 @@ void setup() {
 
   initialize_sensors();
 
+  delay(100);
+
+  // Initialize madgwick filter (need to read accel first)
+  LSM9DS1_SensorData LSM9DS1_data = LSM9DS1Module.readData();
+  if (LSM9DS1_data.accel_x != -999 && LSM9DS1_data.accel_y != -999 && LSM9DS1_data.accel_z != -999){
+        Accel_x = LSM9DS1_data.accel_x;
+        Accel_y = LSM9DS1_data.accel_z;
+        Accel_z = LSM9DS1_data.accel_y;
+  }
   Madgwick_Init(&Quaternion_1, &Quaternion_2, &Quaternion_3, &Quaternion_4, Accel_x, Accel_y, Accel_z, 0.1f);
 
   if (!SD.begin(BUILTIN_SDCARD)) {
