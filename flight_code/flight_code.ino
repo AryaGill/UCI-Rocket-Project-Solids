@@ -12,12 +12,10 @@
 #include "BPM390_Module.h"
 #include "LIS3DH_Module.h"
 #include "LSM9DS1_Module.h"
-// #include <MadgwickAHRS.h>
 #include <Adafruit_Sensor_Calibration.h>
-// #include <Adafruit_AHRS.h>
 #include "madgwick.h"
-
 #include "air_brakes_drag.h"
+// #include "kalman-filter.hpp" //Kalman Filter setup
 
 #define main_1 11     // main primary
 #define main_2 10    // main secondary     
@@ -31,7 +29,7 @@
 
 #define HWSERIAL Serial7 // Hardware Serial Needed for RF
 
-// #include "kalman-filter.hpp" //Kalman Filter setup
+#define BUZZER_ON false   // false -> buzzers off, true -> buzzers on
 
 Adafruit_BMP3XX bmp;
 BPM390_Module bmpModule(bmp);
@@ -39,9 +37,6 @@ Adafruit_LIS3DH lis = Adafruit_LIS3DH();
 LIS3DH_Module LIS3DHModule(lis);
 Adafruit_LSM9DS1 lsm = Adafruit_LSM9DS1();
 LSM9DS1_Module LSM9DS1Module(lsm);
-
-// Madgwick filter;
-// Adafruit_Mahony algo;
 
 //CSV File Declaration
 File dataFile;
@@ -69,6 +64,9 @@ float Quaternion_1 = 0;
 float Quaternion_2 = 0;
 float Quaternion_3 = 0;
 float Quaternion_4 = 0;
+float accel_world_x = 0.0f;  // gravity-compensated vertical acceleration
+float accel_world_y = 0.0f;
+float accel_world_z = 0.0f;
 
 float Vel_x  = 0.0f;
 float Vel_y  = 0.0f;
@@ -156,26 +154,7 @@ float deltaT_coefficient = (TIME_PER_AIRBRAKE_CALL / WANTED_AIRBRAKE_ALG_TIME) /
 int deployment = 0;
 
 //Complimentary Filter variables
-// float vel_baro = 0.0f;
-// float vel_imu = 0.0f;
-// float vel_baro_averaged = 0.0f; //from 1 second moving average
-// float vel_fused = 0.0f;
-
-// float alt_cf = 0.0f;
-// float alt_fused = 0.0f;
-
-// float prev_alt_cf = 0.0f;
 unsigned long prev_cf_time = 0;
-
-// const float VEL_IMU_W   = 0.99f;
-
-// const float ALT_CF_W  = 0.95f;
-
-// const float BARO_TAU = 1.0f;
-
-// float velocity = 0.0f;   // vertical velocity (m/s)
-// float alpha = 0.95f;
-
 float alt_fused = 0.0f;      // fused altitude (m)
 float velocity_fused = 0.0f; // fused vertical velocity (m/s)
 float prev_baro_alt = 0.0f;  // previous barometer altitude for velocity calculation
@@ -308,15 +287,6 @@ int optimal_deployment(const float& alt, const float& temp0, const float& pressu
 void initialize_dataFile() {
   dataFile = SD.open("rocket.csv", FILE_WRITE);
 
-  // if (!dataFile) {
-  //   // File doesn't exist 
-  //   Serial.println("Creating data file.");
-  //   dataFile = SD.open("rocket.csv", FILE_WRITE);
-  //   if (!dataFile) {
-  //       Serial.println("Failed to create file");
-  //   }
-  // }
-
   //data headers
   String dataString = "Cam1,Cam2,Temp,Press,Alt,alt_fused,Accel_x2,Accel_y2,Accel_z2,Accel_x,Accel_y,Accel_z,Vel_x,Vel_y,Vel_z,Vel_x2,Vel_y2,Vel_z2,Gyro_x,Gyro_y,Gyro_z,Mag_x,Mag_y,Mag_z,Quaternion_1,Quaternion_2,Quaternion_3,Quaternion_4,accel_world_x,accel_world_y,accel_world_z,Time,State,Deployment,Predicted_Apogee";
   dataFile.println(dataString);
@@ -364,47 +334,8 @@ void initialize_dataFile() {
 //   prev_vel_time = millis();
 //   current_time = millis();
 // }
-// Add these global variables at top with other globals
-float accel_world_x = 0.0f;  // gravity-compensated vertical acceleration
-float accel_world_y = 0.0f;
-float accel_world_z = 0.0f;
-// Add this function to transform accelerometer to world frame
+
 void transform_accel_to_world() {
-  // // Average the two IMU accelerations (body frame)
-  // float ax_body = 0.5f * (Accel_x + Accel_x2);
-  // float ay_body = 0.5f * (Accel_y + Accel_y2);
-  // float az_body = 0.5f * (Accel_z + Accel_z2);
-  
-  // // Get quaternion from your AHRS filter
-  // float qw = Quaternion_1;
-  // float qx = Quaternion_2;
-  // float qy = Quaternion_3;
-  // float qz = Quaternion_4;
-  
-  // // Rotate acceleration vector from body frame to world frame using quaternion
-  // // Formula: v' = q * v * q^(-1)
-  // // Simplified for acceleration vector [ax, ay, az]:
-  
-  // float t2 = qw * qx;
-  // float t3 = qw * qy;
-  // float t4 = qw * qz;
-  // float t5 = -qx * qx;
-  // float t6 = qx * qy;
-  // float t7 = qx * qz;
-  // float t8 = -qy * qy;
-  // float t9 = qy * qz;
-  // float t10 = -qz * qz;
-  
-  // float ax_world = 2.0f * ((t8 + t10) * ax_body + (t6 - t4) * ay_body + (t3 + t7) * az_body) + ax_body;
-  // float ay_world = 2.0f * ((t4 + t6) * ax_body + (t5 + t10) * ay_body + (t9 - t2) * az_body) + ay_body;
-  // float az_world = 2.0f * ((t7 - t3) * ax_body + (t2 + t9) * ay_body + (t5 + t8) * az_body) + az_body;
-  
-  // // Remove gravity from vertical axis (world frame Z points up, gravity is -9.81 m/s²)
-  // accel_world_z = az_world - 9.81f;
-
-
-
-
   // Average IMUs (body frame)
   float ax = 0.5f * (Accel_x  + Accel_x2);
   float ay = 0.5f * (Accel_y  + Accel_y2);
@@ -440,7 +371,6 @@ void transform_accel_to_world() {
   accel_world_z = az_world - 9.81f;
 }
 
-//complimentary filter
 void complementary_filter() {
   unsigned long now = micros();
   float dt = (now - prev_cf_time) * 1e-6f;
@@ -471,7 +401,6 @@ void complementary_filter() {
   alt_fused = alpha_altitude * alt_from_velocity
             + (1.0f - alpha_altitude) * baro_alt;
 }
-
 
 void initialize_sensors() {
   // BPM390 Setup
@@ -545,33 +474,16 @@ void read_sensors() {
         Mag_y = LSM9DS1_data.mag_z;
         Mag_z = -LSM9DS1_data.mag_y;
 
+        // Madgwick filter to find quaternions
         unsigned long cur_time = micros();
-
         float dt = (cur_time - prev_mag_filter_time) * 1e-6f;
         prev_mag_filter_time = cur_time;
-
         if (dt > 0){
           Madgwick_Update(Gyro_x, Gyro_y, Gyro_z,
                         Accel_x, Accel_y, Accel_z,
                         Mag_x, Mag_y, Mag_z,
                         dt);
         }
-
-        // algo.update(Gyro_x, Gyro_y, Gyro_z,
-        //             Accel_x, Accel_y, Accel_z,
-        //             Mag_x, Mag_y, Mag_z,
-        //             dt);
-        // algo.updateIMU(Gyro_x, Gyro_y, Gyro_z,
-        //             Accel_x, Accel_y, Accel_z,
-        //             dt);
-
-        // float qw, qx, qy, qz;
-        // algo.getQuaternion(&qw, &qx, &qy, &qz);
-
-        // Quaternion_1 = qw;
-        // Quaternion_2 = qx;
-        // Quaternion_3 = qy;
-        // Quaternion_4 = qz;
       }
   else {
     Serial.println("Failed to get LSM9DS1 data");
@@ -594,6 +506,7 @@ void read_sensors() {
   }
 
   prev_vel_time = current_time;
+  transform_accel_to_world();
 }
 
 float get_avg_alt_dif() {
@@ -620,17 +533,6 @@ void update_alt_dif_buf(float new_alt_dif) {
 
 void set_flight_state(FlightState new_state) {
   flight_state = new_state;
-
-  // Write flight state to state file
-  // stateFile = SD.open("rocket_state.csv", FILE_WRITE);
-  // if (stateFile) {
-  //     stateFile.println(String(startAlt, 8));
-  //     stateFile.flush();
-  //     stateFile.println((int)flight_state);
-  //     stateFile.flush();
-  // } else {
-  //     Serial.println("Failed to create state file");
-  // }
 }
 
 void initialize_flight_state() {
@@ -648,38 +550,6 @@ void initialize_flight_state() {
   }
 
   set_flight_state(DISARMED);
-
-  // // Open rocket state file
-  // stateFile = SD.open("rocket_state.csv", FILE_READ);
-
-  // if (stateFile) {
-  //   if (stateFile.size() > 0) {
-  //       float read_alt = startAlt;
-  //       // File exists and has data
-  //       startAlt = stateFile.readStringUntil('\n').trim().toFloat();
-  //       Serial.print("startAlt loaded from file: ");
-  //       Serial.println(startAlt);
-
-  //       if (read_alt - startAlt > 183){
-  //         flight_state = static_cast<FlightState>(stateFile.readStringUntil('\n').trim().toInt());
-  //         Serial.print("Flight state loaded from file: ");
-  //         Serial.println((int)flight_state);
-  //       }
-  //       else{
-  //         set_flight_state(LAUNCH_PAD);
-  //       }
-
-  //   } else {
-  //       // File exists but empty, close previous read mode
-  //       Serial.println("Writing starting altitude.");
-  //       stateFile.close();
-  //       set_flight_state(LAUNCH_PAD);
-  //   }
-  // } else {
-  //   // File doesn't exist 
-  //   Serial.println("Creating and writing starting altitude.");
-  //   set_flight_state(LAUNCH_PAD);
-  // }
 }
 
 void update_flight_state() {
@@ -691,20 +561,9 @@ void update_flight_state() {
     case DISARMED:
       // Rocket Disarmed.
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-      // analogWrite(buzzer, 0); // Uncomment for testing
-      // analogWriteFrequency(buzzer, 4000); // Uncomment for flight
-      // analogWrite(buzzer, 128); // Uncomment for flight
-      // pinMode(buzzer, OUTPUT);
       break;
     case LAUNCH_PAD:
       // Detect if launched
-
-      // Old logic
-      // if (get_avg_alt_dif() > LAUNCH_THRESHOLD) {
-        // dataFile.println("LAUNCHED");
-        // launch_start_time = millis();
-        // set_flight_state(MOTOR_BURN);
-      // }
 
       if (launch_accel_detected_time == -1){
         // Acceleration not detected yet
@@ -966,7 +825,7 @@ void log_data() {
                 String(Quaternion_3, 7) + "," + String(Quaternion_4, 7) + "," +
                 state_to_string(flight_state);       
 
-  if(millis() - prev_time > 500){ // CHANGE BACK TO 500
+  if(millis() - prev_time > 500){
     HWSERIAL.println(dataString);
     Serial.println(dataString);
     prev_time = millis();
@@ -1053,9 +912,10 @@ void handle_rf_commands() {
       set_flight_state(LAUNCH_PAD);
       // turn off disarmed indicators
       digitalWrite(LED_BUILTIN, HIGH);
-      // analogWrite(buzzer, 0); // Uncomment for testing
-      analogWriteFrequency(buzzer, 4500); // Uncomment for flight
-      analogWrite(buzzer, 128); // Uncomment for flight
+      if (BUZZER_ON){
+        analogWriteFrequency(buzzer, 4500); // Uncomment for flight
+        analogWrite(buzzer, 128); // Uncomment for flight
+      }
     }
   }
 }
@@ -1067,9 +927,11 @@ void setup() {
   
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
-  // pinMode(buzzer, OUTPUT);
-  analogWriteFrequency(buzzer, 3500); // Uncomment for flight
-  analogWrite(buzzer, 128); // Uncomment for flight
+  
+  if (BUZZER_ON){
+    analogWriteFrequency(buzzer, 3500); // Uncomment for flight
+    analogWrite(buzzer, 128); // Uncomment for flight
+  }
 
   HWSERIAL.begin(57600);
 
@@ -1077,17 +939,15 @@ void setup() {
   pinMode(main_2, OUTPUT);
   pinMode(drogue_1, OUTPUT);
   pinMode(drogue_2, OUTPUT);
-  // pinMode(buzzer, OUTPUT);
   pinMode(camera1, OUTPUT);
   pinMode(camera2, OUTPUT);
 
-//Turn both cameras on by default
+  //Turn both cameras on by default
   digitalWrite(camera1, HIGH);
   digitalWrite(camera2, HIGH);
 
   initialize_sensors();
 
-  // algo.begin(500);
   Madgwick_Init(&Quaternion_1, &Quaternion_2, &Quaternion_3, &Quaternion_4, Accel_x, Accel_y, Accel_z, 0.1f);
 
   if (!SD.begin(BUILTIN_SDCARD)) {
@@ -1102,17 +962,11 @@ void setup() {
   prev_mag_filter_time = micros();
   prev_vel_time = micros();
 
-  //comment out for actual launch
-  // digitalWrite(buzzer, LOW);
-  // analogWriteFrequency(buzzer, 4500); // Uncomment for flight
-  // analogWrite(buzzer, 128); // Uncomment for flight
-
   // initialize_kalman_filter();
 }
 
 void loop(){
   read_sensors();
-  transform_accel_to_world();
   complementary_filter();
 
   update_flight_state();
@@ -1120,7 +974,7 @@ void loop(){
   // kalman_filter();
 
   // Run Air Brakes Alg
-  if (flight_state == GLIDING_ASCENT){ // ADD:  && get_mach_number(velocity, Temp) < 0.7 && angle of attack < 30 deg
+  if (flight_state == GLIDING_ASCENT && get_mach_number(velocity_fused, Temp) < 0.7){ // ADD: && angle of attack < 30 deg
     deployment = optimal_deployment(Alt - startAlt, Temp, Press, 0 /*angle of attack*/, 0 /*velocity of roll axis*/);
   }
   else {
@@ -1128,6 +982,5 @@ void loop(){
   }
 
   log_data();
-
   handle_rf_commands();
 }
