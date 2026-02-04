@@ -447,9 +447,9 @@ void read_sensors() {
   // LIS3DH Data
   LIS3DH_SensorData LIS3DH_data = LIS3DHModule.readData();
   if (LIS3DH_data.accel_x != -999 && LIS3DH_data.accel_y != -999 && LIS3DH_data.accel_z != -999){
-    Accel_x2 = LIS3DH_data.accel_x;
+    Accel_x2 = -LIS3DH_data.accel_x;
     Accel_y2 = LIS3DH_data.accel_z;
-    Accel_z2 = -LIS3DH_data.accel_y;
+    Accel_z2 = LIS3DH_data.accel_y;
   }
   else {
     Serial.println("Failed to get LIS3DH data");
@@ -462,17 +462,17 @@ void read_sensors() {
       LSM9DS1_data.gyro_x != -999 && LSM9DS1_data.gyro_y != -999 && LSM9DS1_data.gyro_z != -999 &&
       LSM9DS1_data.mag_x != -999 && LSM9DS1_data.mag_y != -999 && LSM9DS1_data.mag_z != -999){
         
-        Accel_x = -LSM9DS1_data.accel_x;
+        Accel_x = LSM9DS1_data.accel_x;
         Accel_y = LSM9DS1_data.accel_z;
-        Accel_z = -LSM9DS1_data.accel_y;
+        Accel_z = LSM9DS1_data.accel_y;
 
-        Gyro_x = -LSM9DS1_data.gyro_x + .0448;
+        Gyro_x = LSM9DS1_data.gyro_x + .0448;
         Gyro_y = LSM9DS1_data.gyro_z -.0283;
-        Gyro_z = -LSM9DS1_data.gyro_y + .0956;
+        Gyro_z = LSM9DS1_data.gyro_y + .0956;
 
-        Mag_x = -LSM9DS1_data.mag_x;
+        Mag_x = LSM9DS1_data.mag_x;
         Mag_y = LSM9DS1_data.mag_z;
-        Mag_z = -LSM9DS1_data.mag_y;
+        Mag_z = LSM9DS1_data.mag_y;
 
         // Madgwick filter to find quaternions
         unsigned long cur_time = micros();
