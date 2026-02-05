@@ -1,7 +1,10 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QGridLayout, QPushButton, QLabel)
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import (Qt, QTimer)
+from PyQt6.QtGui import QAction
 from Backend.backend import SerialStreamer
+
+import csv
 
 class GroundStationWindow(QMainWindow):
     """
@@ -17,6 +20,15 @@ class GroundStationWindow(QMainWindow):
         self.setWindowTitle("Ground Station - Rocket Telemetry")
         self.setGeometry(100, 100, 1400, 900)
         self.setup_ui()
+
+        #CSV attributes specifically for testing, this doesn't affect anything else
+        self.csv_rows = []
+        self.csv_idx = 0
+        self.csv_t0_ms = None
+        self.csv_last_ms = None
+        self.csv_timer = QTimer(self)
+        self.csv_timer.setSingleShot(True)
+        self.csv_timer.timeout.connect(self._csv_step)
         
         # Start serial connection if port was provided
         if self.selected_port:
@@ -29,6 +41,19 @@ class GroundStationWindow(QMainWindow):
         
         main_layout = QVBoxLayout(central_widget)
         
+        # Menu bar
+        file_menu = self.menuBar().addMenu("File")
+
+        load_csv_action = QAction("Load CSV...", self)
+        load_csv_action.triggered.connect(self.load_csv)
+        file_menu.addAction(load_csv_action)
+
+        file_menu.addSeparator()
+
+        clear_action = QAction("Clear All", self)
+        clear_action.triggered.connect(self.clear_all_graphs)
+        file_menu.addAction(clear_action)
+
         # Control bar at top
         control_layout = QHBoxLayout()
         self.status_label = QLabel("Status: Initializing...")
@@ -409,3 +434,117 @@ class GroundStationWindow(QMainWindow):
                     "Connection Error",
                     "Cannot send ARM command: Serial connection is not active"
                 )
+
+    def load_csv(self):
+        from PyQt6.QtWidgets import QFileDialog
+
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Open Telemetry CSV", "", "CSV Files (*.csv);;All Files (*)"
+        )
+        if not path:
+            return
+
+        # Stop live streaming
+        if self.streamer and self.streamer.isRunning():
+            self.streamer.pause()
+            self.pause_btn.setText("Resume")
+
+        # Stop any existing CSV playback
+        if self.csv_timer.isActive():
+            self.csv_timer.stop()
+
+        self.clear_all_graphs()
+        self.update_status(f"Loading CSV: {path}")
+
+        def to_float(x):
+            try:
+                return float(x)
+            except Exception:
+                return None
+
+        # Load all rows once, then play gradually
+        rows = []
+        try:
+            with open(path, "r", newline="", encoding="utf-8", errors="ignore") as f:
+                reader = csv.DictReader(f)
+                for r in reader:
+                    t_ms = to_float(r.get("time"))
+                    if t_ms is None:
+                        continue
+                    rows.append(r)
+
+            if not rows:
+                self.update_status("CSV is empty / no valid rows")
+                return
+
+            self.csv_rows = rows
+            self.csv_idx = 0
+            self.csv_t0_ms = to_float(rows[0].get("time"))
+            self.csv_last_ms = self.csv_t0_ms
+
+            self.update_status(f"CSV loaded ({len(rows)} rows). Playing...")
+            self._csv_step()  # start playback
+
+        except Exception as e:
+            self.update_status(f"CSV load error: {e}")
+
+    def _csv_step(self):
+        if self.csv_idx >= len(self.csv_rows):
+            self.update_status("CSV playback finished")
+            return
+
+        r = self.csv_rows[self.csv_idx]
+
+        def to_float(x):
+            try:
+                return float(x)
+            except Exception:
+                return None
+
+        t_ms = to_float(r.get("time"))
+        if t_ms is None:
+            self.csv_idx += 1
+            self.csv_timer.start(0)
+            return
+
+        # Convert epoch ms to seconds since start for your graphs
+        t_sec = (t_ms - self.csv_t0_ms) / 1000.0
+
+        data = {
+            "Time": t_sec,
+            "Alt": to_float(r.get("alt")),
+            "Filtered_Alt": None,
+
+            "Gyro_X": to_float(r.get("gyro_x")),
+            "Gyro_Y": to_float(r.get("gyro_y")),
+            "Gyro_Z": to_float(r.get("gyro_z")),
+
+            "Accel_X1": to_float(r.get("acc_x")),
+            "Accel_Y1": to_float(r.get("acc_y")),
+            "Accel_Z1": to_float(r.get("acc_z")),
+
+            "Accel_world_x": to_float(r.get("acc_x_2")),
+            "Accel_world_y": to_float(r.get("acc_y_2")),
+            "Accel_world_z": to_float(r.get("acc_z_2")),
+
+            "Mag_X": to_float(r.get("mag_x")),
+            "Mag_Y": to_float(r.get("mag_y")),
+            "Mag_Z": to_float(r.get("mag_z")),
+
+            "Temp": None,
+            "Pressure": None,
+            "flight_state": None,
+        }
+
+        self.handle_new_data(data)
+        self.csv_idx += 1
+
+        # Pace next update based on the time difference between consecutive rows
+        delay_ms = 0
+        if self.csv_idx < len(self.csv_rows):
+            next_t_ms = to_float(self.csv_rows[self.csv_idx].get("time"))
+            if next_t_ms is not None and self.csv_last_ms is not None:
+                delay_ms = int(max(0, min(200, next_t_ms - self.csv_last_ms)))  # cap to keep UI responsive
+                self.csv_last_ms = next_t_ms
+
+        self.csv_timer.start(delay_ms)
