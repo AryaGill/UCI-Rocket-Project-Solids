@@ -61,12 +61,17 @@ class AngGraph(QWidget):
         layout.setContentsMargins(5, 5, 5, 5)
         self.setLayout(layout)
         
-    def update_data(self, t, x, y, z):
+    def update_data(self, t, x, y, z, max_points=100):
         """Update the graph with new data point."""
         self.time_data.append(t)
         self.ang_x.append(x)
         self.ang_y.append(y)
         self.ang_z.append(z)
+
+        self.time_data = self.time_data[-max_points:]
+        self.ang_x = self.ang_x[-max_points:]
+        self.ang_y = self.ang_y[-max_points:]
+        self.ang_z = self.ang_z[-max_points:]
 
         self.line_x.set_xdata(self.time_data); self.line_x.set_ydata(self.ang_x)
         self.line_y.set_xdata(self.time_data); self.line_y.set_ydata(self.ang_y)

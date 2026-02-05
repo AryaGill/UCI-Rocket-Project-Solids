@@ -59,11 +59,15 @@ class AltitudeGraph(QWidget):
         layout.setContentsMargins(5, 5, 5, 5)
         self.setLayout(layout)
         
-    def update_data(self, time_value, altitude_value, filtered_altitude_value):
+    def update_data(self, time_value, altitude_value, filtered_altitude_value, max_points=100):
         """Update the graph with new data points from both sensors."""
         self.time_data.append(time_value)
         self.altitude_data.append(altitude_value)
         self.filtered_altitude_data.append(filtered_altitude_value)
+
+        self.time_data = self.time_data[-max_points:]
+        self.altitude_data = self.altitude_data[-max_points:]
+        self.filtered_altitude_data = self.filtered_altitude_data[-max_points:]
         
         # Update raw altitude line
         self.line_raw.set_xdata(self.time_data)

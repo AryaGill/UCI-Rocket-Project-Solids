@@ -61,12 +61,17 @@ class AccelGraphLIS(QWidget):
         layout.setContentsMargins(5, 5, 5, 5)
         self.setLayout(layout)
         
-    def update_data(self, t, x, y, z):
+    def update_data(self, t, x, y, z, max_points=100):
         """Update the graph with new data point."""
         self.time_data.append(t)
         self.accel_x.append(x)
         self.accel_y.append(y)
         self.accel_z.append(z)
+
+        self.time_data = self.time_data[-max_points:]
+        self.accel_x = self.accel_x[-max_points:]
+        self.accel_y = self.accel_y[-max_points:]
+        self.accel_z = self.accel_z[-max_points:]
 
         self.line_x.set_xdata(self.time_data); self.line_x.set_ydata(self.accel_x)
         self.line_y.set_xdata(self.time_data); self.line_y.set_ydata(self.accel_y)

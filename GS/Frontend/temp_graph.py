@@ -55,10 +55,13 @@ class TempGraph(QWidget):
         layout.setContentsMargins(5, 5, 5, 5)
         self.setLayout(layout)
         
-    def update_data(self, time_value, temp_value):
+    def update_data(self, time_value, temp_value, max_points=100):
         """Update the graph with new data point."""
         self.time_data.append(time_value)
         self.temp_data.append(temp_value)
+
+        self.time_data = self.time_data[-max_points:]
+        self.temp_data = self.temp_data[-max_points:]
         
         self.line.set_xdata(self.time_data)
         self.line.set_ydata(self.temp_data)

@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                             QGridLayout, QPushButton, QLabel)
+                             QGridLayout, QPushButton, QLabel, QSlider, QLineEdit)
 from PyQt6.QtCore import (Qt, QTimer)
 from PyQt6.QtGui import QAction
 from Backend.backend import SerialStreamer
@@ -17,6 +17,7 @@ class GroundStationWindow(QMainWindow):
         self.streamer = None
         self.pyro_panel = None  # Will hold PyroPanel instance
         self.camera_panel = None  # Will hold CameraPanel instance
+        self.max_points = 100 #Default value, allows us to manually control how many data points we want to see
         self.setWindowTitle("Ground Station - Rocket Telemetry")
         self.setGeometry(100, 100, 1400, 900)
         self.setup_ui()
@@ -59,6 +60,47 @@ class GroundStationWindow(QMainWindow):
         self.status_label = QLabel("Status: Initializing...")
         control_layout.addWidget(self.status_label)
         control_layout.addStretch()
+
+        # --- Max points slider ---
+        points_label = QLabel("Points: 100")
+        control_layout.addWidget(points_label)
+
+        self.points_input = QLineEdit("100")
+        self.points_input.setFixedWidth(60)
+        self.points_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.points_slider = QSlider(Qt.Orientation.Horizontal)
+        self.points_slider.setMinimum(10)
+        self.points_slider.setMaximum(300)
+        self.points_slider.setValue(100)
+        self.points_slider.setFixedWidth(150)
+
+        def update_max_points(value):
+            self.max_points = value
+            points_label.setText(f"Points: {value}")
+        
+        def slider_changed(value):
+            self.max_points = value
+            self.points_input.setText(str(value))
+
+        self.points_slider.valueChanged.connect(slider_changed)
+
+        def text_changed():
+            text = self.points_input.text()
+            if not text.isdigit():
+                return
+
+            value = int(text)
+            value = max(10, min(1000, value))  # clamp
+
+            self.max_points = value
+            self.points_slider.setValue(value)
+
+        self.points_input.editingFinished.connect(text_changed)
+
+        self.points_slider.valueChanged.connect(update_max_points)
+        control_layout.addWidget(self.points_input)
+        control_layout.addWidget(self.points_slider)
         
         # Add Flight State Display
         try:
@@ -302,11 +344,11 @@ class GroundStationWindow(QMainWindow):
         
         # Update altitude graph
         if hasattr(self, 'altitude_graph') and data.get('Time') is not None and data.get('Alt') is not None:
-            self.altitude_graph.update_data(data.get('Time'), data.get('Alt'), data.get('Filtered_Alt'))
+            self.altitude_graph.update_data(data.get('Time'), data.get('Alt'), data.get('Filtered_Alt'), max_points=self.max_points)
         
         # Update temperature graph
         if hasattr(self, 'temp_graph') and data.get('Time') is not None and data.get('Temp') is not None:
-            self.temp_graph.update_data(data.get('Time'), data.get('Temp'))
+            self.temp_graph.update_data(data.get('Time'), data.get('Temp'), max_points=self.max_points)
         
         # Update LIS accelerometer graph (Accel_X1, Y1, Z1)
         if hasattr(self, 'accel_lis_graph'):
@@ -315,7 +357,8 @@ class GroundStationWindow(QMainWindow):
                     data.get('Time'),
                     data.get('Accel_X1'),
                     data.get('Accel_Y1'),
-                    data.get('Accel_Z1')
+                    data.get('Accel_Z1'),
+                    max_points=self.max_points
                 )
 
         # Update world accel graph (Accel_world_x, Accel_world_y, Accel_world_z)
@@ -325,7 +368,8 @@ class GroundStationWindow(QMainWindow):
                     data.get('Time'),
                     data.get('Accel_world_x'),
                     data.get('Accel_world_y'),
-                    data.get('Accel_world_z')
+                    data.get('Accel_world_z'),
+                    max_points=self.max_points
                 )
 
     
@@ -336,7 +380,8 @@ class GroundStationWindow(QMainWindow):
                     data.get('Time'),
                     data.get('Gyro_X'),
                     data.get('Gyro_Y'),
-                    data.get('Gyro_Z')
+                    data.get('Gyro_Z'),
+                    max_points=self.max_points
                 )
     
     def update_status(self, message):
