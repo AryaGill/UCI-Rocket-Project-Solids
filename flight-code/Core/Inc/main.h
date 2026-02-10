@@ -78,6 +78,10 @@ typedef struct {
 	float mag_r;
 	float mag_p;
 	float mag_y;
+	float q0;
+	float q1;
+	float q2;
+	float q3;
 } Telemetry_t;
 
 /* USER CODE END ET */

@@ -27,6 +27,7 @@
 #include "telemetry.h"
 #include "fsm.h"
 #include "rf.h"
+#include "madgwick.h"
 #include <string.h>
 #include <math.h>
 
@@ -204,6 +205,10 @@ int main(void)
 	// Set starting altitude
 	set_start_alt(&telemetry);
 
+	// Init madgwick filter (need to read accel first)
+	read_sensors(&telemetry);
+	Madgwick_Init(&telemetry, 0.1f);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -213,6 +218,7 @@ int main(void)
 	{
 		// Read sensor data
 		read_sensors(&telemetry);
+		Madgwick_Update(&telemetry);
 
 		// Update FSM and state string
 		update_flight_state(&flight_state, &telemetry);
