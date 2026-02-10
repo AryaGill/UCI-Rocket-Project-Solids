@@ -2,7 +2,7 @@
 #include <math.h>
 
 float beta;
-uint32_t prev_time = 0;
+uint32_t prev_time_madgwick = 0;
 
 static float invSqrt(float x)
 {
@@ -39,7 +39,7 @@ void Madgwick_Init(Telemetry_t* telemetry, float b)
     telemetry->q2 = cr * sp;
     telemetry->q3 = sr * sp;
 
-    prev_time = HAL_GetTick();
+    prev_time_madgwick = micros();
 }
 
 
@@ -48,9 +48,9 @@ void Madgwick_Init(Telemetry_t* telemetry, float b)
 void Madgwick_UpdateIMU(Telemetry_t* telemetry)
 {
 	// get dt (time in ms since last update)
-	float cur_time = HAL_GetTick();
-	float dt = cur_time - prev_time;
-	prev_time = cur_time;
+	uint32_t cur_time = micros();
+	float dt = (cur_time - prev_time_madgwick) * 1e-6f;
+	prev_time_madgwick = cur_time;
 
 	float q0 = telemetry->q0;
 	float q1 = telemetry->q1;
@@ -137,9 +137,9 @@ void Madgwick_Update(Telemetry_t* telemetry)
     }
 
     // get dt (time in ms since last update)
-	float cur_time = HAL_GetTick();
-	float dt = cur_time - prev_time;
-	prev_time = cur_time;
+    uint32_t cur_time = micros();
+	float dt = (cur_time - prev_time_madgwick) * 1e-6f;
+	prev_time_madgwick = cur_time;
 
     float q0 = telemetry->q0;
     float q1 = telemetry->q1;

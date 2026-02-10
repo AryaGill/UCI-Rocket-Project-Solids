@@ -28,6 +28,7 @@
 #include "fsm.h"
 #include "rf.h"
 #include "madgwick.h"
+#include "complementary_filter.h"
 #include <string.h>
 #include <math.h>
 
@@ -86,6 +87,19 @@ void Error_pattern(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+// Microsecond resolution time
+void DWT_Init(void)
+{
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // Enable DWT
+    DWT->CYCCNT = 0;
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;            // Start counter
+}
+
+uint32_t micros(void)
+{
+    return DWT->CYCCNT / (SystemCoreClock / 1000000);
+}
 
 // Success: 3 quick LED blinks + 2 distinct buzzer tones
 void Success_Pattern(void)
@@ -176,6 +190,9 @@ int main(void)
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
 
+  	// Initialize counter for micros() function
+  	DWT_Init();
+
 	// Initialize all sensors
 	init_sensors(&hspi1);
 	HAL_Delay(100);
@@ -218,7 +235,10 @@ int main(void)
 	{
 		// Read sensor data
 		read_sensors(&telemetry);
+
+		// Filter necessary data
 		Madgwick_Update(&telemetry);
+		complementary_filter(&telemetry);
 
 		// Update FSM and state string
 		update_flight_state(&flight_state, &telemetry);

@@ -1,6 +1,7 @@
 "./Core/Src/FATFS_SD.o"
 "./Core/Src/airbrakes.o"
 "./Core/Src/commands.o"
+"./Core/Src/complementary_filter.o"
 "./Core/Src/fsm.o"
 "./Core/Src/kalman_filter.o"
 "./Core/Src/madgwick.o"

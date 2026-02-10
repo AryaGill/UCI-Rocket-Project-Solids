@@ -210,44 +210,47 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 
 void state_to_string(FlightState_t state, char* str) {
 	switch(state) {
+		case DISARMED:
+			strcpy(str, "0");
+			break;
     	case LAUNCH_PAD:
-    		strcpy(str, "LAUNCH_PAD");
+    		strcpy(str, "1");
     		break;
     	case MOTOR_BURN:
-    		strcpy(str, "MOTOR_BURN");
+    		strcpy(str, "2");
     		break;
     	case GLIDING_ASCENT:
-    		strcpy(str, "GLIDING_ASCENT");
+    		strcpy(str, "3");
     		break;
     	case DROGUE_PRIMARY_DEPLOYING:
-    		strcpy(str, "DROGUE_PRIMARY_DEPLOYING");
+    		strcpy(str, "4");
     		break;
     	case DROGUE_PRIMARY_DEPLOYED:
-    		strcpy(str, "DROGUE_PRIMARY_DEPLOYED");
+    		strcpy(str, "5");
     		break;
     	case DROGUE_SECONDARY_DEPLOYING:
-    		strcpy(str, "DROGUE_SECONDARY_DEPLOYING");
+    		strcpy(str, "6");
     		break;
     	case DROGUE_SECONDARY_DEPLOYED:
-    		strcpy(str, "DROGUE_SECONDARY_DEPLOYED");
+    		strcpy(str, "7");
     		break;
     	case MAIN_PRIMARY_DEPLOYING:
-    		strcpy(str, "MAIN_PRIMARY_DEPLOYING");
+    		strcpy(str, "8");
     		break;
     	case MAIN_PRIMARY_DEPLOYED:
-    		strcpy(str, "MAIN_PRIMARY_DEPLOYED");
+    		strcpy(str, "9");
     		break;
     	case MAIN_SECONDARY_DEPLOYING:
-    		strcpy(str, "MAIN_SECONDARY_DEPLOYING");
+    		strcpy(str, "10");
     		break;
     	case MAIN_SECONDARY_DEPLOYED:
-    		strcpy(str, "MAIN_SECONDARY_DEPLOYED");
+    		strcpy(str, "11");
     		break;
     	case LANDED:
-    		strcpy(str, "LANDED");
+    		strcpy(str, "12");
     		break;
     	default:
-    		strcpy(str, "UNKNOWN_STATE");
+    		strcpy(str, "-1");
     		break;
 	}
 }

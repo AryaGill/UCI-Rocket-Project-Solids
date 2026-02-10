@@ -38,18 +38,19 @@ extern "C" {
 /* USER CODE BEGIN ET */
 
 typedef enum {
-  LAUNCH_PAD,
-  MOTOR_BURN,
-  GLIDING_ASCENT,
-  DROGUE_PRIMARY_DEPLOYING,
-  DROGUE_PRIMARY_DEPLOYED,
-  DROGUE_SECONDARY_DEPLOYING,
-  DROGUE_SECONDARY_DEPLOYED,
-  MAIN_PRIMARY_DEPLOYING,
-  MAIN_PRIMARY_DEPLOYED,
-  MAIN_SECONDARY_DEPLOYING,
-  MAIN_SECONDARY_DEPLOYED,
-  LANDED
+	DISARMED,
+	LAUNCH_PAD,
+	MOTOR_BURN,
+	GLIDING_ASCENT,
+	DROGUE_PRIMARY_DEPLOYING,
+	DROGUE_PRIMARY_DEPLOYED,
+	DROGUE_SECONDARY_DEPLOYING,
+	DROGUE_SECONDARY_DEPLOYED,
+	MAIN_PRIMARY_DEPLOYING,
+	MAIN_PRIMARY_DEPLOYED,
+	MAIN_SECONDARY_DEPLOYING,
+	MAIN_SECONDARY_DEPLOYED,
+	LANDED
 } FlightState_t;
 
 typedef struct {
@@ -82,6 +83,10 @@ typedef struct {
 	float q1;
 	float q2;
 	float q3;
+	float accel_world_x;
+	float accel_world_y;
+	float accel_world_z;
+	float alt_fused;
 } Telemetry_t;
 
 /* USER CODE END ET */
@@ -100,6 +105,8 @@ typedef struct {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+
+uint32_t micros(void);
 
 /* USER CODE END EFP */
 
