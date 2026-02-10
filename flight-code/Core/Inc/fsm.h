@@ -13,9 +13,13 @@
 #define MAIN_DEPLOY_MAX_ALT 229
 #define MAIN_DEPLOY_MIN_ALT 77
 
+// Liftoff detection constants
+#define LAUNCH_ACCEL_THRESHOLD 40
+#define RAIL_DELAY_TIME 250
+#define LAUNCH_EVAL_PERIOD_TIME 250
+
 float get_avg_alt_dif();
 void update_alt_dif_buf(float new_alt_dif);
 void set_flight_state(FlightState_t new_state, FlightState_t *flight_state);
 void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry);
 void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry);
-void state_to_string(FlightState_t state, char* str);

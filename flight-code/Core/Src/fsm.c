@@ -2,6 +2,7 @@
 #include "stm32h7xx_hal.h"
 #include "sensors.h"
 #include "main.h"
+#include "telemetry.h"
 
 float alt_dif_buffer[ALT_DIF_BUF_SIZE];
 int alt_dif_buffer_idx = 0;
@@ -10,6 +11,10 @@ float prev_alt = 0;
 
 // Some states need to know the time that the state started
 unsigned long state_start_time = 0;
+
+// Liftoff detection variables
+uint32_t launch_accel_detected_time = -1;
+unsigned int negative_accel_counter = 0;
 
 float get_avg_alt_dif() {
 	float sum = 0;
@@ -36,6 +41,13 @@ void update_alt_dif_buf(float new_alt_dif) {
 
 void set_flight_state(FlightState_t new_state, FlightState_t *flight_state) {
 	*flight_state = new_state;
+
+	// Write
+	char line[50];
+	char state_str[30];
+	state_to_string_name(new_state, state_str);
+	snprintf(line, sizeof(line), "Entering state: %s", state_str);
+	write_sd(FLIGHT_DATA_FILE, line);
 
 	// Write flight state to state file
 //	stateFile = SD.open("rocket_state.csv", FILE_WRITE);
@@ -90,7 +102,7 @@ void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 //	} else {
 //		 //File doesn't exist
 //		Serial.println("Creating and writing starting altitude.");
-		set_flight_state(LAUNCH_PAD, flight_state);
+		set_flight_state(DISARMED, flight_state);
 //	}
 }
 
@@ -99,12 +111,36 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 
 	// Determine Next State
 	switch(*flight_state) {
+		case DISARMED:
+			HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+
     	case LAUNCH_PAD:
     		// Detect if launched
-    		if (get_avg_alt_dif() > LAUNCH_THRESHOLD) {
-    			state_start_time = HAL_GetTick();
-    			set_flight_state(MOTOR_BURN, flight_state);
+
+    		if (launch_accel_detected_time == -1){
+				// Acceleration not detected yet
+				//changed to < for vacuum testing
+				if (telemetry->lsm_accel_r > LAUNCH_ACCEL_THRESHOLD){
+					// Positive acceleration detected. Begin period of waiting to get off rail.
+					launch_accel_detected_time = HAL_GetTick();
+					negative_accel_counter = 0;
+				}
     		}
+			else if (HAL_GetTick() - launch_accel_detected_time > RAIL_DELAY_TIME){
+				// In evaluation period. Monitor for any negative acceleration value.
+				// If detected, reset the system and begin again.
+				if (HAL_GetTick() - launch_accel_detected_time > RAIL_DELAY_TIME + LAUNCH_EVAL_PERIOD_TIME){
+					// Enough time passed without negative acceleration. Launch detected
+					set_flight_state(MOTOR_BURN, flight_state);
+					state_start_time = HAL_GetTick();
+				}
+				else if (telemetry->lsm_accel_r < 0){
+					// Negative acceleration detected. Reset system.
+					if (++negative_accel_counter >= 5){
+						launch_accel_detected_time = -1;
+					}
+				}
+			}
 
     		break;
 
@@ -206,51 +242,4 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 	}
 
 	prev_alt = telemetry->altitude;
-}
-
-void state_to_string(FlightState_t state, char* str) {
-	switch(state) {
-		case DISARMED:
-			strcpy(str, "0");
-			break;
-    	case LAUNCH_PAD:
-    		strcpy(str, "1");
-    		break;
-    	case MOTOR_BURN:
-    		strcpy(str, "2");
-    		break;
-    	case GLIDING_ASCENT:
-    		strcpy(str, "3");
-    		break;
-    	case DROGUE_PRIMARY_DEPLOYING:
-    		strcpy(str, "4");
-    		break;
-    	case DROGUE_PRIMARY_DEPLOYED:
-    		strcpy(str, "5");
-    		break;
-    	case DROGUE_SECONDARY_DEPLOYING:
-    		strcpy(str, "6");
-    		break;
-    	case DROGUE_SECONDARY_DEPLOYED:
-    		strcpy(str, "7");
-    		break;
-    	case MAIN_PRIMARY_DEPLOYING:
-    		strcpy(str, "8");
-    		break;
-    	case MAIN_PRIMARY_DEPLOYED:
-    		strcpy(str, "9");
-    		break;
-    	case MAIN_SECONDARY_DEPLOYING:
-    		strcpy(str, "10");
-    		break;
-    	case MAIN_SECONDARY_DEPLOYED:
-    		strcpy(str, "11");
-    		break;
-    	case LANDED:
-    		strcpy(str, "12");
-    		break;
-    	default:
-    		strcpy(str, "-1");
-    		break;
-	}
 }

@@ -8,8 +8,10 @@ void init_data_file(SPI_HandleTypeDef *hspi){
 	write_headers();
 }
 
-void log_data(char* state_str, Telemetry_t *t){
+void log_data(FlightState_t flight_state, Telemetry_t *t){
 	char data_string[700];
+	char state_str[3];
+	state_to_string_num(flight_state, state_str);
 	snprintf(data_string, sizeof(data_string),
 	        "%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f",
 	        state_str,
@@ -59,4 +61,98 @@ FRESULT write_headers(void)
           "lsm_gyro_r,lsm_gyro_p,lsm_gyro_y";
 
     return write_sd(FLIGHT_DATA_FILE, header);
+}
+
+void state_to_string_num(FlightState_t state, char* str) {
+	switch(state) {
+		case DISARMED:
+			strcpy(str, "0");
+			break;
+    	case LAUNCH_PAD:
+    		strcpy(str, "1");
+    		break;
+    	case MOTOR_BURN:
+    		strcpy(str, "2");
+    		break;
+    	case GLIDING_ASCENT:
+    		strcpy(str, "3");
+    		break;
+    	case DROGUE_PRIMARY_DEPLOYING:
+    		strcpy(str, "4");
+    		break;
+    	case DROGUE_PRIMARY_DEPLOYED:
+    		strcpy(str, "5");
+    		break;
+    	case DROGUE_SECONDARY_DEPLOYING:
+    		strcpy(str, "6");
+    		break;
+    	case DROGUE_SECONDARY_DEPLOYED:
+    		strcpy(str, "7");
+    		break;
+    	case MAIN_PRIMARY_DEPLOYING:
+    		strcpy(str, "8");
+    		break;
+    	case MAIN_PRIMARY_DEPLOYED:
+    		strcpy(str, "9");
+    		break;
+    	case MAIN_SECONDARY_DEPLOYING:
+    		strcpy(str, "10");
+    		break;
+    	case MAIN_SECONDARY_DEPLOYED:
+    		strcpy(str, "11");
+    		break;
+    	case LANDED:
+    		strcpy(str, "12");
+    		break;
+    	default:
+    		strcpy(str, "-1");
+    		break;
+	}
+}
+
+void state_to_string_name(FlightState_t state, char* str) {
+	switch(state) {
+		case DISARMED:
+			strcpy(str, "DISARMED");
+			break;
+    	case LAUNCH_PAD:
+    		strcpy(str, "LAUNCH_PAD");
+    		break;
+    	case MOTOR_BURN:
+    		strcpy(str, "MOTOR_BURN");
+    		break;
+    	case GLIDING_ASCENT:
+    		strcpy(str, "GLIDING_ASCENT");
+    		break;
+    	case DROGUE_PRIMARY_DEPLOYING:
+    		strcpy(str, "DROGUE_PRIMARY_DEPLOYING");
+    		break;
+    	case DROGUE_PRIMARY_DEPLOYED:
+    		strcpy(str, "DROGUE_PRIMARY_DEPLOYED");
+    		break;
+    	case DROGUE_SECONDARY_DEPLOYING:
+    		strcpy(str, "DROGUE_SECONDARY_DEPLOYING");
+    		break;
+    	case DROGUE_SECONDARY_DEPLOYED:
+    		strcpy(str, "DROGUE_SECONDARY_DEPLOYED");
+    		break;
+    	case MAIN_PRIMARY_DEPLOYING:
+    		strcpy(str, "MAIN_PRIMARY_DEPLOYING");
+    		break;
+    	case MAIN_PRIMARY_DEPLOYED:
+    		strcpy(str, "MAIN_PRIMARY_DEPLOYED");
+    		break;
+    	case MAIN_SECONDARY_DEPLOYING:
+    		strcpy(str, "MAIN_SECONDARY_DEPLOYING");
+    		break;
+    	case MAIN_SECONDARY_DEPLOYED:
+    		strcpy(str, "MAIN_SECONDARY_DEPLOYED");
+    		break;
+    	case LANDED:
+    		strcpy(str, "LANDED");
+    		break;
+    	default:
+    		strcpy(str, "UNKNOWN");
+    		break;
+	}
 }

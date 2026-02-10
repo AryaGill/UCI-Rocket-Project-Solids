@@ -6,5 +6,7 @@
 #define FLIGHT_DATA_FILE "flight_data.csv"
 
 void init_data_file();
-void log_data(char* state_str, Telemetry_t *telemetry);
+void log_data(FlightState_t flight_state, Telemetry_t *t);
 FRESULT write_headers(void);
+void state_to_string_num(FlightState_t state, char* str);
+void state_to_string_name(FlightState_t state, char* str);

@@ -66,7 +66,6 @@ Telemetry_t telemetry = {0};
 
 // Flight State
 FlightState_t flight_state = LAUNCH_PAD;
-char state_str[32] = "UNKNOWN";
 
 /* USER CODE END PV */
 
@@ -211,7 +210,6 @@ int main(void)
 
 	// Initialize flight state machine
 	init_flight_state(&flight_state, &telemetry);
-	state_to_string(flight_state, state_str);
 
 	// Init rf
 	RF_Init(&huart4);
@@ -242,13 +240,12 @@ int main(void)
 
 		// Update FSM and state string
 		update_flight_state(&flight_state, &telemetry);
-		state_to_string(flight_state, state_str);
 
 		// Send RF data
 		RF_Transmit(&telemetry);
 
 		// Log telemetry
-		log_data(state_str, &telemetry);
+		log_data(flight_state, &telemetry);
 
 		HAL_Delay(100); // 10 Hz update rate
 
