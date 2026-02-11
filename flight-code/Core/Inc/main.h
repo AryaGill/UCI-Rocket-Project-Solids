@@ -101,6 +101,8 @@ typedef struct {
 
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -113,8 +115,20 @@ uint32_t micros(void);
 /* Private defines -----------------------------------------------------------*/
 #define LED_Pin GPIO_PIN_0
 #define LED_GPIO_Port GPIOC
+#define Drogue_ADC1_Pin GPIO_PIN_2
+#define Drogue_ADC1_GPIO_Port GPIOA
 #define Flash_CS_Pin GPIO_PIN_3
 #define Flash_CS_GPIO_Port GPIOA
+#define Drogue_ADC2_Pin GPIO_PIN_4
+#define Drogue_ADC2_GPIO_Port GPIOA
+#define Main_ADC1_Pin GPIO_PIN_4
+#define Main_ADC1_GPIO_Port GPIOC
+#define Main_ADC2_Pin GPIO_PIN_5
+#define Main_ADC2_GPIO_Port GPIOC
+#define CAM_ADC1_Pin GPIO_PIN_0
+#define CAM_ADC1_GPIO_Port GPIOB
+#define CAM_ADC2_Pin GPIO_PIN_1
+#define CAM_ADC2_GPIO_Port GPIOB
 #define IMU_2_CS_Pin GPIO_PIN_2
 #define IMU_2_CS_GPIO_Port GPIOB
 #define SD_CS_Pin GPIO_PIN_9
@@ -125,20 +139,28 @@ uint32_t micros(void);
 #define Baro_CS_GPIO_Port GPIOE
 #define IMU_CS_Pin GPIO_PIN_10
 #define IMU_CS_GPIO_Port GPIOB
-#define Drogue_Parachute_2_Pin GPIO_PIN_10
-#define Drogue_Parachute_2_GPIO_Port GPIOD
-#define Drogue_Parachute_1_Pin GPIO_PIN_11
-#define Drogue_Parachute_1_GPIO_Port GPIOD
-#define Mag_SDIO_Pin GPIO_PIN_6
-#define Mag_SDIO_GPIO_Port GPIOC
+#define Buzzer_Pin GPIO_PIN_12
+#define Buzzer_GPIO_Port GPIOD
+#define Camera_1_Pin GPIO_PIN_14
+#define Camera_1_GPIO_Port GPIOD
+#define Camera_2_Pin GPIO_PIN_15
+#define Camera_2_GPIO_Port GPIOD
 #define Mag_CS_Pin GPIO_PIN_7
 #define Mag_CS_GPIO_Port GPIOC
+#define Drogue_Parachute_2_Pin GPIO_PIN_9
+#define Drogue_Parachute_2_GPIO_Port GPIOC
+#define Drogue_Parachute_1_Pin GPIO_PIN_8
+#define Drogue_Parachute_1_GPIO_Port GPIOA
 #define Main_Parachute_2_Pin GPIO_PIN_9
 #define Main_Parachute_2_GPIO_Port GPIOA
 #define Main_Parachute_1_Pin GPIO_PIN_10
 #define Main_Parachute_1_GPIO_Port GPIOA
-#define Buzzer_Pin GPIO_PIN_0
-#define Buzzer_GPIO_Port GPIOD
+#define BuzzerD0_Pin GPIO_PIN_0
+#define BuzzerD0_GPIO_Port GPIOD
+#define Airbrakes_PWM_1_Pin GPIO_PIN_4
+#define Airbrakes_PWM_1_GPIO_Port GPIOB
+#define Airbrakes_PWM_2_Pin GPIO_PIN_5
+#define Airbrakes_PWM_2_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

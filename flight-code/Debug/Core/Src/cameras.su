@@ -1,0 +1,2 @@
+../Core/Src/cameras.c:4:6:turn_camera_on	56	static
+../Core/Src/cameras.c:35:6:turn_camera_off	16	static
