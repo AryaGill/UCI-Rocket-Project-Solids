@@ -208,9 +208,6 @@ int main(void)
 	HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);  // LED stays ON
 
-	// Initialize flight state machine
-	init_flight_state(&flight_state, &telemetry);
-
 	// Init rf
 	RF_Init(&huart4);
 
@@ -219,6 +216,9 @@ int main(void)
 
 	// Set starting altitude
 	set_start_alt(&telemetry);
+
+	// Initialize flight state machine (need to read sensors first)
+	init_flight_state(&flight_state, &telemetry);
 
 	// Init madgwick filter (need to read accel first)
 	read_sensors(&telemetry);

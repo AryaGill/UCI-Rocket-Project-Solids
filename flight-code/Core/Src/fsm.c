@@ -3,6 +3,8 @@
 #include "sensors.h"
 #include "main.h"
 #include "telemetry.h"
+#include "sd_card.h"
+#include <stdio.h>
 
 float alt_dif_buffer[ALT_DIF_BUF_SIZE];
 int alt_dif_buffer_idx = 0;
@@ -10,7 +12,7 @@ int prev_alt_time = 0;
 float prev_alt = 0;
 
 // Some states need to know the time that the state started
-unsigned long state_start_time = 0;
+uint32_t state_start_time = 0;
 
 // Liftoff detection variables
 uint32_t launch_accel_detected_time = -1;
@@ -39,7 +41,7 @@ void update_alt_dif_buf(float new_alt_dif) {
 	prev_alt_time = cur_time;
 }
 
-void set_flight_state(FlightState_t new_state, FlightState_t *flight_state) {
+void set_flight_state(FlightState_t new_state, FlightState_t *flight_state, Telemetry_t *telemetry) {
 	*flight_state = new_state;
 
 	// Write
@@ -48,17 +50,19 @@ void set_flight_state(FlightState_t new_state, FlightState_t *flight_state) {
 	state_to_string_name(new_state, state_str);
 	snprintf(line, sizeof(line), "Entering state: %s", state_str);
 	write_sd(FLIGHT_DATA_FILE, line);
+	write_sd_state(STATE_FILE, *flight_state, telemetry->startAlt);
+}
 
-	// Write flight state to state file
-//	stateFile = SD.open("rocket_state.csv", FILE_WRITE);
-//	if (stateFile) {
-//		stateFile.println(String(startAlt, 8));
-//		stateFile.flush();
-//      	stateFile.println((int)flight_state);
-//      	stateFile.flush();
-//	} else {
-//		Serial.println("Failed to create state file");
-//	}
+uint8_t sensors_indicate_flight(Telemetry_t *telemetry){
+	for (int i = 0; i < 50; ++i){
+		read_sensors(telemetry);
+		// read accel world z for half a second. If all about 9.8, then not in flight
+		if (telemetry->accel_world_z < 9.61 || telemetry->accel_world_z > 10.01){
+			return 1;
+		}
+		HAL_Delay(10);
+	}
+	return 0;
 }
 
 void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
@@ -73,37 +77,27 @@ void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 		HAL_Delay(10);
 	}
 
-	// Open rocket state file
-//	stateFile = SD.open("rocket_state.csv", FILE_READ);
+	// Detect power reset
+//	if (sd_file_exists(STATE_FILE)){
+//		FlightState_t sd_state;
+//		float sd_start_alt;
+//		read_sd_state(STATE_FILE, &sd_state, &sd_start_alt);
 //
-//	if (stateFile) {
-//		if (stateFile.size() > 0) {
-//			float read_alt = startAlt;
-//			// File exists and has data
-//			startAlt = stateFile.readStringUntil('\n').trim().toFloat();
-//			Serial.print("startAlt loaded from file: ");
-//			Serial.println(startAlt);
+//		uint32_t reset_flags = RCC->RSR;
+//		// If Power-on reset (power removed and restored) and sensors indicate in flight and alt > threshold
+//		if ((reset_flags & RCC_RSR_PORRSTF) && (telemetry->altitude - sd_start_alt > MIN_RESET_ALT) && sensors_indicate_flight(telemetry)){
+//			// Print message in data file
+//			write_sd(FLIGHT_DATA_FILE, "POWER RESET DETECTED");
 //
-//			if (read_alt - startAlt > 183){
-//				flight_state = static_cast<FlightState>(stateFile.readStringUntil('\n').trim().toInt());
-//				Serial.print("Flight state loaded from file: ");
-//				Serial.println((int)flight_state);
-//			}
-//			else{
-//				set_flight_state(LAUNCH_PAD);
-//			}
+//			// Go to correct state and start altitude
+//			set_flight_state(sd_state, flight_state, telemetry);
+//			telemetry->startAlt = sd_start_alt;
 //
-//		} else {
-//			// File exists but empty, close previous read mode
-//			Serial.println("Writing starting altitude.");
-//			stateFile.close();
-//			set_flight_state(LAUNCH_PAD);
+//			return;
 //		}
-//	} else {
-//		 //File doesn't exist
-//		Serial.println("Creating and writing starting altitude.");
-		set_flight_state(DISARMED, flight_state);
 //	}
+
+	set_flight_state(DISARMED, flight_state, telemetry);
 }
 
 void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
@@ -131,7 +125,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 				// If detected, reset the system and begin again.
 				if (HAL_GetTick() - launch_accel_detected_time > RAIL_DELAY_TIME + LAUNCH_EVAL_PERIOD_TIME){
 					// Enough time passed without negative acceleration. Launch detected
-					set_flight_state(MOTOR_BURN, flight_state);
+					set_flight_state(MOTOR_BURN, flight_state, telemetry);
 					state_start_time = HAL_GetTick();
 				}
 				else if (telemetry->lsm_accel_r < 0){
@@ -147,14 +141,14 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     	case MOTOR_BURN:
     		// Add logic: wait for certain delay or for acceleration to change
     		if (HAL_GetTick() - state_start_time > MOTOR_BURN_TIME){
-    			set_flight_state(GLIDING_ASCENT, flight_state);
+    			set_flight_state(GLIDING_ASCENT, flight_state, telemetry);
     		}
 
     		break;
 
     	case GLIDING_ASCENT:
     		if (get_avg_alt_dif() < APOGEE_THRESHOLD) {
-    			set_flight_state(DROGUE_PRIMARY_DEPLOYING, flight_state);
+    			set_flight_state(DROGUE_PRIMARY_DEPLOYING, flight_state, telemetry);
     			HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_SET);
     			//drogue primary starts firing and the time this starts is stored
     			state_start_time = HAL_GetTick();
@@ -169,7 +163,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     			//time that primary finishes is stored and bool is set to true so this state does not run again
     			state_start_time = HAL_GetTick();
 
-    			set_flight_state(DROGUE_PRIMARY_DEPLOYED, flight_state);
+    			set_flight_state(DROGUE_PRIMARY_DEPLOYED, flight_state, telemetry);
     		}
 
     		break;
@@ -181,7 +175,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     			//time when secondary finishes is stored and bools set so this state does not run again
     			state_start_time = HAL_GetTick();
 
-    			set_flight_state(DROGUE_SECONDARY_DEPLOYING, flight_state);
+    			set_flight_state(DROGUE_SECONDARY_DEPLOYING, flight_state, telemetry);
     		}
 
     		break;
@@ -190,7 +184,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		if (HAL_GetTick() - state_start_time >= CHARGE_DELAY){
     			HAL_GPIO_WritePin(Drogue_Parachute_2_GPIO_Port, Drogue_Parachute_2_Pin, GPIO_PIN_RESET);
 
-    			set_flight_state(DROGUE_SECONDARY_DEPLOYED, flight_state);
+    			set_flight_state(DROGUE_SECONDARY_DEPLOYED, flight_state, telemetry);
     		}
 
     		break;
@@ -200,7 +194,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		if (telemetry->altitude - telemetry->startAlt < MAIN_DEPLOY_MAX_ALT && telemetry->altitude - telemetry->startAlt > MAIN_DEPLOY_MIN_ALT){
     			HAL_GPIO_WritePin(Main_Parachute_1_GPIO_Port, Main_Parachute_1_Pin, GPIO_PIN_SET);
     			state_start_time = HAL_GetTick();
-    			set_flight_state(MAIN_PRIMARY_DEPLOYING, flight_state);
+    			set_flight_state(MAIN_PRIMARY_DEPLOYING, flight_state, telemetry);
     		}
 
     		break;
@@ -209,7 +203,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		if(HAL_GetTick() - state_start_time >= CHARGE_DELAY){
     			HAL_GPIO_WritePin(Main_Parachute_1_GPIO_Port, Main_Parachute_1_Pin, GPIO_PIN_RESET);
     			state_start_time = HAL_GetTick();
-    			set_flight_state(MAIN_PRIMARY_DEPLOYED, flight_state);
+    			set_flight_state(MAIN_PRIMARY_DEPLOYED, flight_state, telemetry);
     		}
 
     		break;
@@ -218,7 +212,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		if(HAL_GetTick() - state_start_time >= BACKUP_DELAY){
     			HAL_GPIO_WritePin(Main_Parachute_2_GPIO_Port, Main_Parachute_2_Pin, GPIO_PIN_SET);
     			state_start_time = HAL_GetTick();
-    			set_flight_state(MAIN_SECONDARY_DEPLOYING, flight_state);
+    			set_flight_state(MAIN_SECONDARY_DEPLOYING, flight_state, telemetry);
     		}
 
     		break;
@@ -226,13 +220,14 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     	case MAIN_SECONDARY_DEPLOYING:
     		if(HAL_GetTick() - state_start_time >= CHARGE_DELAY){
     			HAL_GPIO_WritePin(Main_Parachute_2_GPIO_Port, Main_Parachute_2_Pin, GPIO_PIN_RESET);
-    			set_flight_state(MAIN_SECONDARY_DEPLOYED, flight_state);
+    			set_flight_state(MAIN_SECONDARY_DEPLOYED, flight_state, telemetry);
     		}
     		break;
 
     	case MAIN_SECONDARY_DEPLOYED:
     		if (get_avg_alt_dif() > LANDED_THRESHOLD){ // Change condition // TODO Needs to be switched according to chat?
-    			set_flight_state(LANDED, flight_state);
+    			set_flight_state(LANDED, flight_state, telemetry);
+    			sd_delete_file(STATE_FILE);
     		}
     		break;
 

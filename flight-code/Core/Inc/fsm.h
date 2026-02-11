@@ -18,8 +18,11 @@
 #define RAIL_DELAY_TIME 250
 #define LAUNCH_EVAL_PERIOD_TIME 250
 
+#define STATE_FILE "flight_state.csv"
+#define MIN_RESET_ALT 150 // m
+
 float get_avg_alt_dif();
 void update_alt_dif_buf(float new_alt_dif);
-void set_flight_state(FlightState_t new_state, FlightState_t *flight_state);
+void set_flight_state(FlightState_t new_state, FlightState_t *flight_state, Telemetry_t *telemetry);
 void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry);
 void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry);

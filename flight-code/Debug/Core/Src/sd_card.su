@@ -1,5 +1,9 @@
-../Core/Src/sd_card.c:124:20:SPI_CS_HIGH	16	static
-../Core/Src/sd_card.c:129:6:SD_SendDummyClocks	32	static
-../Core/Src/sd_card.c:141:6:init_sd	16	static
-../Core/Src/sd_card.c:146:9:write_sd	4176	static
-../Core/Src/sd_card.c:179:9:read_sd_line	4176	static
+../Core/Src/sd_card.c:14:20:SPI_CS_HIGH	16	static
+../Core/Src/sd_card.c:19:6:SD_SendDummyClocks	32	static
+../Core/Src/sd_card.c:31:6:init_sd	16	static
+../Core/Src/sd_card.c:36:9:write_sd	4176	static
+../Core/Src/sd_card.c:89:9:write_sd_state	4208	static
+../Core/Src/sd_card.c:127:6:strip_newline	24	static
+../Core/Src/sd_card.c:137:9:read_sd_state	4200	static
+../Core/Src/sd_card.c:174:9:sd_file_exists	304	static
+../Core/Src/sd_card.c:187:9:sd_delete_file	16	static

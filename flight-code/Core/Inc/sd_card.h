@@ -15,4 +15,8 @@
 
 void init_sd(SPI_HandleTypeDef *hspi);
 FRESULT write_sd(const char *filename, const char *line);
-FRESULT read_sd_line(const char *filename, char *buffer, UINT buffer_size);
+//FRESULT read_sd_line(const char *filename, char *buffer, UINT buffer_size);
+FRESULT write_sd_state(const char *filename, FlightState_t state, float start_alt);
+FRESULT read_sd_state(const char *filename, FlightState_t *state, float *start_alt);
+uint8_t sd_file_exists(const char *filename);
+FRESULT sd_delete_file(const char *filename);

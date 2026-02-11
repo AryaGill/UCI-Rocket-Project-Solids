@@ -57,3 +57,5 @@ void IIS2MDCTR_Read(Telemetry_t *telemetry);
 uint8_t LPS22HH_WhoAmI(void);
 uint8_t LPS22HH_ReadReg(uint8_t reg);
 void LPS22HH_WriteReg(uint8_t reg, uint8_t val);
+
+void transform_accel_to_world(Telemetry_t *telemetry);

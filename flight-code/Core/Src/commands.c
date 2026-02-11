@@ -2,7 +2,7 @@
 
 #include "main.h"
 
-void handle_rf_command(char *cmd, FlightState_t *flight_state) {
+void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *telemetry) {
 //	Serial.println(cmd);
 	if(strcmp(cmd, "ON") == 0){
 //		Serial.println("Camera On Recieved");
@@ -57,6 +57,6 @@ void handle_rf_command(char *cmd, FlightState_t *flight_state) {
 //		HWSERIAL.println("TEENSY Camera2 OFF");
 //		digitalWrite(camera2,LOW);
 	} else if (strcmp(cmd, "ARM") == 0){
-		set_flight_state(LAUNCH_PAD, flight_state);
+		set_flight_state(LAUNCH_PAD, flight_state, telemetry);
 	}
 }

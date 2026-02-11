@@ -99,6 +99,8 @@ void read_sensors(Telemetry_t *telemetry)
     LPS22HH_Read(telemetry);
     LSM6DSL_Read(telemetry);
 //    ICM45686_Read(telemetry);
+
+    transform_accel_to_world(telemetry);
 }
 
 // Calculate altitude from pressure (standard atmosphere model)
@@ -314,4 +316,35 @@ void ICM45686_Read(Telemetry_t *telemetry) {
     telemetry->icm_gyro_r  = gx * (2000.0f / 32768.0f);
     telemetry->icm_gyro_p  = gy * (2000.0f / 32768.0f);
     telemetry->icm_gyro_y  = gz * (2000.0f / 32768.0f);
+}
+
+void transform_accel_to_world(Telemetry_t *telemetry) {
+  // Average IMUs (body frame)
+  float ax = telemetry->lsm_accel_y;
+  float ay = telemetry->lsm_accel_p;
+  float az = telemetry->lsm_accel_r;
+
+  // Quaternion (w, x, y, z)
+  float qw = telemetry->q0;
+  float qx = telemetry->q1;
+  float qy = telemetry->q2;
+  float qz = telemetry->q3;
+
+  // Rotation matrix (body → world)
+  float R11 = 1.0f - 2.0f*(qy*qy + qz*qz);
+  float R12 = 2.0f*(qx*qy - qz*qw);
+  float R13 = 2.0f*(qx*qz + qy*qw);
+
+  float R21 = 2.0f*(qx*qy + qz*qw);
+  float R22 = 1.0f - 2.0f*(qx*qx + qz*qz);
+  float R23 = 2.0f*(qy*qz - qx*qw);
+
+  float R31 = 2.0f*(qx*qz - qy*qw);
+  float R32 = 2.0f*(qy*qz + qx*qw);
+  float R33 = 1.0f - 2.0f*(qx*qx + qy*qy);
+
+  // Rotate acceleration into world frame
+  telemetry->accel_world_x = R11*ax + R12*ay + R13*az;
+  telemetry->accel_world_y = R21*ax + R22*ay + R23*az;
+  telemetry->accel_world_z = R31*ax + R32*ay + R33*az - 9.81f;
 }
