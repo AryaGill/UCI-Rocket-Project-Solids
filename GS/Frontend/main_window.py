@@ -1,10 +1,11 @@
-from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox,
                              QGridLayout, QPushButton, QLabel, QSlider, QLineEdit)
-from PyQt6.QtCore import (Qt, QTimer)
+from PyQt6.QtCore import (Qt, QTimer, QProcess)
 from PyQt6.QtGui import QAction
 from Backend.backend import SerialStreamer
 
 import csv
+import sys
 
 class GroundStationWindow(QMainWindow):
     """
@@ -19,7 +20,11 @@ class GroundStationWindow(QMainWindow):
         self.camera_panel = None  # Will hold CameraPanel instance
         self.max_points = 100 #Default value, allows us to manually control how many data points we want to see
         self.setWindowTitle("Ground Station - Rocket Telemetry")
-        self.setGeometry(100, 100, 1400, 900)
+        #self.setGeometry(100, 100, 1400, 900)
+
+        self.setFixedSize(1400, 900)
+        self.move(100, 100)
+
         self.setup_ui()
 
         #CSV attributes specifically for testing, this doesn't affect anything else
@@ -36,6 +41,8 @@ class GroundStationWindow(QMainWindow):
             self.start_serial_connection()
     
     def setup_ui(self):
+        self._setup_menu_bar()
+
         """Setup the main user interface."""
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -218,7 +225,7 @@ class GroundStationWindow(QMainWindow):
         # Status bar at bottom
         self.statusBar().showMessage("Ready")
 
-    
+
     def create_graphs(self, layout):
         """Create all graphs in a grid layout on one tab."""
         try:
