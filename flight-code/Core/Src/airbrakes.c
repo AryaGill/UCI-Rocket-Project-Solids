@@ -1,6 +1,9 @@
 #include "airbrakes.h"
 #include <math.h>
 
+// Servo timer
+extern TIM_HandleTypeDef htim3;
+
 // Air Brakes variables
 #define TARGET_APOGEE_FT 3500
 #define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
@@ -118,8 +121,8 @@ void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
 		return 0;
 	}
 
-	int low = 0;
-	int high = NUM_DEPLOYMENT_LEVELS - 1;
+	uint8_t low = 0;
+	uint8_t high = NUM_DEPLOYMENT_LEVELS - 1;
 
 	int num_sims = log2f(NUM_DEPLOYMENT_LEVELS);
 
@@ -138,4 +141,17 @@ void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
 
 	telemetry->predicted_apogee = pred_apogee;
 	telemetry->airbrake_deployment = low;
+	set_airbrakes_servo_angle((uint8_t)(((uint32_t)(low * 180)) / NUM_DEPLOYMENT_LEVELS));
+}
+
+void set_airbrakes_servo_angle(uint8_t angle)
+{
+    if (angle > 180) angle = 180;
+
+    uint32_t pulse =
+        SERVO_MIN_US +
+        ((SERVO_MAX_US - SERVO_MIN_US) * angle) / 180;
+
+    __HAL_TIM_SET_COMPARE(&htim3, AIRBRAKES_SERVO_1_CHANNEL, pulse);
+    __HAL_TIM_SET_COMPARE(&htim3, AIRBRAKES_SERVO_2_CHANNEL, pulse);
 }
