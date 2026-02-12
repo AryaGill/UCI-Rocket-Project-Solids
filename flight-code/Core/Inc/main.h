@@ -87,12 +87,16 @@ typedef struct {
 	float accel_world_y;
 	float accel_world_z;
 	float alt_fused;
+	uint8_t cam1_on;
+	uint8_t cam2_on;
 } Telemetry_t;
 
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
+
+#define RF_TRANSMIT_PERIOD 500 // ms
 
 /* USER CODE END EC */
 

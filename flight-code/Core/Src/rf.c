@@ -13,7 +13,7 @@ void RF_Transmit(Telemetry_t *telemetry) {
 
     // Pressure (hPa), Temperature (°C), Altitude (m)
     int len = snprintf(tx_buffer, sizeof(tx_buffer),
-                      "%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n",
+                      "%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%u,%u\r\n",
                       telemetry->pressure,
                       telemetry->temperature,
                       telemetry->altitude,
@@ -22,7 +22,9 @@ void RF_Transmit(Telemetry_t *telemetry) {
 					  telemetry->lsm_gyro_y,
 					  telemetry->lsm_accel_r,
 					  telemetry->lsm_accel_p,
-					  telemetry->lsm_accel_y);
+					  telemetry->lsm_accel_y,
+					  telemetry->cam1_on,
+					  telemetry->cam2_on);
 
     // Transmit over UART4 (Serial 4)
     HAL_UART_Transmit(rf_huart, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);

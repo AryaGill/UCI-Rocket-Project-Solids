@@ -29,6 +29,7 @@
 #include "rf.h"
 #include "madgwick.h"
 #include "complementary_filter.h"
+#include "cameras.h"
 #include <string.h>
 #include <math.h>
 
@@ -70,6 +71,9 @@ Telemetry_t telemetry = {0};
 
 // Flight State
 FlightState_t flight_state = LAUNCH_PAD;
+
+// RF
+uint32_t prev_rf_transmit_time = 0;
 
 /* USER CODE END PV */
 
@@ -259,7 +263,12 @@ int main(void)
 		update_flight_state(&flight_state, &telemetry);
 
 		// Send RF data
-		RF_Transmit(&telemetry);
+		uint32_t cur_time = HAL_GetTick();
+		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD){
+			prev_rf_transmit_time = cur_time;
+			read_camera_adcs(&telemetry);
+			RF_Transmit(&telemetry);
+		}
 
 		// Log telemetry
 		log_data(flight_state, &telemetry);
