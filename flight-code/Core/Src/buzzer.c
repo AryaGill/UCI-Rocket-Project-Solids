@@ -1,0 +1,56 @@
+#include "buzzer.h"
+
+extern TIM_HandleTypeDef htim4;
+
+uint32_t get_timer_clock(TIM_HandleTypeDef *htim){
+    RCC_ClkInitTypeDef clkconfig;
+    uint32_t flash_latency;
+
+    HAL_RCC_GetClockConfig(&clkconfig, &flash_latency);
+
+    uint32_t pclk;
+
+    // TIM2–7,12–14 usually on APB1
+    if (htim->Instance == TIM1 ||
+        htim->Instance == TIM8)
+    {
+        pclk = HAL_RCC_GetPCLK2Freq();
+
+        if (clkconfig.APB2CLKDivider != RCC_HCLK_DIV1)
+            pclk *= 2;
+    }
+    else
+    {
+        pclk = HAL_RCC_GetPCLK1Freq();
+
+        if (clkconfig.APB1CLKDivider != RCC_HCLK_DIV1)
+            pclk *= 2;
+    }
+
+    return pclk;
+}
+
+
+void buzzer_set_frequency(uint32_t freq){
+	if (freq == 0 || BUZZER_ON == 0)
+	{
+		HAL_TIM_PWM_Stop(&htim4, BUZZER_CHANNEL);
+		return;
+	}
+
+	uint32_t timer_clk = get_timer_clock(&htim4);
+
+	// Choose prescaler so timer runs at 1 MHz
+	uint32_t prescaler = (timer_clk / 1000000) - 1;
+
+	__HAL_TIM_SET_PRESCALER(&htim4, prescaler);
+
+	uint32_t period = (1000000 / freq) - 1;
+
+	__HAL_TIM_SET_AUTORELOAD(&htim4, period);
+	__HAL_TIM_SET_COMPARE(&htim4,
+						  BUZZER_CHANNEL,
+						  period / 2);   // 50% duty
+
+	HAL_TIM_PWM_Start(&htim4, BUZZER_CHANNEL);
+}

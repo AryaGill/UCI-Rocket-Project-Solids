@@ -3,6 +3,8 @@
 #include "main.h"
 #include "telemetry.h"
 #include "sensors.h"
+#include "cameras.h"
+#include "buzzer.h"
 #include <stdio.h>
 
 void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *telemetry) {
@@ -45,5 +47,6 @@ void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *tele
 		turn_camera_on(1);
 	} else if (strcmp(cmd, "ARM") == 0){
 		set_flight_state(LAUNCH_PAD, flight_state, telemetry);
+		buzzer_set_frequency(4500);
 	}
 }

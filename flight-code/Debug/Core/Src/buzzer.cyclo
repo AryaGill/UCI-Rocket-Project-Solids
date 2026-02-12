@@ -1,0 +1,2 @@
+../Core/Src/buzzer.c:5:10:get_timer_clock	5
+../Core/Src/buzzer.c:34:6:buzzer_set_frequency	2

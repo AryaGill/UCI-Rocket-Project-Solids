@@ -30,6 +30,7 @@
 #include "madgwick.h"
 #include "complementary_filter.h"
 #include "cameras.h"
+#include "buzzer.h"
 #include <string.h>
 #include <math.h>
 
@@ -222,7 +223,7 @@ int main(void)
 	HAL_Delay(500);
 
 	// Turn buzzer and LED ON for normal operation
-	HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
+	buzzer_set_frequency(4000);
 	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);  // LED stays ON
 
 	// Turn Cameras on

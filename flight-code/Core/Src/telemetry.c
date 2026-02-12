@@ -13,7 +13,7 @@ void log_data(FlightState_t flight_state, Telemetry_t *t){
 	char state_str[3];
 	state_to_string_num(flight_state, state_str);
 	snprintf(data_string, sizeof(data_string),
-	        "%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f",
+	        "%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%u,%u",
 	        state_str,
 			t->pressure,
 	        t->altitude,
@@ -28,7 +28,7 @@ void log_data(FlightState_t flight_state, Telemetry_t *t){
 	        t->lsm_accel_y,
 	        t->lsm_gyro_r,
 	        t->lsm_gyro_p,
-	        t->lsm_gyro_y
+	        t->lsm_gyro_y,
 //	        t->icm_accel_r,
 //	        t->icm_accel_p,
 //	        t->icm_accel_y,
@@ -39,7 +39,17 @@ void log_data(FlightState_t flight_state, Telemetry_t *t){
 //	        t->airbrake_deployment,
 //	        t->mag_r,
 //	        t->mag_p,
-//	        t->mag_y
+//	        t->mag_y,
+			t->q0,
+			t->q1,
+			t->q2,
+			t->q3,
+			t->accel_world_x,
+			t->accel_world_y,
+			t->accel_world_z,
+			t->alt_fused,
+			t->cam1_on,
+			t->cam2_on
 	    );
 
 	write_sd(FLIGHT_DATA_FILE, data_string);
