@@ -1,0 +1,27 @@
+#pragma once
+
+#include "main.h"
+
+#define DROGUE_P_ADC_CHANNEL ADC_CHANNEL_14
+#define DROGUE_S_ADC_CHANNEL ADC_CHANNEL_18
+#define MAIN_P_ADC_CHANNEL ADC_CHANNEL_4
+#define MAIN_S_ADC_CHANNEL ADC_CHANNEL_8
+
+#define DROGUE_P_ADC &hadc1
+#define DROGUE_S_ADC &hadc1
+#define MAIN_P_ADC &hadc1
+#define MAIN_S_ADC &hadc1
+
+#define EMATCH_CONNECTED_THRESHOLD 100
+
+uint8_t check_ematch_on(ADC_HandleTypeDef *hadc, uint32_t channel);
+void read_ematch_connections(Telemetry_t *telemetry);
+
+void drogue_primary_on();
+void drogue_primary_off();
+void drogue_secondary_on();
+void drogue_secondary_off();
+void main_primary_on();
+void main_primary_off();
+void main_secondary_on();
+void main_secondary_off();

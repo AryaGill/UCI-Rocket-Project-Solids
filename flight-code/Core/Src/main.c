@@ -255,6 +255,7 @@ int main(void)
 	{
 		// Read sensor data
 		read_sensors(&telemetry);
+		read_ematch_connections(&telemetry);
 
 		// Filter necessary data
 		Madgwick_Update(&telemetry);

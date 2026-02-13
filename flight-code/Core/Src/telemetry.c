@@ -1,6 +1,7 @@
 #include "telemetry.h"
 #include "sd_card.h"
 #include <stdio.h>
+#include <string.h>
 
 void init_data_file(SPI_HandleTypeDef *hspi){
 	init_sd(hspi);
@@ -13,7 +14,7 @@ void log_data(FlightState_t flight_state, Telemetry_t *t){
 	char state_str[3];
 	state_to_string_num(flight_state, state_str);
 	snprintf(data_string, sizeof(data_string),
-	        "%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%u,%u",
+	        "%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%u,%u,%u,%u,%u,%u",
 	        state_str,
 			t->pressure,
 	        t->altitude,
@@ -49,7 +50,11 @@ void log_data(FlightState_t flight_state, Telemetry_t *t){
 			t->accel_world_z,
 			t->alt_fused,
 			t->cam1_on,
-			t->cam2_on
+			t->cam2_on,
+			t->main_p_ematch_connected,
+			t->main_s_ematch_connected,
+			t->drogue_p_ematch_connected,
+			t->drogue_s_ematch_connected
 	    );
 
 	write_sd(FLIGHT_DATA_FILE, data_string);
@@ -68,7 +73,10 @@ FRESULT write_headers(void)
 //        "mag_r,mag_p,mag_y";
     	  "state,pressure,altitude,startAlt,temperature,"
           "lsm_accel_r,lsm_accel_p,lsm_accel_y,"
-          "lsm_gyro_r,lsm_gyro_p,lsm_gyro_y";
+          "lsm_gyro_r,lsm_gyro_p,lsm_gyro_y,"
+    	  "q0,q1,q2,q3,accle_world_x,accel_world_y,accel_world_z"
+    	  "alt_fused,cam1_on,cam2_on,main_p_ematch_connected,main_s_ematch_connected,"
+    	  "drogue_p_ematch_connected,drogue_s_ematch_connected";
 
     return write_sd(FLIGHT_DATA_FILE, header);
 }

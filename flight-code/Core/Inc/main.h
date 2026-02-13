@@ -75,7 +75,7 @@ typedef struct {
 	float icm_gyro_p;
 	float icm_gyro_y;
 	float predicted_apogee;
-	float airbrake_deployment;
+	uint8_t airbrake_deployment;
 	float mag_r;
 	float mag_p;
 	float mag_y;
@@ -89,6 +89,10 @@ typedef struct {
 	float alt_fused;
 	uint8_t cam1_on;
 	uint8_t cam2_on;
+	uint8_t main_p_ematch_connected;
+	uint8_t main_s_ematch_connected;
+	uint8_t drogue_p_ematch_connected;
+	uint8_t drogue_s_ematch_connected;
 } Telemetry_t;
 
 /* USER CODE END ET */

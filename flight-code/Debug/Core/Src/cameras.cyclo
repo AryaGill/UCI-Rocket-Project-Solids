@@ -1,4 +1,4 @@
-../Core/Src/cameras.c:8:6:turn_camera_on	1
-../Core/Src/cameras.c:39:6:turn_camera_off	1
-../Core/Src/cameras.c:43:10:read_adc	1
-../Core/Src/cameras.c:59:6:read_camera_adcs	1
+../Core/Src/cameras.c:10:6:turn_camera_on	1
+../Core/Src/cameras.c:41:6:turn_camera_off	1
+../Core/Src/cameras.c:45:10:read_adc	1
+../Core/Src/cameras.c:61:6:read_camera_adcs	1

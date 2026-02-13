@@ -5,6 +5,7 @@
 #include "sensors.h"
 #include "cameras.h"
 #include "buzzer.h"
+#include "parachutes.h"
 #include <stdio.h>
 
 void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *telemetry) {
@@ -22,21 +23,21 @@ void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *tele
 //		digitalWrite(camera1, LOW);
 //		digitalWrite(camera2, LOW);
 	}else if (strcmp(cmd, "Fire Main P") == 0){
-	  	HAL_GPIO_WritePin(Main_Parachute_1_GPIO_Port, Main_Parachute_1_Pin, GPIO_PIN_SET);
+	  	main_primary_on();
 	  	HAL_Delay(CHARGE_DELAY);
-	  	HAL_GPIO_WritePin(Main_Parachute_1_GPIO_Port, Main_Parachute_1_Pin, GPIO_PIN_RESET);
+	  	main_primary_off();
 	} else if (strcmp(cmd, "Fire Main S") == 0){
-		HAL_GPIO_WritePin(Main_Parachute_2_GPIO_Port, Main_Parachute_2_Pin, GPIO_PIN_SET);
+		main_secondary_on();
 		HAL_Delay(CHARGE_DELAY);
-		HAL_GPIO_WritePin(Main_Parachute_2_GPIO_Port, Main_Parachute_2_Pin, GPIO_PIN_RESET);
+		main_secondary_off();
 	} else if (strcmp(cmd, "Fire Drogue P") == 0){
-		HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_SET);
+		drogue_primary_on();
 		HAL_Delay(CHARGE_DELAY);
-		HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_RESET);
+		drogue_primary_off();
 	} else if (strcmp(cmd, "Fire Drogue S") == 0){
-		HAL_GPIO_WritePin(Drogue_Parachute_2_GPIO_Port, Drogue_Parachute_2_Pin, GPIO_PIN_SET);
+		drogue_secondary_on();
 		HAL_Delay(CHARGE_DELAY);
-		HAL_GPIO_WritePin(Drogue_Parachute_2_GPIO_Port, Drogue_Parachute_2_Pin, GPIO_PIN_RESET);
+		drogue_secondary_off();
 	}  else if (strcmp(cmd, "CAM1ON") == 0){
 		turn_camera_on(0);
 	} else if (strcmp(cmd, "CAM2ON") == 0){

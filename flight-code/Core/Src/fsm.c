@@ -4,6 +4,7 @@
 #include "main.h"
 #include "telemetry.h"
 #include "sd_card.h"
+#include "parachutes.h"
 #include <stdio.h>
 
 float alt_dif_buffer[ALT_DIF_BUF_SIZE];
@@ -149,7 +150,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     	case GLIDING_ASCENT:
     		if (get_avg_alt_dif() < APOGEE_THRESHOLD) {
     			set_flight_state(DROGUE_PRIMARY_DEPLOYING, flight_state, telemetry);
-    			HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_SET);
+    			drogue_primary_on();
     			//drogue primary starts firing and the time this starts is stored
     			state_start_time = HAL_GetTick();
     		}
@@ -158,7 +159,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 
     	case DROGUE_PRIMARY_DEPLOYING:
     		if (HAL_GetTick() - state_start_time >= CHARGE_DELAY) {
-    			HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_RESET);
+    			drogue_primary_off();
 
     			//time that primary finishes is stored and bool is set to true so this state does not run again
     			state_start_time = HAL_GetTick();
@@ -170,7 +171,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 
     	case DROGUE_PRIMARY_DEPLOYED:
     		if (HAL_GetTick() - state_start_time >= BACKUP_DELAY) {
-    			HAL_GPIO_WritePin(Drogue_Parachute_2_GPIO_Port, Drogue_Parachute_2_Pin, GPIO_PIN_SET);
+    			drogue_secondary_on();
 
     			//time when secondary finishes is stored and bools set so this state does not run again
     			state_start_time = HAL_GetTick();
@@ -182,7 +183,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 
     	case DROGUE_SECONDARY_DEPLOYING:
     		if (HAL_GetTick() - state_start_time >= CHARGE_DELAY){
-    			HAL_GPIO_WritePin(Drogue_Parachute_2_GPIO_Port, Drogue_Parachute_2_Pin, GPIO_PIN_RESET);
+    			drogue_secondary_off();
 
     			set_flight_state(DROGUE_SECONDARY_DEPLOYED, flight_state, telemetry);
     		}
@@ -192,7 +193,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     	case DROGUE_SECONDARY_DEPLOYED:
     		// Wait for main deployment
     		if (telemetry->altitude - telemetry->startAlt < MAIN_DEPLOY_MAX_ALT && telemetry->altitude - telemetry->startAlt > MAIN_DEPLOY_MIN_ALT){
-    			HAL_GPIO_WritePin(Main_Parachute_1_GPIO_Port, Main_Parachute_1_Pin, GPIO_PIN_SET);
+    			main_primary_on();
     			state_start_time = HAL_GetTick();
     			set_flight_state(MAIN_PRIMARY_DEPLOYING, flight_state, telemetry);
     		}
@@ -201,7 +202,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 
     	case MAIN_PRIMARY_DEPLOYING:
     		if(HAL_GetTick() - state_start_time >= CHARGE_DELAY){
-    			HAL_GPIO_WritePin(Main_Parachute_1_GPIO_Port, Main_Parachute_1_Pin, GPIO_PIN_RESET);
+    			main_primary_off();
     			state_start_time = HAL_GetTick();
     			set_flight_state(MAIN_PRIMARY_DEPLOYED, flight_state, telemetry);
     		}
@@ -210,7 +211,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 
     	case MAIN_PRIMARY_DEPLOYED:
     		if(HAL_GetTick() - state_start_time >= BACKUP_DELAY){
-    			HAL_GPIO_WritePin(Main_Parachute_2_GPIO_Port, Main_Parachute_2_Pin, GPIO_PIN_SET);
+    			main_secondary_on();
     			state_start_time = HAL_GetTick();
     			set_flight_state(MAIN_SECONDARY_DEPLOYING, flight_state, telemetry);
     		}
@@ -219,7 +220,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 
     	case MAIN_SECONDARY_DEPLOYING:
     		if(HAL_GetTick() - state_start_time >= CHARGE_DELAY){
-    			HAL_GPIO_WritePin(Main_Parachute_2_GPIO_Port, Main_Parachute_2_Pin, GPIO_PIN_RESET);
+    			main_secondary_off();
     			set_flight_state(MAIN_SECONDARY_DEPLOYED, flight_state, telemetry);
     		}
     		break;
