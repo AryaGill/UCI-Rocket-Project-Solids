@@ -58,10 +58,13 @@ typedef struct {
 	float altitude;
 	float startAlt;
 	float temperature;
-	float angle_of_attack;
-	float velocity_r;
-	float velocity_p;
-	float velocity_y;
+//	float angle_of_attack;
+	float velocity_world_x;
+	float velocity_world_y;
+	float velocity_world_z;
+//	float velocity_r;
+//	float velocity_p;
+//	float velocity_y;
 	float lsm_accel_r;
 	float lsm_accel_p;
 	float lsm_accel_y;

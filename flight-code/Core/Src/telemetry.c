@@ -14,7 +14,7 @@ void log_data(FlightState_t flight_state, Telemetry_t *t){
 	char state_str[3];
 	state_to_string_num(flight_state, state_str);
 	snprintf(data_string, sizeof(data_string),
-	        "%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%u,%u,%u,%u,%u,%u",
+	        "%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%u,%u,%u,%u,%u,%u",
 	        state_str,
 			t->pressure,
 	        t->altitude,
@@ -24,6 +24,9 @@ void log_data(FlightState_t flight_state, Telemetry_t *t){
 //	        t->velocity_r,
 //	        t->velocity_p,
 //	        t->velocity_y,
+			t->velocity_world_x,
+			t->velocity_world_y,
+			t->velocity_world_z,
 	        t->lsm_accel_r,
 	        t->lsm_accel_p,
 	        t->lsm_accel_y,
@@ -72,7 +75,8 @@ FRESULT write_headers(void)
 //        "predicted_apogee,airbrake_deployment,"
 //        "mag_r,mag_p,mag_y";
     	  "state,pressure,altitude,startAlt,temperature,"
-          "lsm_accel_r,lsm_accel_p,lsm_accel_y,"
+          "velocity_world_x,velocity_world_y,velocity_world_z,"
+    	  "lsm_accel_r,lsm_accel_p,lsm_accel_y,"
           "lsm_gyro_r,lsm_gyro_p,lsm_gyro_y,"
     	  "q0,q1,q2,q3,accle_world_x,accel_world_y,accel_world_z"
     	  "alt_fused,cam1_on,cam2_on,main_p_ematch_connected,main_s_ematch_connected,"

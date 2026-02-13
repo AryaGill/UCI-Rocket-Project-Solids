@@ -34,6 +34,14 @@ float air_brakes_drag_coefficient[NUM_RECORDED_DEPLOYMENT_LEVELS][NUM_RECORDED_M
     {0.700, 0.730, 0.760, 0.790, 0.820, 0.850, 0.880, 0.910}  // deploy 1.0
 };
 
+float get_mag2(float x, float y){
+	return sqrtf(x*x + y*y);
+}
+
+float get_mag3(float x, float y, float z){
+	return sqrtf(x*x + y*y + z*z);
+}
+
 float get_drag_coefficient(const int deployment_level, const float mach_number){
 	if (mach_number >= 0.7){
 		return air_brakes_drag_coefficient[NUM_RECORDED_DEPLOYMENT_LEVELS - 1][NUM_RECORDED_MACH_NUMS - 1];
@@ -79,15 +87,18 @@ float get_mach_number(const float velocity, const float temp){
 
 //float predict_apogee(const float alt, const float temp0, const float pressure0, const float angle_of_attack, const float speed0, const int deployment_level){
 float predict_apogee(Telemetry_t *telemetry, const int deployment_level){
-	deltaT = max(0.01, min(telemetry->velocity_r * deltaT_coefficient * cos(telemetry->angle_of_attack), 0.1));
+//	deltaT = fmaxf(0.01, fminf(telemetry->velocity_r * deltaT_coefficient * cos(telemetry->angle_of_attack), 0.1));
+	deltaT = fmaxf(0.01, fminf(telemetry->velocity_world_z * deltaT_coefficient, 0.1));
 
 	float alt_sim = telemetry->altitude;
-	float vz_sim = telemetry->velocity_r * cos(telemetry->angle_of_attack);
-	float vx_sim = telemetry->velocity_r * sin(telemetry->angle_of_attack);
+//	float vz_sim = telemetry->velocity_r * cos(telemetry->angle_of_attack);
+//	float vx_sim = telemetry->velocity_r * sin(telemetry->angle_of_attack);
+	float vz_sim = telemetry->velocity_world_z;
+	float vx_sim = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
 
 	for (int i = 0; i < 100000; ++i){
 		float vz_sim_before = vz_sim;
-		float T_local = max(telemetry->temperature - (L * (alt_sim - telemetry->altitude)), 1);
+		float T_local = fmaxf(telemetry->temperature - (L * (alt_sim - telemetry->altitude)), 1);
 		float mach_number = get_mach_number(pow(vz_sim * vz_sim + vx_sim * vx_sim, 0.5), T_local);
 
 		float airbrake_Cd = get_drag_coefficient(deployment_level, mach_number);
@@ -109,16 +120,20 @@ float predict_apogee(Telemetry_t *telemetry, const int deployment_level){
 		}
 	}
 
-	// Serial.print("Altitude: ");
-	// Serial.println(alt_sim);
 	return alt_sim;
 }
 
 //int optimal_deployment(const float alt, const float temp0, const float pressure0, const float angle_of_attack, const float speed0){
 void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
 	// Make sure only works when flight_state == GLIDING_ASCENT && get_mach_number(velocity, Temp) < 0.7 && angle of attack < 30 deg... else 0
-	if (flight_state != GLIDING_ASCENT || get_mach_number(telemetry->velocity_r, telemetry->temperature) > 0.7 || telemetry->angle_of_attack > 30 * M_PI / 180){
-		return 0;
+	float horizontal_speed = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
+	float angle_of_attack = atan2f(horizontal_speed, telemetry->velocity_world_z);
+	if (flight_state != GLIDING_ASCENT
+			|| get_mach_number(get_mag3(telemetry->velocity_world_x, telemetry->velocity_world_y, telemetry->velocity_world_z), telemetry->temperature) > 0.7
+			|| angle_of_attack > 30 * M_PI / 180){
+		telemetry->airbrake_deployment = 0;
+		set_airbrakes_servo_angle(0);
+		return;
 	}
 
 	uint8_t low = 0;

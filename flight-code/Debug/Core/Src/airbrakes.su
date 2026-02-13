@@ -1,5 +1,7 @@
-../Core/Src/airbrakes.c:37:7:get_drag_coefficient	80	static
-../Core/Src/airbrakes.c:75:7:get_mach_number	24	static
-../Core/Src/airbrakes.c:81:7:predict_apogee	80	static
-../Core/Src/airbrakes.c:118:6:set_optimal_deployment	40	static
-../Core/Src/airbrakes.c:147:6:set_airbrakes_servo_angle	24	static
+../Core/Src/airbrakes.c:37:7:get_mag2	16	static
+../Core/Src/airbrakes.c:41:7:get_mag3	24	static
+../Core/Src/airbrakes.c:45:7:get_drag_coefficient	80	static
+../Core/Src/airbrakes.c:83:7:get_mach_number	24	static
+../Core/Src/airbrakes.c:89:7:predict_apogee	80	static
+../Core/Src/airbrakes.c:127:6:set_optimal_deployment	48	static
+../Core/Src/airbrakes.c:162:6:set_airbrakes_servo_angle	24	static
