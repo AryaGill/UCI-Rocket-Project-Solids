@@ -92,10 +92,10 @@ typedef struct {
 	float alt_fused;
 	uint8_t cam1_on;
 	uint8_t cam2_on;
-	uint8_t main_p_ematch_connected;
-	uint8_t main_s_ematch_connected;
-	uint8_t drogue_p_ematch_connected;
-	uint8_t drogue_s_ematch_connected;
+	uint32_t main_p_ematch_voltage;
+	uint32_t main_s_ematch_voltage;
+	uint32_t drogue_p_ematch_voltage;
+	uint32_t drogue_s_ematch_voltage;
 } Telemetry_t;
 
 /* USER CODE END ET */

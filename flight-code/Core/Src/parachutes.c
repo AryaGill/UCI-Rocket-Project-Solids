@@ -2,7 +2,7 @@
 
 extern ADC_HandleTypeDef hadc1;
 
-uint8_t check_ematch_on(ADC_HandleTypeDef *hadc, uint32_t channel){
+uint32_t read_ematch_voltage(ADC_HandleTypeDef *hadc, uint32_t channel){
 	ADC_ChannelConfTypeDef sConfig;
 	sConfig.Channel = channel;
 	HAL_ADC_ConfigChannel(hadc, &sConfig);
@@ -14,17 +14,14 @@ uint8_t check_ematch_on(ADC_HandleTypeDef *hadc, uint32_t channel){
 
 	HAL_ADC_Stop(hadc);
 
-	if (adc < EMATCH_CONNECTED_THRESHOLD){
-		return 0;
-	}
-	return 1;
+	return adc;
 }
 
 void read_ematch_connections(Telemetry_t *telemetry){
-	telemetry->main_p_ematch_connected = check_ematch_on(&hadc1, MAIN_P_ADC_CHANNEL);
-	telemetry->main_s_ematch_connected = check_ematch_on(&hadc1, MAIN_S_ADC_CHANNEL);
-	telemetry->drogue_p_ematch_connected = check_ematch_on(&hadc1, DROGUE_P_ADC_CHANNEL);
-	telemetry->drogue_s_ematch_connected = check_ematch_on(&hadc1, DROGUE_S_ADC_CHANNEL);
+	telemetry->main_p_ematch_voltage = read_ematch_voltage(&hadc1, MAIN_P_ADC_CHANNEL);
+	telemetry->main_s_ematch_voltage = read_ematch_voltage(&hadc1, MAIN_S_ADC_CHANNEL);
+	telemetry->drogue_p_ematch_voltage = read_ematch_voltage(&hadc1, DROGUE_P_ADC_CHANNEL);
+	telemetry->drogue_s_ematch_voltage = read_ematch_voltage(&hadc1, DROGUE_S_ADC_CHANNEL);
 }
 
 void drogue_primary_on(){

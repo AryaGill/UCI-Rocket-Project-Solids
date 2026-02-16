@@ -12,9 +12,7 @@
 #define MAIN_P_ADC &hadc1
 #define MAIN_S_ADC &hadc1
 
-#define EMATCH_CONNECTED_THRESHOLD 100
-
-uint8_t check_ematch_on(ADC_HandleTypeDef *hadc, uint32_t channel);
+uint32_t read_ematch_voltage(ADC_HandleTypeDef *hadc, uint32_t channel);
 void read_ematch_connections(Telemetry_t *telemetry);
 
 void drogue_primary_on();
