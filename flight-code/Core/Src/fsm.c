@@ -67,6 +67,8 @@ uint8_t sensors_indicate_flight(Telemetry_t *telemetry){
 }
 
 void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
+	telemetry->alt_fused = 0;
+	
 	//possible start altitude after reset fix
 	for (int i = 0; i < ALT_DIF_BUF_SIZE + 1; ++i) {
 		LPS22HH_Read(telemetry);
