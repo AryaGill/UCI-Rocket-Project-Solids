@@ -2,7 +2,6 @@
 
 uint32_t prev_time_cf = 0;
 
-float alt_fused = 0.0f;      // fused altitude (m)
 float prev_baro_alt = 0.0f;  // previous barometer altitude for velocity calculation
 
 void complementary_filter(Telemetry_t* telemetry) {
@@ -31,7 +30,7 @@ void complementary_filter(Telemetry_t* telemetry) {
 
     // STAGE 2: Altitude Fusion
     // Integrate fused velocity to get altitude prediction
-    float alt_from_velocity = alt_fused + telemetry->velocity_world_z * dt;
+    float alt_from_velocity = telemetry->alt_fused + telemetry->velocity_world_z * dt;
 
     // Fuse altitudes: 95% integrated velocity, 5% raw barometer
     telemetry->alt_fused = ALPHA_ALTITUDE * alt_from_velocity
