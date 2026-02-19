@@ -124,8 +124,18 @@ uint32_t micros(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define RF_EN_Pin GPIO_PIN_2
+#define RF_EN_GPIO_Port GPIOE
+#define RF_CS_Pin GPIO_PIN_3
+#define RF_CS_GPIO_Port GPIOE
+#define RF_RST_Pin GPIO_PIN_4
+#define RF_RST_GPIO_Port GPIOE
 #define LED_Pin GPIO_PIN_0
 #define LED_GPIO_Port GPIOC
+#define RX_RF_Pin GPIO_PIN_0
+#define RX_RF_GPIO_Port GPIOA
+#define RF_TX_Pin GPIO_PIN_1
+#define RF_TX_GPIO_Port GPIOA
 #define Drogue_ADC1_Pin GPIO_PIN_2
 #define Drogue_ADC1_GPIO_Port GPIOA
 #define Flash_CS_Pin GPIO_PIN_3
