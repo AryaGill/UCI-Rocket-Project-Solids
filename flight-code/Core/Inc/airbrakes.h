@@ -16,4 +16,5 @@ float get_drag_coefficient(const int deployment_level, const float mach_number);
 float get_mach_number(const float velocity, const float temp);
 float predict_apogee(Telemetry_t *telemetry, const int deployment_level);
 void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry);
+void init_airbrakes_servo();
 void set_airbrakes_servo_angle(uint8_t angle);

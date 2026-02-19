@@ -159,6 +159,11 @@ void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
 	set_airbrakes_servo_angle((uint8_t)(((uint32_t)(low * 180)) / NUM_DEPLOYMENT_LEVELS));
 }
 
+void init_airbrakes_servo(){
+	HAL_TIM_PWM_Start(&htim3, AIRBRAKES_SERVO_1_CHANNEL);
+	HAL_TIM_PWM_Start(&htim3, AIRBRAKES_SERVO_2_CHANNEL);
+}
+
 void set_airbrakes_servo_angle(uint8_t angle)
 {
     if (angle > 180) angle = 180;

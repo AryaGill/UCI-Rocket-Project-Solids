@@ -31,6 +31,7 @@
 #include "complementary_filter.h"
 #include "cameras.h"
 #include "buzzer.h"
+#include "airbrakes.h"
 #include <string.h>
 #include <math.h>
 
@@ -232,6 +233,9 @@ int main(void)
 
 	// Init rf
 	RF_Init(&huart4);
+
+	// Init airbrakes servos
+	init_airbrakes_servo();
 
 	// Get Inital state string
 	init_data_file(&hspi1);
