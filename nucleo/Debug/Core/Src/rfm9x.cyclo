@@ -11,4 +11,4 @@
 ../Core/Src/rfm9x.c:237:6:RFM9X_Send	3
 ../Core/Src/rfm9x.c:270:6:RFM9X_Poll	3
 ../Core/Src/rfm9x.c:294:9:RFM9X_IsTxBusy	1
-../Core/Src/rfm9x.c:301:9:RFM9X_Receive	6
+../Core/Src/rfm9x.c:301:9:RFM9X_Receive	5

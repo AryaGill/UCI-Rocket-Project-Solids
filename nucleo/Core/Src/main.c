@@ -24,6 +24,7 @@
 
 #include "rfm9x.h"
 #include "servo.h"
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -53,6 +54,7 @@ UART_HandleTypeDef huart2;
 
 uint8_t rxbuf[64];
 uint8_t len;
+uint32_t packet_num = 1;
 
 /* USER CODE END PV */
 
@@ -130,9 +132,9 @@ int main(void)
 	  /* ---- TRANSMIT PERIODICALLY ---- */
 	  if(HAL_GetTick() - last_tx > 1000 && !RFM9X_IsTxBusy())
 	  {
-		  uint8_t msg[] = "telemetry";
-
-		  RFM9X_Send(msg, sizeof(msg));
+		  char msg[16];
+		  snprintf(msg, sizeof(msg), "Packet %lu", ++packet_num);
+		  RFM9X_Send((uint8_t *)msg, sizeof(msg));
 		  last_tx = HAL_GetTick();
 	  }
 
