@@ -32,6 +32,6 @@
 ../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd.c:2051:19:HAL_PCD_DeActivateRemoteWakeup	1
 ../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd.c:2080:18:HAL_PCD_GetState	1
 ../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd.c:2092:19:HAL_PCD_SetTestMode	2
-../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd.c:2133:26:PCD_WriteEmptyTxFifo	8
-../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd.c:2193:26:PCD_EP_OutXfrComplete_int	16
-../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd.c:2305:26:PCD_EP_OutSetupPacket_int	5
+../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd.c:2134:26:PCD_WriteEmptyTxFifo	8
+../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd.c:2194:26:PCD_EP_OutXfrComplete_int	16
+../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd.c:2306:26:PCD_EP_OutSetupPacket_int	5

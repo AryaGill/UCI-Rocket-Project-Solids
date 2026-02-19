@@ -26,12 +26,14 @@
 #include "sensors.h"
 #include "telemetry.h"
 #include "fsm.h"
-#include "rf.h"
 #include "madgwick.h"
 #include "complementary_filter.h"
 #include "cameras.h"
 #include "buzzer.h"
 #include "airbrakes.h"
+#include "rfm9x.h"
+#include "commands.h"
+#include "parachutes.h"
 #include <string.h>
 #include <math.h>
 
@@ -76,6 +78,8 @@ FlightState_t flight_state = LAUNCH_PAD;
 
 // RF
 uint32_t prev_rf_transmit_time = 0;
+uint8_t rxbuf[32];
+uint8_t len;
 
 /* USER CODE END PV */
 
@@ -232,7 +236,7 @@ int main(void)
 	turn_camera_on(1);
 
 	// Init rf
-	RF_Init(&huart4);
+	RFM9X_Init(&hspi1, RF_CS_GPIO_Port, RF_CS_Pin, RF_RST_GPIO_Port, RF_RST_Pin, RF_EN_GPIO_Port, RF_EN_Pin);
 
 	// Init airbrakes servos
 	init_airbrakes_servo();
@@ -260,6 +264,7 @@ int main(void)
 		// Read sensor data
 		read_sensors(&telemetry);
 		read_ematch_connections(&telemetry);
+		read_camera_adcs(&telemetry);
 
 		// Filter necessary data
 		Madgwick_Update(&telemetry);
@@ -268,12 +273,21 @@ int main(void)
 		// Update FSM and state string
 		update_flight_state(&flight_state, &telemetry);
 
+		// Handle Commands
+		RFM9X_Poll();
+		len = RFM9X_Receive(rxbuf, sizeof(rxbuf));
+		if(len > 0)
+		{
+			handle_rf_command((char *)rxbuf, &flight_state, &telemetry);
+		}
+
 		// Send RF data
 		uint32_t cur_time = HAL_GetTick();
 		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD){
 			prev_rf_transmit_time = cur_time;
-			read_camera_adcs(&telemetry);
-			RF_Transmit(&telemetry);
+			char msg[128];
+			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
+			RFM9X_Send((uint8_t *)msg, sizeof(msg));
 		}
 
 		// Log telemetry

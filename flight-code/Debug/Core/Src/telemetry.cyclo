@@ -1,5 +1,6 @@
 ../Core/Src/telemetry.c:6:6:init_data_file	1
-../Core/Src/telemetry.c:12:6:log_data	1
-../Core/Src/telemetry.c:66:9:write_headers	1
-../Core/Src/telemetry.c:88:6:state_to_string_num	14
-../Core/Src/telemetry.c:135:6:state_to_string_name	14
+../Core/Src/telemetry.c:12:6:get_rf_msg	1
+../Core/Src/telemetry.c:35:6:log_data	1
+../Core/Src/telemetry.c:89:9:write_headers	1
+../Core/Src/telemetry.c:111:6:state_to_string_num	14
+../Core/Src/telemetry.c:158:6:state_to_string_name	14

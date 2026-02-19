@@ -4,4 +4,5 @@
 ../Core/Src/airbrakes.c:83:7:get_mach_number	1
 ../Core/Src/airbrakes.c:89:7:predict_apogee	3
 ../Core/Src/airbrakes.c:127:6:set_optimal_deployment	7
-../Core/Src/airbrakes.c:162:6:set_airbrakes_servo_angle	2
+../Core/Src/airbrakes.c:162:6:init_airbrakes_servo	1
+../Core/Src/airbrakes.c:167:6:set_airbrakes_servo_angle	2

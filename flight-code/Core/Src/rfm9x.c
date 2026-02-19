@@ -42,7 +42,7 @@ uint16_t en_pin;
 uint8_t tx_busy;
 
 static uint8_t spi_num_saved = 0;
-static uint32_t spi2_saved_mode;
+static uint32_t spi1_saved_mode;
 
 /**
  * Switch SPI1 to Mode 0 (CPOL=0, CPHA=0)
@@ -50,39 +50,37 @@ static uint32_t spi2_saved_mode;
  */
 static inline void SPI_SwitchToMode0_Save(void)
 {
-	if (++spi_num_saved > 1) return;
+	if (++spi_num_saved > 1) return;  // nested calls support
 
-	// Save current CPOL/CPHA
-	spi2_saved_mode = SPI2->CR1 & (SPI_CR1_CPOL | SPI_CR1_CPHA);
+	// Save current CPOL/CPHA (in CFG2 register)
+	spi1_saved_mode = SPI1->CFG2 & (SPI_CFG2_CPOL | SPI_CFG2_CPHA);
 
-	// Disable SPI
-	CLEAR_BIT(SPI2->CR1, SPI_CR1_SPE);
+	// Disable SPI before changing mode
+	CLEAR_BIT(SPI1->CR1, SPI_CR1_SPE);
 
 	// Set Mode 0 (CPOL=0, CPHA=0)
-	CLEAR_BIT(SPI2->CR1, SPI_CR1_CPOL | SPI_CR1_CPHA);
+	CLEAR_BIT(SPI1->CFG2, SPI_CFG2_CPOL | SPI_CFG2_CPHA);
 
-	// Enable SPI
-	SET_BIT(SPI2->CR1, SPI_CR1_SPE);
+	// Re-enable SPI
+	SET_BIT(SPI1->CR1, SPI_CR1_SPE);
 }
 
 
 /**
- * Restore previous SPI2 CPOL/CPHA settings
+ * Restore previous SPI1 CPOL/CPHA settings
  */
 static inline void SPI_RestoreMode(void)
 {
-	if (--spi_num_saved > 0) return;
+	if (--spi_num_saved > 0) return;  // still in nested call, don't restore yet
 
-	// Disable SPI
-	CLEAR_BIT(SPI2->CR1, SPI_CR1_SPE);
+	// Disable SPI before restoring
+	CLEAR_BIT(SPI1->CR1, SPI_CR1_SPE);
 
 	// Restore saved CPOL/CPHA
-	MODIFY_REG(SPI2->CR1,
-			   SPI_CR1_CPOL | SPI_CR1_CPHA,
-			   spi2_saved_mode);
+	MODIFY_REG(SPI1->CFG2, SPI_CFG2_CPOL | SPI_CFG2_CPHA, spi1_saved_mode);
 
-	// Enable SPI
-	SET_BIT(SPI2->CR1, SPI_CR1_SPE);
+	// Re-enable SPI
+	SET_BIT(SPI1->CR1, SPI_CR1_SPE);
 }
 
 /* -------------------------------------------------- */
@@ -238,7 +236,7 @@ void RFM9X_Send(uint8_t *data, uint8_t len)
 {
     if(tx_busy) return;
 
-    SPI_RestoreMode();
+    SPI_SwitchToMode0_Save();
 
     /* MUST enter standby first */
     write_reg(REG_OP_MODE, MODE_STDBY);
