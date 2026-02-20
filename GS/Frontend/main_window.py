@@ -1,11 +1,13 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox,
                              QGridLayout, QPushButton, QLabel, QSlider, QLineEdit)
-from PyQt6.QtCore import (Qt, QTimer, QProcess)
+from PyQt6.QtCore import (Qt, QTimer, QProcess, QCoreApplication)
 from PyQt6.QtGui import QAction
 from Backend.backend import SerialStreamer
 
 import csv
 import sys
+import os
+import subprocess
 
 class GroundStationWindow(QMainWindow):
     """
@@ -35,13 +37,22 @@ class GroundStationWindow(QMainWindow):
         self.csv_timer = QTimer(self)
         self.csv_timer.setSingleShot(True)
         self.csv_timer.timeout.connect(self._csv_step)
+
+        self.telemetry_log = []
         
         # Start serial connection if port was provided
         if self.selected_port:
             self.start_serial_connection()
     
     def setup_ui(self):
-        self._setup_menu_bar()
+        # Create menu bar
+        menubar = self.menuBar()
+        system_menu = menubar.addMenu("System")
+
+        hard_reset_action = QAction("Hard Reset", self)
+        hard_reset_action.triggered.connect(self.hard_reset)
+
+        system_menu.addAction(hard_reset_action)
 
         """Setup the main user interface."""
         central_widget = QWidget()
@@ -55,6 +66,10 @@ class GroundStationWindow(QMainWindow):
         load_csv_action = QAction("Load CSV...", self)
         load_csv_action.triggered.connect(self.load_csv)
         file_menu.addAction(load_csv_action)
+
+        save_csv_action = QAction("Save CSV...", self)
+        save_csv_action.triggered.connect(self.save_csv)
+        file_menu.addAction(save_csv_action)
 
         file_menu.addSeparator()
 
@@ -225,6 +240,66 @@ class GroundStationWindow(QMainWindow):
         # Status bar at bottom
         self.statusBar().showMessage("Ready")
 
+    #Doesn't work yet
+    def hard_reset(self):
+        reply = QMessageBox.warning(
+            self,
+            "Hard Reset",
+            "This will completely restart the Ground Station.\n\n"
+            "All current data and connections will be lost.\n\n"
+            "Continue?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        # Stop serial thread cleanly
+        if self.streamer:
+            self.streamer.stop()
+            self.streamer.wait(2000)
+
+        python_exe = sys.executable
+        script_path, extra_args = self._resolve_entry_script()
+
+        # Launch new instance, then quit current Qt app cleanly
+        try:
+            subprocess.Popen([python_exe, script_path, *extra_args], close_fds=True)
+        except Exception as e:
+            QMessageBox.critical(self, "Hard Reset Failed", f"Could not relaunch:\n{e}")
+            return
+
+        QCoreApplication.quit()
+
+
+    def _resolve_entry_script(self) -> tuple[str, list[str]]:
+        """
+        Try to reconstruct the script path even if sys.argv was split by spaces.
+        Returns (script_path, remaining_args).
+        """
+        argv = sys.argv[:]  # includes argv[0] = "script" when run as python script.py
+
+        # Normal case
+        if argv and argv[0].endswith(".py") and os.path.exists(argv[0]):
+            return os.path.abspath(argv[0]), argv[1:]
+
+        # If argv got split, try to join pieces until we find an existing .py
+        for i in range(1, len(argv) + 1):
+            candidate = " ".join(argv[:i])
+            if candidate.endswith(".py") and os.path.exists(candidate):
+                return os.path.abspath(candidate), argv[i:]
+
+        # Fallback: try __main__.__file__ (works in most python script launches)
+        try:
+            import __main__
+            main_file = getattr(__main__, "__file__", None)
+            if main_file and os.path.exists(main_file):
+                return os.path.abspath(main_file), []
+        except Exception:
+            pass
+
+        # Last resort: just use argv[0] as-is (may fail, but at least explicit)
+        return os.path.abspath(argv[0]) if argv else "", argv[1:]
 
     def create_graphs(self, layout):
         """Create all graphs in a grid layout on one tab."""
@@ -345,6 +420,9 @@ class GroundStationWindow(QMainWindow):
         Time, Temp, Pressure, Alt, Gyro_X, Gyro_Y, Gyro_Z,
         Accel_X1, Accel_Y1, Accel_Z1, Accel_X2, Accel_Y2, Accel_Z2, flight_state
         """
+
+        self.telemetry_log.append(data.copy())
+
         # Update flight state display
         if hasattr(self, 'flight_state_display') and data.get('flight_state') is not None:
             self.flight_state_display.update_state(data.get('flight_state'))
@@ -486,6 +564,41 @@ class GroundStationWindow(QMainWindow):
                     "Connection Error",
                     "Cannot send ARM command: Serial connection is not active"
                 )
+
+    def save_csv(self):
+        from PyQt6.QtWidgets import QFileDialog
+
+        if not self.telemetry_log:
+            self.update_status("No data to save")
+            return
+
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Telemetry CSV",
+            "telemetry.csv",
+            "CSV Files (*.csv)"
+        )
+
+        if not path:
+            return
+
+        try:
+            # Collect all possible keys across packets
+            fieldnames = set()
+            for row in self.telemetry_log:
+                fieldnames.update(row.keys())
+
+            fieldnames = sorted(fieldnames)
+
+            with open(path, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(self.telemetry_log)
+
+            self.update_status(f"Saved {len(self.telemetry_log)} rows to {path}")
+
+        except Exception as e:
+            self.update_status(f"CSV save error: {e}")
 
     def load_csv(self):
         from PyQt6.QtWidgets import QFileDialog
