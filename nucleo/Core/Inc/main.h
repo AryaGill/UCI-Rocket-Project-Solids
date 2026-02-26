@@ -86,6 +86,67 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
+typedef enum {
+	DISARMED,
+	LAUNCH_PAD,
+	MOTOR_BURN,
+	GLIDING_ASCENT,
+	DROGUE_PRIMARY_DEPLOYING,
+	DROGUE_PRIMARY_DEPLOYED,
+	DROGUE_SECONDARY_DEPLOYING,
+	DROGUE_SECONDARY_DEPLOYED,
+	MAIN_PRIMARY_DEPLOYING,
+	MAIN_PRIMARY_DEPLOYED,
+	MAIN_SECONDARY_DEPLOYING,
+	MAIN_SECONDARY_DEPLOYED,
+	LANDED
+} FlightState_t;
+
+typedef struct {
+	float pressure;
+	float altitude;
+	float startAlt;
+	float temperature;
+//	float angle_of_attack;
+	float velocity_world_x;
+	float velocity_world_y;
+	float velocity_world_z;
+//	float velocity_r;
+//	float velocity_p;
+//	float velocity_y;
+	float lsm_accel_r;
+	float lsm_accel_p;
+	float lsm_accel_y;
+	float lsm_gyro_r;
+	float lsm_gyro_p;
+	float lsm_gyro_y;
+	float icm_accel_r;
+	float icm_accel_p;
+	float icm_accel_y;
+	float icm_gyro_r;
+	float icm_gyro_p;
+	float icm_gyro_y;
+	float predicted_apogee;
+	uint8_t airbrake_deployment;
+	float mag_r;
+	float mag_p;
+	float mag_y;
+	float q0;
+	float q1;
+	float q2;
+	float q3;
+	float accel_world_x;
+	float accel_world_y;
+	float accel_world_z;
+	float alt_fused;
+	uint8_t cam1_on;
+	uint8_t cam2_on;
+	uint32_t main_p_ematch_voltage;
+	uint32_t main_s_ematch_voltage;
+	uint32_t drogue_p_ematch_voltage;
+	uint32_t drogue_s_ematch_voltage;
+} Telemetry_t;
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

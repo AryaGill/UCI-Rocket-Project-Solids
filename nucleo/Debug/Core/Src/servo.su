@@ -1,2 +1,0 @@
-../Core/Src/servo.c:6:6:init_airbrakes_servo	8	static
-../Core/Src/servo.c:11:6:set_airbrakes_servo_angle	24	static

@@ -273,6 +273,9 @@ int main(void)
 		// Update FSM and state string
 		update_flight_state(&flight_state, &telemetry);
 
+		// Control Airbrakes
+		set_optimal_deployment(flight_state, &telemetry);
+
 		// Handle Commands
 		RFM9X_Poll();
 		len = RFM9X_Receive(rxbuf, sizeof(rxbuf));

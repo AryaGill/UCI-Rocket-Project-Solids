@@ -1,6 +1,6 @@
+"./Core/Src/airbrakes_testing.o"
 "./Core/Src/main.o"
 "./Core/Src/rfm9x.o"
-"./Core/Src/servo.o"
 "./Core/Src/stm32l4xx_hal_msp.o"
 "./Core/Src/stm32l4xx_it.o"
 "./Core/Src/syscalls.o"

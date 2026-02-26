@@ -1,0 +1,10 @@
+../Core/Src/airbrakes_testing.c:60:21:clampf	3
+../Core/Src/airbrakes_testing.c:67:7:get_CdA	3
+../Core/Src/airbrakes_testing.c:109:7:get_mach_number	1
+../Core/Src/airbrakes_testing.c:114:7:get_mag2	1
+../Core/Src/airbrakes_testing.c:118:7:get_mag3	1
+../Core/Src/airbrakes_testing.c:122:7:predict_apogee	3
+../Core/Src/airbrakes_testing.c:162:6:set_optimal_deployment	6
+../Core/Src/airbrakes_testing.c:196:6:init_airbrakes_servo	1
+../Core/Src/airbrakes_testing.c:201:6:set_airbrakes_servo_angle	2
+../Core/Src/airbrakes_testing.c:213:6:set_airbrakes_deployment_level	1

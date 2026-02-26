@@ -1,11 +1,11 @@
-#include "airbrakes.h"
+#include "airbrakes_testing.h"
 #include <math.h>
 
 // Servo timer
 extern TIM_HandleTypeDef htim3;
 
 // Air Brakes variables
-#define TARGET_APOGEE_FT 3500
+#define TARGET_APOGEE_FT 8400
 #define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
 #define GAMMA 1.4
 #define R 287.05287
@@ -13,7 +13,7 @@ extern TIM_HandleTypeDef htim3;
 #define L 0.0065 // Temperature Lapse Rate
 #define MASS 31.5
 #define DESIRED_SEARCH_TIME 200 // ms
-#define TIME_PER_SIM_STEP 0.015 // ms
+#define TIME_PER_SIM_STEP 0.23 // ms
 float deltaT_coefficient = TIME_PER_SIM_STEP * log2f(NUM_DEPLOYMENT_LEVELS) / DESIRED_SEARCH_TIME / g;
 
 // Deployment levels should be evenly spread between least and most deployment (inclusive)

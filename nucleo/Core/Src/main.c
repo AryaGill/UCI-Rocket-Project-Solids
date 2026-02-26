@@ -23,7 +23,7 @@
 /* USER CODE BEGIN Includes */
 
 #include "rfm9x.h"
-#include "servo.h"
+#include "airbrakes_testing.h"
 #include <stdio.h>
 
 /* USER CODE END Includes */
@@ -55,6 +55,10 @@ UART_HandleTypeDef huart2;
 uint8_t rxbuf[64];
 uint8_t len;
 uint32_t packet_num = 1;
+
+float debug_value = 0;
+uint32_t debug_time = 0;
+Telemetry_t telemetry;
 
 /* USER CODE END PV */
 
@@ -113,6 +117,23 @@ int main(void)
 
   RFM9X_Init(&hspi2, RF_CS_GPIO_Port, RF_CS_Pin, RF_RST_GPIO_Port, RF_RST_Pin, RF_EN_GPIO_Port, RF_EN_Pin);
 
+
+  // Testing airbrakes functions
+  telemetry.velocity_world_z = 200;
+  telemetry.velocity_world_x = 0;
+  telemetry.velocity_world_y = 0;
+  telemetry.temperature = 20;
+  telemetry.altitude = 1000;
+  telemetry.pressure = 1014;
+
+  uint32_t t = HAL_GetTick();
+//  debug_value = predict_apogee(&telemetry, 28);
+  set_optimal_deployment(GLIDING_ASCENT, &telemetry);
+  debug_time = HAL_GetTick() - t;
+
+  // What is deltaT
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -139,7 +160,10 @@ int main(void)
 	  }
 
 //	  set_airbrakes_servo_angle(0);
-//	  HAL_Delay(1000);
+//	  HAL_Delay(460);
+//	  set_airbrakes_servo_angle(180);
+//	  HAL_Delay(2000);
+
 //	  for (int i = 0; i < 181; ++i){
 //		  set_airbrakes_servo_angle(i);
 //		  HAL_Delay(10);
@@ -156,6 +180,21 @@ int main(void)
 //	  set_airbrakes_servo_angle(180);
 //	  HAL_Delay(1000);
 
+//	  set_airbrakes_servo_angle(50);
+//	  HAL_Delay(1000);
+
+//	  set_airbrakes_servo_angle(120);
+//	  HAL_Delay(1000);
+//	  for (int i = 120; i > 20; --i){
+//		  set_airbrakes_servo_angle(i);
+//		  HAL_Delay(10);
+//	  }
+//	  HAL_Delay(1000000);
+
+//	  set_airbrakes_servo_angle(120);
+//	  HAL_Delay(1000);
+//	  set_airbrakes_servo_angle(20);
+//	  HAL_Delay(10000);
 
     /* USER CODE END WHILE */
 
