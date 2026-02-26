@@ -11,7 +11,7 @@ extern TIM_HandleTypeDef htim3;
 #define R 287.05287
 #define g 9.80665 // Gravity
 #define L 0.0065 // Temperature Lapse Rate
-#define MASS 31.5
+#define MASS 25.71 // kg
 #define DESIRED_SEARCH_TIME 200 // ms
 #define TIME_PER_SIM_STEP 0.23 // ms
 float deltaT_coefficient = TIME_PER_SIM_STEP * log2f(NUM_DEPLOYMENT_LEVELS) / DESIRED_SEARCH_TIME / g;
