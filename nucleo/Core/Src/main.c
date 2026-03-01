@@ -60,6 +60,8 @@ float debug_value = 0;
 uint32_t debug_time = 0;
 Telemetry_t telemetry;
 
+uint32_t last_tx = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -113,8 +115,6 @@ int main(void)
 
   init_airbrakes_servo();
 
-  uint32_t last_tx = 0;
-
   RFM9X_Init(&hspi2, RF_CS_GPIO_Port, RF_CS_Pin, RF_RST_GPIO_Port, RF_RST_Pin, RF_EN_GPIO_Port, RF_EN_Pin);
 
 
@@ -148,6 +148,7 @@ int main(void)
 	  if(len > 0)
 	  {
 		  // handle received packet
+		  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 	  }
 
 	  /* ---- TRANSMIT PERIODICALLY ---- */
@@ -156,8 +157,10 @@ int main(void)
 		  char msg[16];
 		  snprintf(msg, sizeof(msg), "Packet %lu", ++packet_num);
 		  RFM9X_Send((uint8_t *)msg, sizeof(msg));
-		  last_tx = HAL_GetTick();
+		  last_tx += 1000;
 	  }
+
+	  HAL_Delay(10);
 
 //	  set_airbrakes_servo_angle(0);
 //	  HAL_Delay(460);
@@ -191,10 +194,21 @@ int main(void)
 //	  }
 //	  HAL_Delay(1000000);
 
-//	  set_airbrakes_servo_angle(120);
+//	  set_airbrakes_servo_angle(180);
 //	  HAL_Delay(1000);
-//	  set_airbrakes_servo_angle(20);
+//	  set_airbrakes_servo_angle(0);
 //	  HAL_Delay(10000);
+
+//	  set_airbrakes_servo_angle(90);
+//	  HAL_Delay(1000);
+//	  set_airbrakes_servo_angle(0);
+//	  HAL_Delay(10000);
+//	  set_airbrakes_servo_angle(90);
+//	  HAL_Delay(1000);
+//	  set_airbrakes_servo_angle(135);
+//	  HAL_Delay(1000);
+//	  set_airbrakes_servo_angle(180);
+//	  HAL_Delay(1000);
 
     /* USER CODE END WHILE */
 

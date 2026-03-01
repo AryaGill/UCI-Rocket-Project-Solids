@@ -321,6 +321,7 @@ uint8_t RFM9X_Receive(uint8_t *buf, uint8_t max_len)
 
 	for(uint8_t i = 0; i < len; i++)
 		buf[i] = read_reg(REG_FIFO);
+	buf[len] = '\0';
 
 	write_reg(REG_IRQ_FLAGS, 0xFF);
 
