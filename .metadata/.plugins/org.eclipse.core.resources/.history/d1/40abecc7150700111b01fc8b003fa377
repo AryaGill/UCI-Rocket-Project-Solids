@@ -1,0 +1,187 @@
+#include "sd_card.h"
+#include "main.h"
+#include <stdlib.h>
+#include <string.h>
+
+// SPI Helper Functions
+static inline void SPI_CS_LOW(GPIO_TypeDef *port, uint16_t pin)
+{
+    HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+}
+
+static inline void SPI_CS_HIGH(GPIO_TypeDef *port, uint16_t pin)
+{
+    HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
+}
+
+void SD_SendDummyClocks(SPI_HandleTypeDef *hspi,
+                        GPIO_TypeDef *port, uint16_t pin)
+{
+    uint8_t dummy = 0xFF;
+
+    SPI_CS_HIGH(port, pin);
+
+    for (int i = 0; i < 10; i++) { // 10 bytes = 80 clocks
+        HAL_SPI_Transmit(hspi, &dummy, 1, HAL_MAX_DELAY);
+    }
+}
+
+void init_sd(SPI_HandleTypeDef *hspi){
+	SD_SendDummyClocks(hspi, SD_CS_GPIO_Port, SD_CS_Pin);
+	f_mount(&USERFatFS, USERPath, 1);
+}
+
+FRESULT write_sd(const char *filename, const char *line)
+{
+    FIL file;
+    UINT bytes_written;
+    FRESULT res;
+
+    // Open file (create if it doesn't exist)
+    res = f_open(&file, filename, FA_OPEN_ALWAYS | FA_WRITE);
+    if (res != FR_OK)
+        return res;
+
+    // Move write pointer to end of file
+    res = f_lseek(&file, f_size(&file));
+    if (res != FR_OK) {
+        f_close(&file);
+        return res;
+    }
+
+    // Write the line
+    res = f_write(&file, line, strlen(line), &bytes_written);
+    if (res != FR_OK) {
+        f_close(&file);
+        return res;
+    }
+
+    // Optional: newline
+    const char newline[] = "\r\n";
+    f_write(&file, newline, 2, &bytes_written);
+
+    f_close(&file);
+    return FR_OK;
+}
+
+//FRESULT read_sd_line(const char *filename, char *buffer, UINT buffer_size)
+//{
+//    FIL file;
+//    FRESULT res;
+//
+//    // Open file for reading
+//    res = f_open(&file, filename, FA_READ);
+//    if (res != FR_OK)
+//        return res;
+//
+//    // Read one line
+//    if (f_gets(buffer, buffer_size, &file) == NULL) {
+//        f_close(&file);
+//        return FR_DISK_ERR;   // or FR_DISK_ERR if you prefer
+//    }
+//
+//    f_close(&file);
+//    return FR_OK;
+//}
+
+FRESULT write_sd_state(const char *filename, FlightState_t state, float start_alt){
+	FIL file;
+	UINT bytes_written;
+	FRESULT res;
+
+	// Open file: create new or overwrite existing
+	res = f_open(&file, filename, FA_WRITE | FA_CREATE_ALWAYS);
+	if (res != FR_OK)
+		return res;
+
+	// Write state
+	char line[20];
+	state_to_string_num(state, line);
+	res = f_write(&file, line, strlen(line), &bytes_written);
+	if (res != FR_OK) {
+		f_close(&file);
+		return res;
+	}
+
+	// newline
+	const char newline[] = "\r\n";
+	f_write(&file, newline, 2, &bytes_written);
+
+	// Write start alt
+	sprintf(line, sizeof(line), "%.6f", start_alt);
+	res = f_write(&file, line, strlen(line), &bytes_written);
+	if (res != FR_OK) {
+		f_close(&file);
+		return res;
+	}
+
+	// newline
+	f_write(&file, newline, 2, &bytes_written);
+
+	f_close(&file);
+	return FR_OK;
+}
+
+void strip_newline(char *s)
+{
+    size_t len = strlen(s);
+    while (len > 0 &&
+          (s[len-1] == '\n' || s[len-1] == '\r'))
+    {
+        s[--len] = '\0';
+    }
+}
+
+FRESULT read_sd_state(const char *filename, FlightState_t *state, float *start_alt){
+	FIL file;
+	FRESULT res;
+
+	char buf[20];
+
+	// Open file for reading
+	res = f_open(&file, filename, FA_READ);
+	if (res != FR_OK)
+		return res;
+
+	// Read state line
+	if (f_gets(buf, sizeof(buf), &file) == NULL) {
+		f_close(&file);
+		return FR_DISK_ERR;   // or FR_DISK_ERR if you prefer
+	}
+	strip_newline(buf);
+	int state_int = atoi(buf);
+	if (state_int < (int)DISARMED || state_int > (int)LANDED){
+		*state = DISARMED;
+	}
+	else{
+		*state = (FlightState_t)atoi(buf);
+	}
+
+	// Read start alt line
+	if (f_gets(buf, sizeof(buf), &file) == NULL) {
+		f_close(&file);
+		return FR_DISK_ERR;   // or FR_DISK_ERR if you prefer
+	}
+	strip_newline(buf);
+	*start_alt = strtof(buf, NULL);
+
+	f_close(&file);
+	return FR_OK;
+}
+
+uint8_t sd_file_exists(const char *filename)
+{
+    FILINFO fno;
+    FRESULT res;
+
+    res = f_stat(filename, &fno);
+
+    if (res == FR_OK)
+        return 1;   // file exists
+    else
+        return 0;   // file does not exist or error
+}
+
+FRESULT sd_delete_file(const char *filename) {
+    return f_unlink(filename);
+}

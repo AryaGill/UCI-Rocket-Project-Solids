@@ -1,0 +1,6 @@
+#pragma once
+#include "main.h"
+
+#define BUZZER_CHANNEL TIM_CHANNEL_1
+
+void buzzer_set_frequency(uint32_t freq);

@@ -1,0 +1,12 @@
+#pragma once
+
+#include "main.h"
+#include "sd_card.h"
+
+#define FLIGHT_DATA_FILE "flight_data.csv"
+
+void init_data_file();
+void log_data(char* state_str, Telemetry_t *telemetry);
+FRESULT write_headers(void);
+void state_to_string_num(FlightState_t state, char* str);
+void state_to_string_name(FlightState_t state, char* str);

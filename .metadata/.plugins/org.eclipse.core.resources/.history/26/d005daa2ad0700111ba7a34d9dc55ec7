@@ -1,0 +1,65 @@
+#include "cameras.h"
+
+void turn_camera_on(int cam_num){
+	HAL_GPIO_WritePin(CAM_PORTS[cam_num], CAM_PINS[cam_num], GPIO_PIN_SET);
+//	HAL_Delay(5);
+//
+//	ADC_ChannelConfTypeDef sConfig;
+//	for(int i = 0; i < 5; ++i){
+//		// Read ADC
+//		sConfig.Channel = CAM_ADC_CHANNELS[cam_num];
+//		HAL_ADC_ConfigChannel(CAM_ADCs[cam_num], &sConfig);
+//
+//		HAL_ADC_Start(CAM_ADCs[cam_num]);
+//		HAL_ADC_PollForConversion(CAM_ADCs[cam_num], HAL_MAX_DELAY);
+//
+//		uint32_t adc = HAL_ADC_GetValue(CAM_ADCs[cam_num]);
+//
+//		HAL_ADC_Stop(CAM_ADCs[cam_num]);
+//
+//		if (adc < 1000){
+//			// Camera is on
+//			break;
+//		}
+//		else{
+//			// Camera is off. Turn off then back on.
+//			HAL_GPIO_WritePin(CAM_PORTS[cam_num], CAM_PINS[cam_num], GPIO_PIN_RESET);
+//			HAL_Delay(10);
+//			HAL_GPIO_WritePin(CAM_PORTS[cam_num], CAM_PINS[cam_num], GPIO_PIN_SET);
+//			HAL_Delay(10);
+//		}
+//	}
+}
+
+void turn_camera_off(int cam_num){
+	HAL_GPIO_WritePin(CAM_PORTS[cam_num], CAM_PINS[cam_num], GPIO_PIN_RESET);
+}
+
+void read_camera_adcs(Telemetry_t *telemetry){
+	ADC_ChannelConfTypeDef sConfig;
+
+	// Read ADC
+	for (int cam_num = 0; cam_num < 2; ++cam_num){
+		sConfig.Channel = CAM_ADC_CHANNELS[cam_num];
+		HAL_ADC_ConfigChannel(CAM_ADCs[cam_num], &sConfig);
+
+		HAL_ADC_Start(CAM_ADCs[cam_num]);
+		HAL_ADC_PollForConversion(CAM_ADCs[cam_num], HAL_MAX_DELAY);
+
+		uint32_t adc = HAL_ADC_GetValue(CAM_ADCs[cam_num]);
+
+		HAL_ADC_Stop(CAM_ADCs[cam_num]);
+
+		if (adc < 1000){
+			// Camera is on
+			break;
+		}
+		else{
+			// Camera is off. Turn off then back on.
+			HAL_GPIO_WritePin(CAM_PORTS[cam_num], CAM_PINS[cam_num], GPIO_PIN_RESET);
+			HAL_Delay(10);
+			HAL_GPIO_WritePin(CAM_PORTS[cam_num], CAM_PINS[cam_num], GPIO_PIN_SET);
+			HAL_Delay(10);
+		}
+	}
+}

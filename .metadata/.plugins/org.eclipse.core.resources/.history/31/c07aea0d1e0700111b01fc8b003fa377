@@ -1,0 +1,13 @@
+#include "cameras.h"
+
+void turn_camera_on(int cam_num){
+	HAL_GPIO_WritePin(CAM_PORTS[cam_num], CAM_PINS[cam_num], GPIO_PIN_SET);
+
+	// Read ADC
+	ADC_ChannelConfTypeDef sConfig;
+	sConfig.Channel = CAM_ADC_CHANNELS[cam_num];
+}
+
+void turn_camera_off(GPIO_TypeDef *cam_port, uint16_t cam_pin){
+	HAL_GPIO_WritePin(cam_port, cam_pin, GPIO_PIN_RESET);
+}

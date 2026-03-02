@@ -1,0 +1,8 @@
+#include "buzzer.h"
+
+extern TIM_HandleTypeDef htim4;
+
+void buzzer_set_frequency(uint32_t freq){
+	HAL_TIM_PWM_Start(&htim4, BUZZER_CHANNEL);
+	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 250);
+}

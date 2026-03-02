@@ -1,0 +1,97 @@
+import datetime
+
+class config:
+    def __init__(self):
+        # Environment
+        self.latitude = 31.0498
+        self.longitude = -103.5473
+        self.elevation = 0
+
+        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+        self.year = tomorrow.year
+        self.month = tomorrow.month
+        self.day = tomorrow.day
+
+        # self.atmosphere_model_type = "Forecast"
+        self.atmosphere_model_type = "standard_atmosphere"
+        self.atmosphere_model_file = "GFS"
+
+        # Motor
+        self.thrust_source = "RocketPy/night_fury/nf_thrust_curve.csv"
+        self.dry_mass = 5.5
+        self.dry_inertia = (6.300, 6.300, 0.042) # Guess
+        self.center_of_dry_mass_position = 1.833197866 # Guess
+        self.grains_center_of_mass_position = 0.527051054 # Guess
+        self.burn_time = 3.09
+        self.grain_number = 7
+        self.grain_separation = 0.0127000254
+        self.grain_density = 1746.601
+        self.grain_outer_radius = 0.04699 #0.09398
+        self.grain_initial_inner_radius = 0.02794
+        self.grain_initial_height = 0.1397
+        self.nozzle_radius = 0.03048
+        self.throat_radius = 0.0123317
+        self.interpolation_method = "linear"
+        self.nozzle_position = 0
+        self.motor_coordinate_system_orientation = "nozzle_to_combustion_chamber"
+
+        # Rocket
+        self.radius = 0.078867
+        self.mass = 17.78
+        self.inertia = (10.020, 10.020, 0.067) # Guess
+        self.power_off_drag = "RocketPy/night_fury/nf_power_on_drag.csv"
+        self.power_on_drag = "RocketPy/night_fury/nf_power_on_drag.csv"
+        self.center_of_mass_without_motor = -2.2483
+        self.rocket_coordinate_system_orientation = "tail_to_nose"
+
+        self.motor_position = -3.3274
+
+        # Rail Buttons
+        self.upper_button_position = -2.032
+        self.lower_button_position = -3.0734
+        self.angular_position = 45
+
+        # Nose Cone
+        self.nose_cone_length = 0.9144018288
+        self.nose_cone_kind = "von karman"
+        self.nose_cone_position = 0
+
+        # Fins
+        self.num_fins = 4
+        self.root_chord = 0.2794005588
+        self.tip_chord = 0.1778
+        self.fin_span = 0.1778
+        self.fin_position = -2.8956
+        self.cant_angle = 0
+        # self.airfoil = ("../data/airfoils/NACA0012-radians.txt","radians") # Guess
+
+        # Tail
+        self.tail_top_radius = 0.07886715773
+        self.tail_bottom_radius = 0.05270510541
+        self.tail_length = 0
+        self.tail_position = self.motor_position
+
+        # Main Parachute
+        self.main_name = "main"
+        self.main_cd_s = 6.6902
+        self.main_trigger = 304.7851265      # ejection altitude in meters
+        self.main_sampling_rate = 105
+        self.main_lag = 1.5 # Guess
+        self.main_noise = (0, 8.3, 0.5) # Guess
+
+        # Drogue Parachute
+        self.drogue_name = "drogue"
+        self.drogue_cd_s = 1.79955
+        self.drogue_trigger = "apogee"  # ejection at apogee
+        self.drogue_sampling_rate = 105
+        self.drogue_lag = 1.5 # Guess
+        self.drogue_noise = (0, 8.3, 0.5) # Guess
+
+        # Airbrakes
+        self.drag_coefficient_curve = "RocketPy/night_fury/nf_air_brakes_drag_coefficient_curve.csv" # Guess
+        self.air_brakes_sampling_rate = 10
+        self.air_brakes_reference_area = None
+        self.air_brakes_clamp = True
+        self.air_brakes_initial_observed_variables = [0, 0, 0, 0]
+        self.air_brakes_override_rocket_drag = True
+        self.air_brakes_name = "Air Brakes"

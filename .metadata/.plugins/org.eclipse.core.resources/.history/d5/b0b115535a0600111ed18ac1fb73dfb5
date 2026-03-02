@@ -1,0 +1,3 @@
+#pragma once
+
+void complementary_filter(Telemetry_t* telemetry);

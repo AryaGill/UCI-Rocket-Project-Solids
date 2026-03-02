@@ -1,0 +1,170 @@
+#include "airbrakes.h"
+#include <math.h>
+
+// Servo timer
+extern TIM_HandleTypeDef htim3;
+
+// Air Brakes variables
+#define TARGET_APOGEE_FT 3500
+#define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
+#define GAMMA 1.4
+#define R 287.05287
+#define g 9.80665 // Gravity
+#define L 0.0065 // Temperature Lapse Rate
+#define MASS 2.562797
+#define WANTED_AIRBRAKE_ALG_TIME 30 // ms
+#define TIME_PER_AIRBRAKE_CALL 0.0125 // ms
+float deltaT = 0.01;
+float A = pow(0.1016, 2) * M_PI;
+float deltaT_coefficient = (TIME_PER_AIRBRAKE_CALL / WANTED_AIRBRAKE_ALG_TIME) / g;
+
+// Deployment levels should be evenly spread between least and most deployment (inclusive)
+// Mach numbers should be evenly spread between 0 and 0.7 (inclusive)
+float air_brakes_drag_coefficient[NUM_RECORDED_DEPLOYMENT_LEVELS][NUM_RECORDED_MACH_NUMS] = {
+    {0.400, 0.400, 0.400, 0.400, 0.400, 0.400, 0.400, 0.400}, // deploy 0.0
+    {0.430, 0.460, 0.490, 0.520, 0.550, 0.580, 0.610, 0.640}, // deploy 0.1
+    {0.460, 0.490, 0.520, 0.550, 0.580, 0.610, 0.640, 0.670}, // deploy 0.2
+    {0.490, 0.520, 0.550, 0.580, 0.610, 0.640, 0.670, 0.700}, // deploy 0.3
+    {0.520, 0.550, 0.580, 0.610, 0.640, 0.670, 0.700, 0.730}, // deploy 0.4
+    {0.550, 0.580, 0.610, 0.640, 0.670, 0.700, 0.730, 0.760}, // deploy 0.5
+    {0.580, 0.610, 0.640, 0.670, 0.700, 0.730, 0.760, 0.790}, // deploy 0.6
+    {0.610, 0.640, 0.670, 0.700, 0.730, 0.760, 0.790, 0.820}, // deploy 0.7
+    {0.640, 0.670, 0.700, 0.730, 0.760, 0.790, 0.820, 0.850}, // deploy 0.8
+    {0.670, 0.700, 0.730, 0.760, 0.790, 0.820, 0.850, 0.880}, // deploy 0.9
+    {0.700, 0.730, 0.760, 0.790, 0.820, 0.850, 0.880, 0.910}  // deploy 1.0
+};
+
+float get_mag2(float x, float y){
+	return sqrtf(x*x + y*y);
+}
+
+float get_mag3(float x, float y, float z){
+	return sqrtf(x*x + y*y + z*z);
+}
+
+float get_drag_coefficient(const int deployment_level, const float mach_number){
+	if (mach_number >= 0.7){
+		return air_brakes_drag_coefficient[NUM_RECORDED_DEPLOYMENT_LEVELS - 1][NUM_RECORDED_MACH_NUMS - 1];
+	}
+
+	float mach_idx = mach_number * (NUM_RECORDED_MACH_NUMS - 1) / 0.7;
+	float deployment_idx = (float)deployment_level * (NUM_RECORDED_DEPLOYMENT_LEVELS - 1) / (NUM_DEPLOYMENT_LEVELS - 1);
+
+	// Integer and fractional parts
+	int mach_i = (int)mach_idx;                 // lower index
+	float mach_frac = mach_idx - (float)mach_i;      // fractional part
+	int deployment_i = (int)deployment_idx;
+	float deployment_frac = deployment_idx - (float)deployment_i;
+
+	float low_low = air_brakes_drag_coefficient[deployment_i][mach_i];
+	float low_high = air_brakes_drag_coefficient[deployment_i][mach_i + 1];
+
+	if (deployment_idx == floor(deployment_idx)){
+		// deployment_level is round. No need for upper value
+		return low_low + (low_high - low_low) * mach_frac;
+	}
+
+	float high_low = air_brakes_drag_coefficient[deployment_i + 1][mach_i];
+	float high_high = air_brakes_drag_coefficient[deployment_i + 1][mach_i + 1];
+
+	// --- Bilinear interpolation ---
+	float x = mach_frac;
+	float y = deployment_frac;
+
+	float result =
+			(1 - x) * (1 - y) * low_low +
+			x   * (1 - y) * low_high +
+			(1 - x) *     y   * high_low +
+			x   *     y   * high_high;
+
+	return result;
+}
+
+float get_mach_number(const float velocity, const float temp){
+	float speed_of_sound = pow(R * GAMMA * temp, 0.5);
+	return velocity / speed_of_sound;
+}
+
+//float predict_apogee(const float alt, const float temp0, const float pressure0, const float angle_of_attack, const float speed0, const int deployment_level){
+float predict_apogee(Telemetry_t *telemetry, const int deployment_level){
+//	deltaT = fmaxf(0.01, fminf(telemetry->velocity_r * deltaT_coefficient * cos(telemetry->angle_of_attack), 0.1));
+	deltaT = fmaxf(0.01, fminf(telemetry->velocity_world_z * deltaT_coefficient, 0.1));
+
+	float alt_sim = telemetry->altitude;
+//	float vz_sim = telemetry->velocity_r * cos(telemetry->angle_of_attack);
+//	float vx_sim = telemetry->velocity_r * sin(telemetry->angle_of_attack);
+	float vz_sim = telemetry->velocity_world_z;
+	float vx_sim = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
+
+	for (int i = 0; i < 100000; ++i){
+		float vz_sim_before = vz_sim;
+		float T_local = fmaxf(telemetry->temperature - (L * (alt_sim - telemetry->altitude)), 1);
+		float mach_number = get_mach_number(pow(vz_sim * vz_sim + vx_sim * vx_sim, 0.5), T_local);
+
+		float airbrake_Cd = get_drag_coefficient(deployment_level, mach_number);
+
+		float p_local = telemetry->pressure * pow(T_local / telemetry->temperature, g / (R * L));
+		float rho_sim = p_local / (R * T_local);
+
+		float Fd = 0.5 * airbrake_Cd * rho_sim * A * (vx_sim * vx_sim + vz_sim * vz_sim);
+
+		float angle_sim = atan2(vx_sim, vz_sim);
+		float Fx = -Fd * sin(angle_sim);
+		float Fz = -Fd * cos(angle_sim) - g * MASS;
+		vx_sim += (Fx / MASS) * deltaT;
+		vz_sim += (Fz / MASS) * deltaT;
+		alt_sim += ((vz_sim + vz_sim_before) / 2) * deltaT;
+
+		if (vz_sim < 0){
+			break;
+		}
+	}
+
+	return alt_sim;
+}
+
+//int optimal_deployment(const float alt, const float temp0, const float pressure0, const float angle_of_attack, const float speed0){
+void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
+	// Make sure only works when flight_state == GLIDING_ASCENT && get_mach_number(velocity, Temp) < 0.7 && angle of attack < 30 deg... else 0
+	float horizontal_speed = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
+	float angle_of_attack = atan2f(horizontal_speed, telemetry->velocity_world_z);
+	if (flight_state != GLIDING_ASCENT || get_mach_number(get_mag3(telemetry->velocity_world_x, telemetry->velocity_world_y, telemetry->velocity_world_z), telemetry->temperature) > 0.7 || angle_of_attack > 30 * M_PI / 180){
+		telemetry->airbrake_deployment = 0;
+		set_airbrakes_servo_angle(0);
+		return;
+	}
+
+	uint8_t low = 0;
+	uint8_t high = NUM_DEPLOYMENT_LEVELS - 1;
+
+	int num_sims = log2f(NUM_DEPLOYMENT_LEVELS);
+
+	float pred_apogee;
+	for (int i = 0; i < num_sims; ++i){
+		int mid = (high + low) / 2;
+		pred_apogee = predict_apogee(telemetry, mid);
+//		pred_apogee = predict_apogee(alt, temp0, pressure0, angle_of_attack, speed0, mid);
+		if (pred_apogee > TARGET_APOGEE_M){
+			low = mid;
+		}
+		else{
+			high = mid;
+		}
+	}
+
+	telemetry->predicted_apogee = pred_apogee;
+	telemetry->airbrake_deployment = low;
+	set_airbrakes_servo_angle((uint8_t)(((uint32_t)(low * 180)) / NUM_DEPLOYMENT_LEVELS));
+}
+
+void set_airbrakes_servo_angle(uint8_t angle)
+{
+    if (angle > 180) angle = 180;
+
+    uint32_t pulse =
+        SERVO_MIN_US +
+        ((SERVO_MAX_US - SERVO_MIN_US) * angle) / 180;
+
+    __HAL_TIM_SET_COMPARE(&htim3, AIRBRAKES_SERVO_1_CHANNEL, pulse);
+    __HAL_TIM_SET_COMPARE(&htim3, AIRBRAKES_SERVO_2_CHANNEL, pulse);
+}

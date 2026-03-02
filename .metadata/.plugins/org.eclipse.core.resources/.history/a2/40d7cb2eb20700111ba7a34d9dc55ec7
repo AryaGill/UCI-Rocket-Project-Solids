@@ -1,0 +1,9 @@
+#include "buzzer.h"
+
+void set_buzzer_freq(){
+
+}
+
+void turn_buzzer_off(){
+
+}

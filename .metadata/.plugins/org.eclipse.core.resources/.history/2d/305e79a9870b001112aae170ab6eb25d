@@ -1,0 +1,60 @@
+#include "parachutes.h"
+
+extern ADC_HandleTypeDef hadc1;
+
+uint8_t check_ematch_on(ADC_HandleTypeDef *hadc, uint32_t channel){
+	ADC_ChannelConfTypeDef sConfig;
+	sConfig.Channel = channel;
+	HAL_ADC_ConfigChannel(hadc, &sConfig);
+
+	HAL_ADC_Start(hadc);
+	HAL_ADC_PollForConversion(hadc, HAL_MAX_DELAY);
+
+	uint32_t adc = HAL_ADC_GetValue(hadc);
+
+	HAL_ADC_Stop(hadc);
+
+	if (adc < EMATCH_CONNECTED_THRESHOLD){
+		return 0;
+	}
+	return 1;
+}
+
+void read_ematch_connections(Telemetry_t *telemetry){
+	telemetry->main_p_ematch_connected = check_ematch_on(&hadc1, MAIN_P_ADC_CHANNEL);
+	telemetry->main_s_ematch_connected = check_ematch_on(&hadc1, MAIN_S_ADC_CHANNEL);
+	telemetry->drogue_p_ematch_connected = check_ematch_on(&hadc1, DROGUE_P_ADC_CHANNEL);
+	telemetry->drogue_s_ematch_connected = check_ematch_on(&hadc1, DROGUE_S_ADC_CHANNEL);
+}
+
+void drogue_primary_on(){
+	HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_SET);
+}
+
+void drogue_primary_off(){
+	HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_RESET);
+}
+
+void drogue_secondary_on(){
+	HAL_GPIO_WritePin(Drogue_Parachute_2_GPIO_Port, Drogue_Parachute_2_Pin, GPIO_PIN_SET);
+}
+
+void drogue_secondary_off(){
+	HAL_GPIO_WritePin(Drogue_Parachute_2_GPIO_Port, Drogue_Parachute_2_Pin, GPIO_PIN_RESET);
+}
+
+void main_primary_on(){
+	HAL_GPIO_WritePin(Main_Parachute_1_GPIO_Port, Main_Parachute_1_Pin, GPIO_PIN_SET);
+}
+
+void main_primary_off(){
+	HAL_GPIO_WritePin(Main_Parachute_1_GPIO_Port, Main_Parachute_1_Pin, GPIO_PIN_RESET);
+}
+
+void main_secondary_on(){
+	HAL_GPIO_WritePin(Main_Parachute_2_GPIO_Port, Main_Parachute_2_Pin, GPIO_PIN_SET);
+}
+
+void main_secondary_off(){
+	HAL_GPIO_WritePin(Main_Parachute_2_GPIO_Port, Main_Parachute_2_Pin, GPIO_PIN_RESET);
+}

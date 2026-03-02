@@ -1,0 +1,248 @@
+#include "sd_card.h"
+#include "main.h"
+#include <string.h>
+
+//char TxBuffer[250];
+//FRESULT FR_Status;
+//
+//
+//FATFS *FS_Ptr;
+//DWORD FreeClusters;
+//uint32_t TotalSize, FreeSpace;
+//
+//void mount_sd(){
+//	FATFS FatFs;
+//
+//	FR_Status = f_mount(&FatFs, "", 1);
+//	if (FR_Status != FR_OK)
+//	{
+//	  sprintf(TxBuffer, "Error! While Mounting SD Card, Error Code: (%i)\r\n", FR_Status);
+//	  return;
+//	}
+//	sprintf(TxBuffer, "SD Card Mounted Successfully! \r\n\n");
+//}
+//
+//void write_sd(char* file_name, char* data){
+//	FIL Fil;
+//
+//	//Open the file
+//	FR_Status = f_open(&Fil, file_name, FA_WRITE | FA_OPEN_ALWAYS);
+//	if(FR_Status != FR_OK)
+//	{
+//	  sprintf(TxBuffer, "Error! While Creating/Opening Text File, Error Code: (%i)\r\n", FR_Status);
+//	  return;
+//	}
+//	FR_Status = f_lseek(&Fil, f_size(&Fil)); // Move The File Pointer To The EOF (End-Of-File)
+//	if(FR_Status != FR_OK)
+//	{
+//	  sprintf(TxBuffer, "Error! While moving pointer to end of file, Error Code: (%i)\r\n", FR_Status);
+//	  return;
+//	}
+//
+//	sprintf(TxBuffer, "Text File Opened! Writing Data To The Text File..\r\n\n");
+//	// (1) Write Data To The Text File [ Using f_puts() Function ]
+//	f_puts(data, &Fil);
+//	// Close The File
+//	f_close(&Fil);
+//}
+//
+//void read_sd(char* file_name, uint32_t line_number, char* RW_buffer, size_t buffer_size)
+//{
+//    FIL Fil;
+//    UINT bytesRead;
+//    uint32_t current_line = 0;
+//
+//    // Open the file for reading
+//    FR_Status = f_open(&Fil, file_name, FA_READ);
+//    if(FR_Status != FR_OK) {
+//        sprintf(TxBuffer, "Error opening file %s, code: %i\r\n", file_name, FR_Status);
+//        RW_buffer[0] = '\0';
+//        return;
+//    }
+//
+//    RW_buffer[0] = '\0';
+//    size_t pos = 0;
+//
+//    while(f_gets(&RW_buffer[pos], buffer_size - pos, &Fil)) {
+//        if(current_line == line_number) {
+//            // Remove newline characters
+//            size_t len = strlen(RW_buffer);
+//            if(len > 0 && (RW_buffer[len-1] == '\n' || RW_buffer[len-1] == '\r')) {
+//                RW_buffer[len-1] = '\0';
+//                if(len > 1 && RW_buffer[len-2] == '\r') RW_buffer[len-2] = '\0';
+//            }
+//            break;
+//        }
+//
+//        // Move to next line
+//        current_line++;
+//    }
+//
+//    // If requested line does not exist, return empty string
+//    if(current_line < line_number) {
+//        RW_buffer[0] = '\0';
+//    }
+//
+//    f_close(&Fil);
+//}
+//
+//void delete_file(char* file_name){
+//	FR_Status = f_unlink(file_name);
+//	if (FR_Status != FR_OK){
+//		sprintf(TxBuffer, "Error! While Deleting The (TextFileWrite.txt) File.. \r\n");
+//	}
+//}
+//
+//void unmount_sd(char* file_name){
+//	FR_Status = f_mount(NULL, "", 0);
+//	if (FR_Status != FR_OK)
+//	{
+//		sprintf(TxBuffer, "Error! While Un-mounting SD Card, Error Code: (%i)\r\n", FR_Status);
+//	} else{
+//		sprintf(TxBuffer, "SD Card Un-mounted Successfully! \r\n");
+//	}
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+// SPI Helper Functions
+static inline void SPI_CS_LOW(GPIO_TypeDef *port, uint16_t pin)
+{
+    HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+}
+
+static inline void SPI_CS_HIGH(GPIO_TypeDef *port, uint16_t pin)
+{
+    HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
+}
+
+void SD_SendDummyClocks(SPI_HandleTypeDef *hspi,
+                        GPIO_TypeDef *port, uint16_t pin)
+{
+    uint8_t dummy = 0xFF;
+
+    SPI_CS_HIGH(port, pin);
+
+    for (int i = 0; i < 10; i++) { // 10 bytes = 80 clocks
+        HAL_SPI_Transmit(hspi, &dummy, 1, HAL_MAX_DELAY);
+    }
+}
+
+void init_sd(SPI_HandleTypeDef *hspi){
+	SD_SendDummyClocks(hspi, SD_CS_GPIO_Port, SD_CS_Pin);
+	f_mount(&USERFatFS, USERPath, 1);
+}
+
+FRESULT write_sd(const char *filename, const char *line)
+{
+    FIL file;
+    UINT bytes_written;
+    FRESULT res;
+
+    // Open file (create if it doesn't exist)
+    res = f_open(&file, filename, FA_OPEN_ALWAYS | FA_WRITE);
+    if (res != FR_OK)
+        return res;
+
+    // Move write pointer to end of file
+    res = f_lseek(&file, f_size(&file));
+    if (res != FR_OK) {
+        f_close(&file);
+        return res;
+    }
+
+    // Write the line
+    res = f_write(&file, line, strlen(line), &bytes_written);
+    if (res != FR_OK) {
+        f_close(&file);
+        return res;
+    }
+
+    // Optional: newline
+    const char newline[] = "\r\n";
+    f_write(&file, newline, 2, &bytes_written);
+
+    f_close(&file);
+    return FR_OK;
+}
+
+FRESULT read_sd_line(const char *filename, char *buffer, UINT buffer_size)
+{
+    FIL file;
+    FRESULT res;
+
+    // Open file for reading
+    res = f_open(&file, filename, FA_READ);
+    if (res != FR_OK)
+        return res;
+
+    // Read one line
+    if (f_gets(buffer, buffer_size, &file) == NULL) {
+        f_close(&file);
+        return FR_DISK_ERR;   // or FR_DISK_ERR if you prefer
+    }
+
+    f_close(&file);
+    return FR_OK;
+}
+
+uint8_t sd_file_exists(const char *filename)
+{
+    FILINFO fno;
+    FRESULT res;
+
+    res = f_stat(filename, &fno);
+
+    if (res == FR_OK)
+        return 1;   // file exists
+    else
+        return 0;   // file does not exist or error
+}
+
+//void test_sd(SPI_HandleTypeDef *hspi){
+//	SD_SendDummyClocks(hspi, SD_CS_GPIO_Port, SD_CS_Pin);
+////	sd_test = SD_SendCommand(hspi, SD_CS_GPIO_Port, SD_CS_Pin, 0, 0x00000000, 0x95);
+//
+//	res = append_line("test.txt", "STM32 logging works");
+//}
+
+//uint8_t SD_SendCommand(SPI_HandleTypeDef *hspi,
+//                       GPIO_TypeDef *port, uint16_t pin,
+//                       uint8_t cmd, uint32_t arg, uint8_t crc)
+//{
+//    uint8_t tx[6] = {
+//        0x40 | cmd,
+//        (arg >> 24) & 0xFF,
+//        (arg >> 16) & 0xFF,
+//        (arg >> 8)  & 0xFF,
+//        arg & 0xFF,
+//        crc
+//    };
+//
+//    uint8_t rx = 0xFF;
+//
+//    SPI_CS_LOW(port, pin);
+//
+//    HAL_SPI_Transmit(hspi, tx, 6, HAL_MAX_DELAY);
+//
+//    // SD card responds within 1–8 bytes
+//    for (int i = 0; i < 8; i++) {
+//        HAL_SPI_Receive(hspi, &rx, 1, HAL_MAX_DELAY);
+//        if ((rx & 0x80) == 0)
+//            break;
+//    }
+//
+//    SPI_CS_HIGH(port, pin);
+//    return rx;
+//}
+

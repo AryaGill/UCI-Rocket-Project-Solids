@@ -1,0 +1,7 @@
+#include "cameras.h"
+#include "main.h"
+
+void turn_camera_on(int cam_num){
+	Camera_1_GPIO_Port
+
+}

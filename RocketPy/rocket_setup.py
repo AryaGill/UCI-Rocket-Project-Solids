@@ -476,6 +476,6 @@ def create_rocket(config, env):
         name=config.air_brakes_name,
     )
 
-    # air_brakes.all_info()
+    air_brakes.all_info()
     
     return rocket

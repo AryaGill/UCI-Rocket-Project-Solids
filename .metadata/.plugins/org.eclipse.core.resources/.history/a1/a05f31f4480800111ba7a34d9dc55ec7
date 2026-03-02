@@ -1,0 +1,12 @@
+#pragma once
+
+void read_ematch_connections(Telemetry_t *telemetry);
+
+void drogue_primary_on();
+void drogue_primary_off();
+void drogue_secondary_on();
+void drogue_secondary_off();
+void main_primary_on();
+void main_primary_off();
+void main_secondary_on();
+void main_secondary_off();

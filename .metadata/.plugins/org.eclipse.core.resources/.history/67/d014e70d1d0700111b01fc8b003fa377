@@ -1,0 +1,4 @@
+#pragma once
+#include "main.h"
+
+GPIO_TypeDef *cam_ports[2] = {}

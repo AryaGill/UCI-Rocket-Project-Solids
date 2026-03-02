@@ -1,0 +1,15 @@
+#include "parachutes.h"
+
+#include "main.h"
+
+void read_ematch_connections(){
+
+}
+
+void drogue_1_on(){
+	HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_SET);
+}
+
+void drogue_1_off(){
+	HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_RESET);
+}

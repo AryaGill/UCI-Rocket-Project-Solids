@@ -1,0 +1,348 @@
+#include "sensors.h"
+
+GPIO_TypeDef *LPS22HH_port;
+uint16_t LPS22HH_pin;
+SPI_HandleTypeDef *LPS22HH_hspi;
+
+GPIO_TypeDef *LSM_port;
+uint16_t LSM_pin;
+SPI_HandleTypeDef *LSM_hspi;
+
+GPIO_TypeDef *ICM45_port;
+uint16_t ICM45_pin;
+SPI_HandleTypeDef *ICM45_hspi;
+
+volatile uint8_t lps_whoami = 0; // Should be 0xB3 for LPS22HH
+volatile uint8_t lsm_whoami = 0; // Should be 0x6A
+volatile uint8_t icm_whoami = 0;
+
+uint8_t Verify_Sensors(void){
+	// Check Barometer
+	lps_whoami = LPS22HH_WhoAmI();
+	if (lps_whoami != 0xB3){
+		return 1;
+	}
+
+	// Check LSM6DSL IMU
+	lsm_whoami = LSM6DSL_WhoAmI();
+	if (lsm_whoami != 0x6a){
+		return 1;
+	}
+	// TODO CURRENTLY NOT WORKING. CHANGE AFTER
+
+	// Check ICM45686 IMU
+//	icm_whoami = ICM45686_WhoAmI();
+//	if (icm_whoami != 0xE9){
+//		return 1;
+//	}
+
+	return 0;
+
+}
+
+// SPI Helper Functions
+static inline void SPI_CS_LOW(GPIO_TypeDef *port, uint16_t pin)
+{
+    HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+}
+
+static inline void SPI_CS_HIGH(GPIO_TypeDef *port, uint16_t pin)
+{
+    HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
+}
+
+static void SPI_Read(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
+                     uint8_t reg, uint8_t *buf, uint8_t len)
+{
+    reg |= 0x80; // Set read bit
+    SPI_CS_LOW(port, pin);
+    HAL_SPI_Transmit(hspi, &reg, 1, HAL_MAX_DELAY);
+    HAL_SPI_Receive(hspi, buf, len, HAL_MAX_DELAY);
+    SPI_CS_HIGH(port, pin);
+}
+
+static void SPI_Write(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
+                      uint8_t reg, uint8_t val)
+{
+    uint8_t tx[2] = { reg & 0x7F, val }; // Clear read bit
+    SPI_CS_LOW(port, pin);
+    HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
+    SPI_CS_HIGH(port, pin);
+}
+
+// Sensor Initialization
+void init_sensors(SPI_HandleTypeDef *hspi)
+{
+    // Force all CS HIGH immediately
+    HAL_GPIO_WritePin(Baro_CS_GPIO_Port, Baro_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(IMU_2_CS_GPIO_Port, IMU_2_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(Mag_CS_GPIO_Port, Mag_CS_Pin, GPIO_PIN_SET);
+    HAL_Delay(100);
+
+    // Initialize Baro
+    LPS22HH_Init(hspi, Baro_CS_GPIO_Port, Baro_CS_Pin);
+    HAL_Delay(20);
+
+    // Initialize LSM
+    LSM6DSL_Init(hspi, IMU_2_CS_GPIO_Port, IMU_2_CS_Pin);
+    HAL_Delay(20);
+
+    // Initialize ICM - Use the correct IMU_2 defines
+//    ICM45686_Init(hspi, IMU_CS_GPIO_Port, IMU_CS_Pin);
+//    HAL_Delay(20);
+}
+
+// Sensor Reading
+void read_sensors(Telemetry_t *telemetry)
+{
+    LPS22HH_Read(telemetry);
+    LSM6DSL_Read(telemetry);
+//    ICM45686_Read(telemetry);
+}
+
+// Calculate altitude from pressure (standard atmosphere model)
+
+float Calculate_Altitude(float pressure_hPa)
+{
+	const float sea_level_pressure = 1013.25f; // hPa at sea level
+
+	// Barometric formula: h = 44330 * (1 - (P/P0)^(1/5.255))
+	float ratio = pressure_hPa / sea_level_pressure;
+	float altitude = 44330.0f * (1.0f - powf(ratio, 0.1903f));
+
+	return altitude;
+}
+
+// LPS22HHTR Functions
+void LPS22HH_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin)
+{
+    LPS22HH_port = cs_port;
+    LPS22HH_pin = cs_pin;
+    LPS22HH_hspi = hspi;
+
+    HAL_Delay(20); // Wait for sensor power-up
+
+    // Software reset
+    SPI_Write(hspi, cs_port, cs_pin, LPS22HH_CTRL_REG2, 0x04);
+    HAL_Delay(10);
+
+    // Configure: 75 Hz ODR, continuous mode, BDU enabled
+    // CTRL_REG1: ODR=75Hz (0101), AVG=512 (11), EN_LPFP=0, BDU=1
+    SPI_Write(hspi, cs_port, cs_pin, LPS22HH_CTRL_REG1, 0x5C);
+    HAL_Delay(10);
+}
+
+void LPS22HH_Read(Telemetry_t *telemetry)
+{
+    uint8_t buf[5];
+    int32_t raw_p;
+    int16_t raw_t;
+
+    // Read pressure (3 bytes) and temperature (2 bytes) - 5 bytes total
+    SPI_Read(LPS22HH_hspi, LPS22HH_port, LPS22HH_pin, LPS22HH_PRESS_OUT_XL, buf, 5);
+
+    // Pressure is 24-bit, little-endian
+    raw_p = (int32_t)((buf[2] << 16) | (buf[1] << 8) | buf[0]);
+
+    // Sign extend from 24-bit to 32-bit
+    if (raw_p & 0x800000) {
+        raw_p |= 0xFF000000;
+    }
+
+    // Temperature is 16-bit, little-endian
+    raw_t = (int16_t)((buf[4] << 8) | buf[3]);
+
+    // Convert to metric units
+    telemetry->pressure = raw_p / 4096.0f;      // hPa (mbar)
+    telemetry->temperature = raw_t / 100.0f;     // °C
+    telemetry->altitude = Calculate_Altitude(telemetry->pressure);
+}
+
+void set_start_alt(Telemetry_t *telemetry){
+	LPS22HH_Read(telemetry);
+	telemetry->startAlt = telemetry->altitude;
+}
+
+uint8_t LPS22HH_WhoAmI(void)
+{
+    uint8_t id = 0;
+    SPI_Read(LPS22HH_hspi,
+             LPS22HH_port,
+             LPS22HH_pin,
+             LPS22HH_WHO_AM_I,
+             &id,
+             1);
+    return id;
+}
+
+uint8_t LPS22HH_ReadReg(uint8_t reg)
+{
+    uint8_t val = 0;
+    SPI_Read(LPS22HH_hspi,
+             LPS22HH_port,
+             LPS22HH_pin,
+             reg,
+             &val,
+             1);
+    return val;
+}
+
+void LPS22HH_WriteReg(uint8_t reg, uint8_t val)
+{
+    SPI_Write(LPS22HH_hspi,
+              LPS22HH_port,
+              LPS22HH_pin,
+              reg,
+              val);
+}
+
+void LSM6DSL_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin) {
+    LSM_port = cs_port;
+    LSM_pin = cs_pin;
+    LSM_hspi = hspi;
+
+    // 1. Software Reset
+    SPI_Write(hspi, cs_port, cs_pin, LSM6DSL_CTRL3_C, 0x01);
+    HAL_Delay(50);
+
+    // 2. Enable Block Data Update (BDU) and Auto-Increment
+    // CTRL3_C: BDU=1 (0x40), IF_INC=1 (0x04) -> 0x44
+    SPI_Write(hspi, cs_port, cs_pin, LSM6DSL_CTRL3_C, 0x44);
+
+    // 3. Configure Accelerometer: 104Hz, +/- 4g
+    // CTRL1_XL: 0100 (104Hz), 10 (4g) -> 0x48
+    SPI_Write(hspi, cs_port, cs_pin, LSM6DSL_CTRL1_XL, 0x48);
+
+    // 4. Configure Gyroscope: 104Hz, 2000 dps
+    // CTRL2_G: 0100 (104Hz), 11 (2000dps) -> 0x4C
+    SPI_Write(hspi, cs_port, cs_pin, LSM6DSL_CTRL2_G, 0x4C);
+}
+
+void LSM6DSL_Read(Telemetry_t *telemetry) {
+    uint8_t buf[12];
+    // Read 12 bytes starting from Gyro X_L all the way through Accel Z_H
+    SPI_Read(LSM_hspi, LSM_port, LSM_pin, LSM6DSL_OUTX_L_G, buf, 12);
+
+    // Raw values (Little Endian)
+    int16_t gx = (int16_t)((buf[1] << 8) | buf[0]);
+    int16_t gy = (int16_t)((buf[3] << 8) | buf[2]);
+    int16_t gz = (int16_t)((buf[5] << 8) | buf[4]);
+    int16_t ax = (int16_t)((buf[7] << 8) | buf[6]);
+    int16_t ay = (int16_t)((buf[9] << 8) | buf[8]);
+    int16_t az = (int16_t)((buf[11] << 8) | buf[10]);
+
+    // Conversion Factors (Based on +/- 4g and 2000dps)
+    // Accel: 4g range = 0.122 mg/LSB. 0.122 * 9.81 / 1000 = 0.001197 m/s^2
+    telemetry->lsm_accel_r = ay * 0.001197f;
+    telemetry->lsm_accel_p = -ax * 0.001197f;
+    telemetry->lsm_accel_y = az * 0.001197f;
+
+    // Gyro: 2000dps range = 70 mdps/LSB. 70 * (PI/180) / 1000 = 0.0012217 rad/s
+    telemetry->lsm_gyro_r = -gy * 0.0012217f;
+    telemetry->lsm_gyro_p = gx * 0.0012217f;
+    telemetry->lsm_gyro_y = -gz * 0.0012217f;
+}
+
+uint8_t LSM6DSL_WhoAmI(void) {
+    uint8_t id = 0;
+    SPI_Read(LSM_hspi, LSM_port, LSM_pin, LSM6DSL_WHO_AM_I, &id, 1);
+    return id;
+}
+
+void ICM45686_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin) {
+    ICM45_port = cs_port;
+    ICM45_pin = cs_pin;
+    ICM45_hspi = hspi;
+
+    // 1. Ensure we are in Bank 0
+    SPI_Write(hspi, cs_port, cs_pin, ICM45_REG_REG_BANK_SEL, 0x00);
+    HAL_Delay(10);
+
+    // 2. Soft Reset (Toggle bit in DEVICE_CONFIG or similar)
+    // For ICM45 series, a power management wake-up is usually enough
+
+    // 3. Set PWR_MGMT0: Enable Accel and Gyro in Low Noise (LN) Mode
+    // Bits [3:2] Gyro: 11 (LN), Bits [1:0] Accel: 11 (LN) -> 0x0F
+    SPI_Write(hspi, cs_port, cs_pin, ICM45_REG_PWR_MGMT0, 0x0F);
+    HAL_Delay(50); // Wait for sensors to stabilize
+}
+
+uint8_t ICM45686_WhoAmI(void) {
+    uint8_t id = 0;
+    uint8_t bank_reg = 0x76; // REG_BANK_SEL is usually 0x76 or 0x00 depending on variant
+    uint8_t bank0 = 0x00;
+    uint8_t who_am_i_reg = 0x75 | 0x80; // 0x75 with Read Bit
+
+    SPI_CS_LOW(GPIOB, IMU_2_CS_Pin);
+    // Ensure we are in Bank 0
+    HAL_SPI_Transmit(ICM45_hspi, &bank_reg, 1, 10);
+    HAL_SPI_Transmit(ICM45_hspi, &bank0, 1, 10);
+    SPI_CS_HIGH(GPIOB, IMU_2_CS_Pin);
+
+    HAL_Delay(1);
+
+    SPI_CS_LOW(GPIOB, IMU_2_CS_Pin);
+    HAL_SPI_Transmit(ICM45_hspi, &who_am_i_reg, 1, 10);
+    HAL_SPI_Receive(ICM45_hspi, &id, 1, 10);
+    SPI_CS_HIGH(GPIOB, IMU_2_CS_Pin);
+
+    return id;
+}
+
+void ICM45686_Read(Telemetry_t *telemetry) {
+    uint8_t buf[12];
+    // ICM-45686 data registers are usually 20-bit or 16-bit.
+    // We will read 12 bytes starting at Accel X
+    SPI_Read(ICM45_hspi, ICM45_port, ICM45_pin, ICM45_REG_ACCEL_DATA_X1, buf, 12);
+
+    // Raw 16-bit values (Big Endian usually for InvenSense!)
+    // Note: Check your specific variant, but most ICMs are Big Endian
+    int16_t ax = (int16_t)((buf[0] << 8) | buf[1]);
+    int16_t ay = (int16_t)((buf[2] << 8) | buf[3]);
+    int16_t az = (int16_t)((buf[4] << 8) | buf[5]);
+
+    int16_t gx = (int16_t)((buf[6] << 8) | buf[7]);
+    int16_t gy = (int16_t)((buf[8] << 8) | buf[9]);
+    int16_t gz = (int16_t)((buf[10] << 8) | buf[11]);
+
+    // Simple Scaling (Assuming default +/- 8g and 2000 dps)
+    telemetry->icm_accel_r = ax * (8.0f / 32768.0f);
+    telemetry->icm_accel_p = ay * (8.0f / 32768.0f);
+    telemetry->icm_accel_y = az * (8.0f / 32768.0f);
+
+    telemetry->icm_gyro_r  = gx * (2000.0f / 32768.0f);
+    telemetry->icm_gyro_p  = gy * (2000.0f / 32768.0f);
+    telemetry->icm_gyro_y  = gz * (2000.0f / 32768.0f);
+}
+
+void transform_accel_to_world(Telemetry_t *telemetry) {
+  // Average IMUs (body frame)
+  float ax = telemetry->lsm_accel_y;
+  float ay = telemetry->lsm_accel_p;
+  float az = telemetry->lsm_accel_r;
+
+  // Quaternion (w, x, y, z)
+  float qw = telemetry->q0;
+  float qx = telemetry->q1;
+  float qy = telemetry->q2;
+  float qz = telemetry->q3;
+
+  // Rotation matrix (body → world)
+  float R11 = 1.0f - 2.0f*(qy*qy + qz*qz);
+  float R12 = 2.0f*(qx*qy - qz*qw);
+  float R13 = 2.0f*(qx*qz + qy*qw);
+
+  float R21 = 2.0f*(qx*qy + qz*qw);
+  float R22 = 1.0f - 2.0f*(qx*qx + qz*qz);
+  float R23 = 2.0f*(qy*qz - qx*qw);
+
+  float R31 = 2.0f*(qx*qz - qy*qw);
+  float R32 = 2.0f*(qy*qz + qx*qw);
+  float R33 = 1.0f - 2.0f*(qx*qx + qy*qy);
+
+  // Rotate acceleration into world frame
+  telemetry->accel_world_x = R11*ax + R12*ay + R13*az;
+  telemetry->accel_world_y = R21*ax + R22*ay + R23*az;
+  telemetry->accel_world_z = R31*ax + R32*ay + R33*az - 9.81f;
+}

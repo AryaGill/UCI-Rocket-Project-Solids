@@ -1,0 +1,315 @@
+2026-01-09 12:37:54,954 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Exception in thread "AWT-EventQueue-0" java.lang.ClassCastException: class sun.awt.windows.WEmbeddedFrame cannot be cast to class javax.swing.JFrame (sun.awt.windows.WEmbeddedFrame and javax.swing.JFrame are in module java.desktop of loader 'bootstrap')
+2026-01-09 12:37:54,967 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at com.st.microxplorer.plugins.clock.ClockConfigurationView.activatePlugin(ClockConfigurationView.java:425)
+2026-01-09 12:37:54,967 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at com.st.microxplorer.maingui.MainPanel$1.stateChanged(MainPanel.java:374)
+2026-01-09 12:37:54,968 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/javax.swing.JTabbedPane.fireStateChanged(JTabbedPane.java:444)
+2026-01-09 12:37:54,968 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/javax.swing.JTabbedPane$ModelListener.stateChanged(JTabbedPane.java:295)
+2026-01-09 12:37:54,969 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/javax.swing.DefaultSingleSelectionModel.fireStateChanged(DefaultSingleSelectionModel.java:148)
+2026-01-09 12:37:54,969 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/javax.swing.DefaultSingleSelectionModel.setSelectedIndex(DefaultSingleSelectionModel.java:79)
+2026-01-09 12:37:54,970 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/javax.swing.JTabbedPane.setSelectedIndexImpl(JTabbedPane.java:648)
+2026-01-09 12:37:54,971 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/javax.swing.JTabbedPane.setSelectedIndex(JTabbedPane.java:623)
+2026-01-09 12:37:54,971 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/javax.swing.plaf.basic.BasicTabbedPaneUI$Handler.mousePressed(BasicTabbedPaneUI.java:4101)
+2026-01-09 12:37:54,972 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.Component.processMouseEvent(Component.java:6623)
+2026-01-09 12:37:54,972 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/javax.swing.JComponent.processMouseEvent(JComponent.java:3389)
+2026-01-09 12:37:54,972 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.Component.processEvent(Component.java:6391)
+2026-01-09 12:37:54,973 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.Container.processEvent(Container.java:2266)
+2026-01-09 12:37:54,973 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.Component.dispatchEventImpl(Component.java:5001)
+2026-01-09 12:37:54,974 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.Container.dispatchEventImpl(Container.java:2324)
+2026-01-09 12:37:54,974 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.Component.dispatchEvent(Component.java:4833)
+2026-01-09 12:37:54,975 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4948)
+2026-01-09 12:37:54,976 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.LightweightDispatcher.processMouseEvent(Container.java:4572)
+2026-01-09 12:37:54,976 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.LightweightDispatcher.dispatchEvent(Container.java:4516)
+2026-01-09 12:37:54,977 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.Container.dispatchEventImpl(Container.java:2310)
+2026-01-09 12:37:54,977 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.Component.dispatchEvent(Component.java:4833)
+2026-01-09 12:37:54,977 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:775)
+2026-01-09 12:37:54,978 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+2026-01-09 12:37:54,978 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+2026-01-09 12:37:54,979 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+2026-01-09 12:37:54,979 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+2026-01-09 12:37:54,980 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:97)
+2026-01-09 12:37:54,980 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.EventQueue$5.run(EventQueue.java:747)
+2026-01-09 12:37:54,981 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.EventQueue$5.run(EventQueue.java:745)
+2026-01-09 12:37:54,981 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+2026-01-09 12:37:54,982 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+2026-01-09 12:37:54,982 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:744)
+2026-01-09 12:37:54,983 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+2026-01-09 12:37:54,983 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+2026-01-09 12:37:54,984 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+2026-01-09 12:37:54,984 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+2026-01-09 12:37:54,985 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+2026-01-09 12:37:54,985 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+2026-01-09 12:50:19,336 [INFO] UtilMem:75 - End SaveConfig() Used Memory: 912281576 Bytes (1073741824)
+2026-01-09 12:50:20,697 [INFO] UtilMem:75 - End SaveConfig() Used Memory: 952127464 Bytes (1073741824)
+2026-01-09 12:50:22,020 [INFO] UtilMem:75 - End SaveConfig() Used Memory: 790659984 Bytes (1073741824)
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: SPI
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: RCC
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: USART
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: FATFS
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: MEMORYMAP
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: SYS
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: USB_OTG_FS
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: NVIC
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: CORTEX_M7
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: UART
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: UART
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: DEBUG
+2026-01-09 12:50:22,133 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: GPIO
+2026-01-09 12:50:22,134 [INFO] CodeGenerator:807 - code generatio: config db path: C:\ST\STM32CubeIDE_1.16.0\STM32CubeIDE\plugins\com.st.stm32cube.common.mx_6.12.0.202406281431\\db\
+2026-01-09 12:50:22,203 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\license.tmp_save
+2026-01-09 12:50:22,270 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\license.tmp
+2026-01-09 12:50:22,317 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\gpio.tmp_save
+2026-01-09 12:50:22,373 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\gpio.tmp
+2026-01-09 12:50:22,415 [WARN] IPConfigManager:98 - WARNING: Missing Config File for DEBUG ip!!
+2026-01-09 12:50:22,495 [WARN] IPConfigManager:98 - WARNING: Missing Config File for MEMORYMAP ip!!
+2026-01-09 12:50:22,865 [INFO] Middleware:1439 - No code input for Bsp Dependency
+2026-01-09 12:50:22,869 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_HalInit.tmp_save
+2026-01-09 12:50:22,923 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_HalInit.tmp
+2026-01-09 12:50:22,925 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_vars.tmp_save
+2026-01-09 12:50:22,963 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_vars.tmp
+2026-01-09 12:50:22,965 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_ext_vars.tmp_save
+2026-01-09 12:50:22,995 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_ext_vars.tmp
+2026-01-09 12:50:22,997 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_inc.tmp_save
+2026-01-09 12:50:23,031 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_inc.tmp
+2026-01-09 12:50:23,037 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\cortex.tmp_save
+2026-01-09 12:50:23,087 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\cortex.tmp
+2026-01-09 12:50:23,103 [INFO] Middleware:1439 - No code input for Bsp Dependency
+2026-01-09 12:50:23,107 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_HalInit.tmp_save
+2026-01-09 12:50:23,154 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_HalInit.tmp
+2026-01-09 12:50:23,158 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_vars.tmp_save
+2026-01-09 12:50:23,187 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_vars.tmp
+2026-01-09 12:50:23,190 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_ext_vars.tmp_save
+2026-01-09 12:50:23,221 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_ext_vars.tmp
+2026-01-09 12:50:23,224 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_inc.tmp_save
+2026-01-09 12:50:23,255 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_inc.tmp
+2026-01-09 12:50:23,267 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\ffconf.h_save
+2026-01-09 12:50:23,335 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\ffconf.h
+2026-01-09 12:50:23,348 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\user_diskio.c_save
+2026-01-09 12:50:23,384 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\user_diskio.c
+2026-01-09 12:50:23,388 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\user_diskio.h_save
+2026-01-09 12:50:23,421 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\user_diskio.h
+2026-01-09 12:50:23,424 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\App\fatfs.c_save
+2026-01-09 12:50:23,459 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\App\fatfs.c
+2026-01-09 12:50:23,463 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\App\fatfs.h_save
+2026-01-09 12:50:23,498 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\App\fatfs.h
+2026-01-09 12:50:23,521 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\stm32h7xx_it.c_save
+2026-01-09 12:50:23,603 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\stm32h7xx_it.c
+2026-01-09 12:50:23,608 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\stm32h7xx_it.h_save
+2026-01-09 12:50:23,655 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\stm32h7xx_it.h
+2026-01-09 12:50:23,780 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\stm32h7xx_hal_msp.c_save
+2026-01-09 12:50:23,869 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\stm32h7xx_hal_msp.c
+2026-01-09 12:50:23,871 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\system.tmp_save
+2026-01-09 12:50:23,905 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\system.tmp
+2026-01-09 12:50:23,925 [INFO] CodeEngine:311 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\stm32h7xx_hal_conf.h_save
+2026-01-09 12:50:23,985 [INFO] CodeEngine:335 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\stm32h7xx_hal_conf.h
+2026-01-09 12:50:24,012 [WARN] IPConfigManager:3554 - IP not found : USB_OTG
+2026-01-09 12:50:24,012 [WARN] CodeGenerator:4002 - IP not found : null
+2026-01-09 12:50:24,022 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\main.h_save
+2026-01-09 12:50:24,073 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\main.h
+2026-01-09 12:50:24,086 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\main.c_save
+2026-01-09 12:50:24,170 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\main.c
+2026-01-09 12:50:24,373 [INFO] ProjectBuilder:3249 - Time for Copy HAL[1] : 121mS.
+2026-01-09 12:50:24,375 [INFO] ProjectBuilder:4828 - Project Generator version: 4.4.0-B60
+2026-01-09 12:50:24,413 [INFO] ConfigFileManager:1531 - The Die is : DIE450
+2026-01-09 12:50:24,884 [INFO] ProjectBuilder:5097 - Time for Generating toolchain IDE Files: 509mS.
+2026-01-09 12:50:24,884 [INFO] ProjectBuilder:3107 - Time for Copy CMSIS : 0mS.
+2026-01-09 12:50:24,887 [INFO] ProjectBuilder:3107 - Time for Copy CMSIS : 0mS.
+2026-01-09 12:51:32,119 [INFO] WebApp:189 - Connection lost
+2026-01-09 12:51:32,266 [INFO] WebApp:186 - Connection restablished
+2026-01-09 13:58:52,287 [INFO] WebApp:189 - Connection lost
+2026-01-09 13:58:55,657 [INFO] WebApp:186 - Connection restablished
+2026-01-09 13:58:57,427 [INFO] WebApp:189 - Connection lost
+2026-01-09 13:58:57,814 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:12:03,121 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:12:03,276 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:12:31,109 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:12:31,274 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:14:12,148 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:14:12,257 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:18:16,645 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:18:16,739 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:20:43,588 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:20:43,683 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:23:46,602 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:23:46,747 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:24:20,636 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:24:20,735 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:27:23,081 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:27:23,199 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:42:16,119 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:42:16,252 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:42:28,163 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:42:28,271 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:53:34,930 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:53:35,578 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:53:35,785 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:53:35,872 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:53:41,985 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:53:42,081 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:53:45,131 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:53:45,281 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:53:48,615 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:53:48,770 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:53:51,770 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:53:51,931 [INFO] WebApp:186 - Connection restablished
+2026-01-09 14:54:02,673 [INFO] WebApp:189 - Connection lost
+2026-01-09 14:54:02,778 [INFO] WebApp:186 - Connection restablished
+2026-01-09 15:21:05,856 [INFO] Gpio:277 - dependency for GPIO [DEBUG, RCC, SPI1, UART4, UART8, USART3, USB_OTG_FS]
+2026-01-09 15:21:17,576 [INFO] UtilMem:75 - End SaveConfig() Used Memory: 921817752 Bytes (1073741824)
+2026-01-09 15:21:19,097 [INFO] UtilMem:75 - End SaveConfig() Used Memory: 807525144 Bytes (1073741824)
+2026-01-09 15:21:20,611 [INFO] UtilMem:75 - End SaveConfig() Used Memory: 862004248 Bytes (1073741824)
+2026-01-09 15:21:20,852 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: SPI
+2026-01-09 15:21:20,852 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: RCC
+2026-01-09 15:21:20,852 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: USART
+2026-01-09 15:21:20,852 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: FATFS
+2026-01-09 15:21:20,852 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: MEMORYMAP
+2026-01-09 15:21:20,852 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: SYS
+2026-01-09 15:21:20,852 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: USB_OTG_FS
+2026-01-09 15:21:20,852 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: NVIC
+2026-01-09 15:21:20,852 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: CORTEX_M7
+2026-01-09 15:21:20,852 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: UART
+2026-01-09 15:21:20,852 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: UART
+2026-01-09 15:21:20,852 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: DEBUG
+2026-01-09 15:21:20,853 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: GPIO
+2026-01-09 15:21:20,854 [INFO] CodeGenerator:807 - code generatio: config db path: C:\ST\STM32CubeIDE_1.16.0\STM32CubeIDE\plugins\com.st.stm32cube.common.mx_6.12.0.202406281431\\db\
+2026-01-09 15:21:20,977 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\license.tmp_save
+2026-01-09 15:21:21,089 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\license.tmp
+2026-01-09 15:21:21,238 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\gpio.tmp_save
+2026-01-09 15:21:21,323 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\gpio.tmp
+2026-01-09 15:21:21,413 [WARN] IPConfigManager:98 - WARNING: Missing Config File for DEBUG ip!!
+2026-01-09 15:21:21,550 [WARN] IPConfigManager:98 - WARNING: Missing Config File for MEMORYMAP ip!!
+2026-01-09 15:21:22,125 [INFO] Middleware:1439 - No code input for Bsp Dependency
+2026-01-09 15:21:22,145 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_HalInit.tmp_save
+2026-01-09 15:21:22,222 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_HalInit.tmp
+2026-01-09 15:21:22,229 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_vars.tmp_save
+2026-01-09 15:21:22,275 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_vars.tmp
+2026-01-09 15:21:22,281 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_ext_vars.tmp_save
+2026-01-09 15:21:22,336 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_ext_vars.tmp
+2026-01-09 15:21:22,342 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_inc.tmp_save
+2026-01-09 15:21:22,387 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_inc.tmp
+2026-01-09 15:21:22,401 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\cortex.tmp_save
+2026-01-09 15:21:22,472 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\cortex.tmp
+2026-01-09 15:21:22,480 [INFO] Middleware:1439 - No code input for Bsp Dependency
+2026-01-09 15:21:22,503 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_HalInit.tmp_save
+2026-01-09 15:21:22,566 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_HalInit.tmp
+2026-01-09 15:21:22,570 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_vars.tmp_save
+2026-01-09 15:21:22,607 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_vars.tmp
+2026-01-09 15:21:22,611 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_ext_vars.tmp_save
+2026-01-09 15:21:22,671 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_ext_vars.tmp
+2026-01-09 15:21:22,680 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_inc.tmp_save
+2026-01-09 15:21:22,749 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_inc.tmp
+2026-01-09 15:21:22,774 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\ffconf.h_save
+2026-01-09 15:21:22,902 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\ffconf.h
+2026-01-09 15:21:22,921 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\user_diskio.c_save
+2026-01-09 15:21:22,985 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\user_diskio.c
+2026-01-09 15:21:22,993 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\user_diskio.h_save
+2026-01-09 15:21:23,066 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\user_diskio.h
+2026-01-09 15:21:23,091 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\App\fatfs.c_save
+2026-01-09 15:21:23,174 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\App\fatfs.c
+2026-01-09 15:21:23,183 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\App\fatfs.h_save
+2026-01-09 15:21:23,239 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\App\fatfs.h
+2026-01-09 15:21:23,277 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\stm32h7xx_it.c_save
+2026-01-09 15:21:23,428 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\stm32h7xx_it.c
+2026-01-09 15:21:23,437 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\stm32h7xx_it.h_save
+2026-01-09 15:21:23,501 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\stm32h7xx_it.h
+2026-01-09 15:21:23,662 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\stm32h7xx_hal_msp.c_save
+2026-01-09 15:21:23,813 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\stm32h7xx_hal_msp.c
+2026-01-09 15:21:23,819 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\system.tmp_save
+2026-01-09 15:21:23,874 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\system.tmp
+2026-01-09 15:21:23,912 [INFO] CodeEngine:311 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\stm32h7xx_hal_conf.h_save
+2026-01-09 15:21:24,010 [INFO] CodeEngine:335 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\stm32h7xx_hal_conf.h
+2026-01-09 15:21:24,058 [WARN] IPConfigManager:3554 - IP not found : USB_OTG
+2026-01-09 15:21:24,060 [WARN] CodeGenerator:4002 - IP not found : null
+2026-01-09 15:21:24,089 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\main.h_save
+2026-01-09 15:21:24,183 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\main.h
+2026-01-09 15:21:24,205 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\main.c_save
+2026-01-09 15:21:24,377 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\main.c
+2026-01-09 15:21:24,859 [INFO] ProjectBuilder:3249 - Time for Copy HAL[1] : 318mS.
+2026-01-09 15:21:24,867 [INFO] ProjectBuilder:4828 - Project Generator version: 4.4.0-B60
+2026-01-09 15:21:24,937 [INFO] ConfigFileManager:1531 - The Die is : DIE450
+2026-01-09 15:21:25,709 [INFO] ProjectBuilder:5097 - Time for Generating toolchain IDE Files: 842mS.
+2026-01-09 15:21:25,710 [INFO] ProjectBuilder:3107 - Time for Copy CMSIS : 1mS.
+2026-01-09 15:21:25,714 [INFO] ProjectBuilder:3107 - Time for Copy CMSIS : 0mS.
+2026-01-09 15:21:57,884 [INFO] UtilMem:75 - End SaveConfig() Used Memory: 908204912 Bytes (1073741824)
+2026-01-09 15:21:59,680 [INFO] UtilMem:75 - End SaveConfig() Used Memory: 816927664 Bytes (1073741824)
+2026-01-09 15:22:01,223 [INFO] UtilMem:75 - End SaveConfig() Used Memory: 816315640 Bytes (1073741824)
+2026-01-09 15:22:01,425 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: SPI
+2026-01-09 15:22:01,425 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: RCC
+2026-01-09 15:22:01,425 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: USART
+2026-01-09 15:22:01,425 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: FATFS
+2026-01-09 15:22:01,425 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: MEMORYMAP
+2026-01-09 15:22:01,425 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: SYS
+2026-01-09 15:22:01,425 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: USB_OTG_FS
+2026-01-09 15:22:01,425 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: NVIC
+2026-01-09 15:22:01,425 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: CORTEX_M7
+2026-01-09 15:22:01,425 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: UART
+2026-01-09 15:22:01,425 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: UART
+2026-01-09 15:22:01,425 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: DEBUG
+2026-01-09 15:22:01,426 [INFO] BlockDiagram:2766 - set Specific Code input for plugin: GPIO
+2026-01-09 15:22:01,427 [INFO] CodeGenerator:807 - code generatio: config db path: C:\ST\STM32CubeIDE_1.16.0\STM32CubeIDE\plugins\com.st.stm32cube.common.mx_6.12.0.202406281431\\db\
+2026-01-09 15:22:01,538 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\license.tmp_save
+2026-01-09 15:22:01,653 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\license.tmp
+2026-01-09 15:22:01,754 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\gpio.tmp_save
+2026-01-09 15:22:01,839 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\gpio.tmp
+2026-01-09 15:22:01,898 [WARN] IPConfigManager:98 - WARNING: Missing Config File for DEBUG ip!!
+2026-01-09 15:22:02,042 [WARN] IPConfigManager:98 - WARNING: Missing Config File for MEMORYMAP ip!!
+2026-01-09 15:22:02,695 [INFO] Middleware:1439 - No code input for Bsp Dependency
+2026-01-09 15:22:02,703 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_HalInit.tmp_save
+2026-01-09 15:22:02,781 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_HalInit.tmp
+2026-01-09 15:22:02,786 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_vars.tmp_save
+2026-01-09 15:22:02,832 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_vars.tmp
+2026-01-09 15:22:02,836 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_ext_vars.tmp_save
+2026-01-09 15:22:02,878 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_ext_vars.tmp
+2026-01-09 15:22:02,883 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_inc.tmp_save
+2026-01-09 15:22:02,930 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_inc.tmp
+2026-01-09 15:22:02,941 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\cortex.tmp_save
+2026-01-09 15:22:03,012 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\cortex.tmp
+2026-01-09 15:22:03,020 [INFO] Middleware:1439 - No code input for Bsp Dependency
+2026-01-09 15:22:03,031 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_HalInit.tmp_save
+2026-01-09 15:22:03,125 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_HalInit.tmp
+2026-01-09 15:22:03,133 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_vars.tmp_save
+2026-01-09 15:22:03,184 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_vars.tmp
+2026-01-09 15:22:03,191 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_ext_vars.tmp_save
+2026-01-09 15:22:03,235 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_ext_vars.tmp
+2026-01-09 15:22:03,241 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_inc.tmp_save
+2026-01-09 15:22:03,290 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\fatfs_inc.tmp
+2026-01-09 15:22:03,312 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\ffconf.h_save
+2026-01-09 15:22:03,435 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\ffconf.h
+2026-01-09 15:22:03,443 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\user_diskio.c_save
+2026-01-09 15:22:03,520 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\user_diskio.c
+2026-01-09 15:22:03,528 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\user_diskio.h_save
+2026-01-09 15:22:03,584 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\Target\user_diskio.h
+2026-01-09 15:22:03,592 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\App\fatfs.c_save
+2026-01-09 15:22:03,650 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\App\fatfs.c
+2026-01-09 15:22:03,658 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\App\fatfs.h_save
+2026-01-09 15:22:03,713 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\FATFS\App\fatfs.h
+2026-01-09 15:22:03,755 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\stm32h7xx_it.c_save
+2026-01-09 15:22:03,835 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\stm32h7xx_it.c
+2026-01-09 15:22:03,843 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\stm32h7xx_it.h_save
+2026-01-09 15:22:03,897 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\stm32h7xx_it.h
+2026-01-09 15:22:04,071 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\stm32h7xx_hal_msp.c_save
+2026-01-09 15:22:04,204 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\stm32h7xx_hal_msp.c
+2026-01-09 15:22:04,210 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\system.tmp_save
+2026-01-09 15:22:04,272 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\MXTmpFiles\system.tmp
+2026-01-09 15:22:04,310 [INFO] CodeEngine:311 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\stm32h7xx_hal_conf.h_save
+2026-01-09 15:22:04,419 [INFO] CodeEngine:335 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\stm32h7xx_hal_conf.h
+2026-01-09 15:22:04,472 [WARN] IPConfigManager:3554 - IP not found : USB_OTG
+2026-01-09 15:22:04,473 [WARN] CodeGenerator:4002 - IP not found : null
+2026-01-09 15:22:04,498 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\main.h_save
+2026-01-09 15:22:04,621 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Inc\main.h
+2026-01-09 15:22:04,651 [INFO] CodeEngine:255 - oldGeneratedFile, C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\main.c_save
+2026-01-09 15:22:04,801 [INFO] CodeEngine:279 - Generated code: C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\Core\Src\main.c
+2026-01-09 15:22:05,188 [INFO] ProjectBuilder:3249 - Time for Copy HAL[1] : 209mS.
+2026-01-09 15:22:05,196 [INFO] ProjectBuilder:4828 - Project Generator version: 4.4.0-B60
+2026-01-09 15:22:05,271 [INFO] ConfigFileManager:1531 - The Die is : DIE450
+2026-01-09 15:22:05,972 [INFO] ProjectBuilder:5097 - Time for Generating toolchain IDE Files: 777mS.
+2026-01-09 15:22:05,972 [INFO] ProjectBuilder:3107 - Time for Copy CMSIS : 0mS.
+2026-01-09 15:22:05,976 [INFO] ProjectBuilder:3107 - Time for Copy CMSIS : 0mS.
+2026-01-09 15:52:04,081 [INFO] WebApp:189 - Connection lost
+2026-01-09 15:52:14,197 [INFO] WebApp:186 - Connection restablished
+2026-01-09 16:26:39,281 [INFO] WebApp:189 - Connection lost
+2026-01-09 16:26:39,524 [INFO] WebApp:186 - Connection restablished
+2026-01-09 16:39:39,572 [INFO] WebApp:189 - Connection lost
+2026-01-09 16:39:39,729 [INFO] WebApp:186 - Connection restablished
+2026-01-09 16:40:15,596 [INFO] WebApp:189 - Connection lost
+2026-01-09 16:40:15,769 [INFO] WebApp:186 - Connection restablished
+2026-01-09 16:43:15,085 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 
+2026-01-09 16:43:15,086 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] 

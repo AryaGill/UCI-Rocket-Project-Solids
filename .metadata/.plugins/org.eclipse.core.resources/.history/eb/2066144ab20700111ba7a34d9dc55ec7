@@ -1,0 +1,9 @@
+#include "buzzer.h"
+
+void set_buzzer_freq(){
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+}
+
+void turn_buzzer_off(){
+
+}

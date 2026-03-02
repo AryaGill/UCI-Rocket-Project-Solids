@@ -1,5 +1,6 @@
 from rocket_setup import *
-from azula.azula_config import config
+# from azula.azula_config import config
+from night_fury.night_fury_config import config
 import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
@@ -8,7 +9,7 @@ if __name__ == "__main__":
     rocket = create_rocket(conf, env)
 
     # rocket.plots.static_margin()
-    # rocket.draw()
+    rocket.draw()
 
     # Run simulation
     test_flight = Flight(

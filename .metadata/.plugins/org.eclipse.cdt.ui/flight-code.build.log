@@ -1,0 +1,17 @@
+14:39:41 **** Incremental Build of configuration Debug for project flight-code ****
+make -j20 all 
+arm-none-eabi-gcc "../Core/Src/rf.c" -mcpu=cortex-m7 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32H743xx -c -I../Core/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/rf.d" -MT"Core/Src/rf.o" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "Core/Src/rf.o"
+arm-none-eabi-gcc -o "flight-code.elf" @"objects.list"   -mcpu=cortex-m7 -T"C:\Users\brady\repos\UCI-Rocket-Project-Solids\flight-code\STM32H743VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="flight-code.map" -Wl,--gc-sections -static -u _printf_float --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: flight-code.elf
+ 
+arm-none-eabi-size  flight-code.elf 
+arm-none-eabi-objdump -h -S flight-code.elf  > "flight-code.list"
+   text	   data	    bss	    dec	    hex	filename
+  95548	    532	   8988	 105068	  19a6c	flight-code.elf
+Finished building: default.size.stdout
+ 
+Finished building: flight-code.list
+ 
+
+14:39:42 Build Finished. 0 errors, 0 warnings. (took 998ms)
+

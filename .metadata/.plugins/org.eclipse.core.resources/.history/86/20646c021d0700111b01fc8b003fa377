@@ -1,0 +1,12 @@
+#include "cameras.h"
+#include "main.h"
+
+void turn_camera_on(GPIO_TypeDef *cam_port, uint16_t cam_pin){
+	HAL_GPIO_WritePin(cam_port, cam_pin, GPIO_PIN_SET);
+
+	// Read ADC
+}
+
+void turn_camera_off(GPIO_TypeDef *cam_port, uint16_t cam_pin){
+	HAL_GPIO_WritePin(cam_port, cam_pin, GPIO_PIN_RESET);
+}

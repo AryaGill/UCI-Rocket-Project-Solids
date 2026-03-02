@@ -1,0 +1,5 @@
+telemetry
+flight_state
+lsm_whoami
+lps_whoami
+alt_dif_buffer
