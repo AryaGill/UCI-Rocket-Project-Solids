@@ -27,7 +27,7 @@
 #define LAUNCH_EVAL_PERIOD_TIME 250
 
 #define STATE_FILE "flight_state.csv"
-#define MIN_RESET_ALT 150 // m
+#define MIN_RESET_ALT 50 // m
 
 float get_avg_alt_dif();
 void update_alt_dif_buf(float new_alt_dif);
