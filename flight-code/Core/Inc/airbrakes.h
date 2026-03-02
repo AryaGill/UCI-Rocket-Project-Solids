@@ -2,6 +2,11 @@
 
 #include "main.h"
 
+// Change before flight - check fsm.h as well
+#define MASS 25.71 // kg
+#define TARGET_APOGEE_FT 3500
+#define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
+
 #define NUM_DEPLOYMENT_LEVELS 64
 #define NUM_RECORDED_DEPLOYMENT_LEVELS 11
 #define NUM_RECORDED_MACH_NUMS 14
@@ -19,3 +24,4 @@ void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry);
 void init_airbrakes_servo();
 void set_airbrakes_servo_angle(uint8_t angle);
 void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment);
+void set_airbrakes_initial_temp(Telemetry_t *telemetry);

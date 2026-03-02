@@ -3,15 +3,23 @@
 #include <string.h>
 #include "main.h"
 
+// Change before flight - check airbrakes.h as well
+#define MAIN_DEPLOY_MAX_ALT 229 // m
+#define MAIN_DEPLOY_MIN_ALT 77 // m
+// Leilani rocket
+#define MOTOR_BURN_TIME 1500 // ms
+#define POWER_RESET_MIN_ALT_CHANGE 15
+// Night Fury
+//#define MOTOR_BURN_TIME 4000 // ms
+//#define POWER_RESET_MIN_ALT_CHANGE 40
+// Light Fury
+//#define MOTOR_BURN_TIME 4000 // ms
+//#define POWER_RESET_MIN_ALT_CHANGE 40
+
 #define LAUNCH_THRESHOLD 10
 #define APOGEE_THRESHOLD -0.5
 #define LANDED_THRESHOLD -0.2
 #define ALT_DIF_BUF_SIZE 10
-
-#define MOTOR_BURN_TIME 1500
-
-#define MAIN_DEPLOY_MAX_ALT 229
-#define MAIN_DEPLOY_MIN_ALT 77
 
 // Liftoff detection constants
 #define LAUNCH_ACCEL_THRESHOLD 40

@@ -247,12 +247,19 @@ int main(void)
 	// Set starting altitude
 	set_start_alt(&telemetry);
 
+	// Read sensors a bunch to ensure correct initial values
+	for(int i = 0; i < 20; ++i){
+		read_sensors(&telemetry);
+	}
+
+	// Init madgwick filter (need to read accel first)
+	Madgwick_Init(&telemetry, 0.1f);
+
 	// Initialize flight state machine (need to read sensors first)
 	init_flight_state(&flight_state, &telemetry);
 
-	// Init madgwick filter (need to read accel first)
-	read_sensors(&telemetry);
-	Madgwick_Init(&telemetry, 0.1f);
+	// Set the initial temperature for airbrakes algorithm. Used for drag force.
+	set_airbrakes_initial_temp(&telemetry);
 
   /* USER CODE END 2 */
 

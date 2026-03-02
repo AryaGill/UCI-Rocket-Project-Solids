@@ -5,16 +5,14 @@
 extern TIM_HandleTypeDef htim3;
 
 // Air Brakes variables
-#define TARGET_APOGEE_FT 3500
-#define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
 #define GAMMA 1.4
 #define R 287.05287
 #define g 9.80665 // Gravity
 #define L 0.0065 // Temperature Lapse Rate
-#define MASS 25.71 // kg
 #define DESIRED_SEARCH_TIME 200 // ms
 #define TIME_PER_SIM_STEP 0.015 // ms
 float deltaT_coefficient = TIME_PER_SIM_STEP * log2f(NUM_DEPLOYMENT_LEVELS) / DESIRED_SEARCH_TIME / g;
+float ground_temp = 300;
 
 // Deployment levels should be evenly spread between least and most deployment (inclusive)
 // Mach numbers should be evenly spread between 0 and 0.7 (inclusive)
@@ -123,19 +121,17 @@ float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 	float deltaT = clampf(telemetry->velocity_world_z * deltaT_coefficient, 0.01, 0.1);
 
 	float alt_sim = telemetry->altitude;
-//	float vz_sim = telemetry->velocity_r * cosf(telemetry->angle_of_attack);
-//	float vx_sim = telemetry->velocity_r * sinf(telemetry->angle_of_attack);
 	float vz_sim = telemetry->velocity_world_z;
 	float vx_sim = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
 
 	// Convert pressure from hPa to Pa
 	float pressure_Pa = telemetry->pressure * 100.0f;
-	float temperature_K = telemetry->temperature + 273.15f;
+	float temperature_K = fmaxf(ground_temp - (L * telemetry->altitude), 1);
 
 	for (int i = 0; i < 100000; ++i){
 		float vz_sim_before = vz_sim;
 		float T_local = fmaxf(temperature_K - (L * (alt_sim - telemetry->altitude)), 1);
-		float mach_number = get_mach_number(pow(vz_sim * vz_sim + vx_sim * vx_sim, 0.5), T_local);
+		float mach_number = get_mach_number(get_mag2(vz_sim, vx_sim), T_local);
 
 		float airbrake_CdA = get_CdA(deployment_level, mach_number);
 
@@ -162,8 +158,9 @@ float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
 	float horizontal_speed = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
 	float angle_of_attack = atan2f(horizontal_speed, telemetry->velocity_world_z);
+	float local_temp = fmaxf(ground_temp - (L * telemetry->altitude), 1);
 	if (flight_state != GLIDING_ASCENT
-			|| get_mach_number(get_mag3(telemetry->velocity_world_x, telemetry->velocity_world_y, telemetry->velocity_world_z), telemetry->temperature + 273.15) > 0.7
+			|| get_mach_number(get_mag3(telemetry->velocity_world_x, telemetry->velocity_world_y, telemetry->velocity_world_z), local_temp) > 0.7
 			|| angle_of_attack > 30 * M_PI / 180){
 		set_airbrakes_deployment_level(telemetry, 0);
 		return;
@@ -186,8 +183,8 @@ void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
 		}
 	}
 
-	// set predicted apogee variable (wastes time. Comment out if don't want data logged)
-	telemetry->predicted_apogee = predict_apogee(telemetry, low);
+	// set predicted apogee variable
+	telemetry->predicted_apogee = pred_apogee;
 
 	// Set deployment level
 	set_airbrakes_deployment_level(telemetry, low);
@@ -196,6 +193,10 @@ void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
 void init_airbrakes_servo(){
 	HAL_TIM_PWM_Start(&htim3, AIRBRAKES_SERVO_1_CHANNEL);
 	HAL_TIM_PWM_Start(&htim3, AIRBRAKES_SERVO_2_CHANNEL);
+}
+
+void set_airbrakes_initial_temp(Telemetry_t *telemetry){
+	ground_temp = telemetry->temperature + 273.15;
 }
 
 void set_airbrakes_servo_angle(uint8_t angle)

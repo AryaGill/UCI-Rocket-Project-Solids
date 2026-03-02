@@ -55,14 +55,27 @@ void set_flight_state(FlightState_t new_state, FlightState_t *flight_state, Tele
 }
 
 uint8_t sensors_indicate_flight(Telemetry_t *telemetry){
-	for (int i = 0; i < 50; ++i){
+	float alt_i = telemetry->altitude;
+
+	for (int i = 0; i < 500; ++i){
 		read_sensors(telemetry);
-		// read accel world z for half a second. If all about 9.8, then not in flight
-		if (telemetry->accel_world_z < 9.61 || telemetry->accel_world_z > 10.01){
-			return 1;
-		}
 		HAL_Delay(10);
 	}
+
+	if (abs(telemetry->altitude - alt_i) > POWER_RESET_MIN_ALT_CHANGE){
+		return 1;
+	}
+	return 0;
+
+
+//	for (int i = 0; i < 50; ++i){
+//		read_sensors(telemetry);
+//		// read accel world z for half a second. If all about 9.8, then not in flight
+//		if (telemetry->accel_world_z < 9.61 || telemetry->accel_world_z > 10.01){
+//			return 1;
+//		}
+//		HAL_Delay(10);
+//	}
 	return 0;
 }
 
@@ -81,24 +94,24 @@ void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 	}
 
 	// Detect power reset
-//	if (sd_file_exists(STATE_FILE)){
-//		FlightState_t sd_state;
-//		float sd_start_alt;
-//		read_sd_state(STATE_FILE, &sd_state, &sd_start_alt);
-//
-//		uint32_t reset_flags = RCC->RSR;
-//		// If Power-on reset (power removed and restored) and sensors indicate in flight and alt > threshold
-//		if ((reset_flags & RCC_RSR_PORRSTF) && (telemetry->altitude - sd_start_alt > MIN_RESET_ALT) && sensors_indicate_flight(telemetry)){
-//			// Print message in data file
-//			write_sd(FLIGHT_DATA_FILE, "POWER RESET DETECTED");
-//
-//			// Go to correct state and start altitude
-//			set_flight_state(sd_state, flight_state, telemetry);
-//			telemetry->startAlt = sd_start_alt;
-//
-//			return;
-//		}
-//	}
+	if (sd_file_exists(STATE_FILE)){
+		FlightState_t sd_state;
+		float sd_start_alt;
+		read_sd_state(STATE_FILE, &sd_state, &sd_start_alt);
+
+		uint32_t reset_flags = RCC->RSR;
+		// If Power-on reset (power removed and restored) and sensors indicate in flight and alt > threshold
+		if ((reset_flags & RCC_RSR_PORRSTF) && (telemetry->altitude - sd_start_alt > MIN_RESET_ALT) && sensors_indicate_flight(telemetry) == 1){
+			// Print message in data file
+			write_sd(FLIGHT_DATA_FILE, "POWER RESET DETECTED");
+
+			// Go to correct state and start altitude
+			set_flight_state(sd_state, flight_state, telemetry);
+			telemetry->startAlt = sd_start_alt;
+
+			return;
+		}
+	}
 
 	set_flight_state(DISARMED, flight_state, telemetry);
 }
