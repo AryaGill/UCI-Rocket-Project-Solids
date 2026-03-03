@@ -19,6 +19,9 @@ uint32_t state_start_time = 0;
 uint32_t launch_accel_detected_time = -1;
 unsigned int negative_accel_counter = 0;
 
+// Motor Burn to Gliding Ascent detection variables
+uint32_t num_neg_accel = 0;
+
 float get_avg_alt_dif() {
 	float sum = 0;
 	float largest = alt_dif_buffer[0];
@@ -155,8 +158,14 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case MOTOR_BURN:
-    		// Add logic: wait for certain delay or for acceleration to change
-    		if (HAL_GetTick() - state_start_time > MOTOR_BURN_TIME){
+    		if (telemetry->accel_world_z < 0){
+    			++num_neg_accel;
+    		}
+    		else{
+    			num_neg_accel = 0;
+    		}
+
+    		if (num_neg_accel > 20 || HAL_GetTick() - state_start_time > MOTOR_BURN_TIME){
     			set_flight_state(GLIDING_ASCENT, flight_state, telemetry);
     		}
 
