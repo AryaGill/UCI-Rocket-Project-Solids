@@ -89,7 +89,8 @@ class config:
         self.drogue_noise = (0, 8.3, 0.5) # Guess
 
         # Airbrakes
-        self.drag_coefficient_curve = "RocketPy/night_fury/nf_air_brakes_drag_coefficient_curve.csv" # Guess
+        # self.drag_coefficient_curve = "RocketPy/night_fury/nf_air_brakes_drag_coefficient_curve.csv"
+        self.drag_coefficient_curve = "RocketPy/night_fury/incorrect_nf_air_brakes_drag_coefficient_curve.csv"
         self.air_brakes_sampling_rate = 10
         self.air_brakes_reference_area = None
         self.air_brakes_clamp = True
