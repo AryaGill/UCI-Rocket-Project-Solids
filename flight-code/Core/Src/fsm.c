@@ -165,7 +165,12 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     			num_neg_accel = 0;
     		}
 
-    		if (num_neg_accel > 20 || HAL_GetTick() - state_start_time > MOTOR_BURN_TIME){
+    		// Combine with if statement below once verified to work
+    		if (num_neg_accel > 20){
+    			write_sd(FLIGHT_DATA_FILE, "Detected motor burn finished using accel");
+    		}
+
+    		if (HAL_GetTick() - state_start_time > MOTOR_BURN_TIME /* || num_neg_accel > 20 */){
     			set_flight_state(GLIDING_ASCENT, flight_state, telemetry);
     		}
 
