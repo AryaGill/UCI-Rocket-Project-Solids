@@ -25,3 +25,4 @@ void init_airbrakes_servo();
 void set_airbrakes_servo_angle(uint8_t angle);
 void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment);
 void set_airbrakes_initial_temp(Telemetry_t *telemetry);
+void perform_airbrakes_servo_sequence();
