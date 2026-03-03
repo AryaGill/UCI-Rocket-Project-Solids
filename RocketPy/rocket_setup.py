@@ -505,7 +505,7 @@ def create_rocket(config, env):
     NUM_RECORDED_MACH_NUMS = 14
 
     MASS = 23.28
-    TARGET_APOGEE_FT = 7700
+    TARGET_APOGEE_FT = 8000
     TARGET_APOGEE_M = TARGET_APOGEE_FT * 0.3048
 
     NUM_DEPLOYMENT_LEVELS = 64
@@ -733,8 +733,8 @@ def create_rocket(config, env):
         set_optimal_deployment("GLIDING_ASCENT", telemetry)
 
         air_brakes.deployment_level = telemetry.airbrake_deployment / (NUM_DEPLOYMENT_LEVELS - 1)
-        air_brakes.deployment_level = 31 /  (NUM_DEPLOYMENT_LEVELS - 1)
-        telemetry.predicted_apogee = predict_apogee(telemetry, 31)
+        # air_brakes.deployment_level = 63 /  (NUM_DEPLOYMENT_LEVELS - 1)
+        # telemetry.predicted_apogee = predict_apogee(telemetry, 63)
 
         # Return variables of interest to be saved in the observed_variables list
         local_temp = max(ground_temp - (L * telemetry.altitude), 1)

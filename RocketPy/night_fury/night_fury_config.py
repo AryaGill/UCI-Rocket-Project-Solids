@@ -17,12 +17,13 @@ class config:
         self.atmosphere_model_file = "GFS"
 
         # Motor
-        self.thrust_source = "RocketPy/night_fury/nf_thrust_curve.csv"
+        self.thrust_source = "RocketPy/night_fury/M2207.eng"
         self.dry_mass = 5.5
         self.dry_inertia = (6.300, 6.300, 0.042) # Guess
         self.center_of_dry_mass_position = 1.833197866 # Guess
         self.grains_center_of_mass_position = 0.527051054 # Guess
-        self.burn_time = 3.09
+        # self.burn_time = 3.09
+        self.burn_time = 3.75
         self.grain_number = 7
         self.grain_separation = 0.0127000254
         self.grain_density = 1746.601
