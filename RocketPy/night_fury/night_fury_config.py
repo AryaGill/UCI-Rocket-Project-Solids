@@ -12,7 +12,7 @@ class config:
         self.month = tomorrow.month
         self.day = tomorrow.day
 
-        # self.atmosphere_model_type = "Forecast"
+        # self.atmosphere_model_type = "forecast"
         self.atmosphere_model_type = "standard_atmosphere"
         self.atmosphere_model_file = "GFS"
 
@@ -92,6 +92,6 @@ class config:
         self.air_brakes_sampling_rate = 10
         self.air_brakes_reference_area = None
         self.air_brakes_clamp = True
-        self.air_brakes_initial_observed_variables = [0, 0, 0, 0]
+        self.air_brakes_initial_observed_variables = [0, 0, 0, 0, 0]
         self.air_brakes_override_rocket_drag = True
         self.air_brakes_name = "Air Brakes"

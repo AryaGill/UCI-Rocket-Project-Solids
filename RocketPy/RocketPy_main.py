@@ -9,11 +9,11 @@ if __name__ == "__main__":
     rocket = create_rocket(conf, env)
 
     # rocket.plots.static_margin()
-    rocket.draw()
+    # rocket.draw()
 
     # Run simulation
     test_flight = Flight(
-        rocket=rocket, environment=env, rail_length=5.2, inclination=90, heading=0, terminate_on_apogee=True
+        rocket=rocket, environment=env, rail_length=5.2, inclination=85, heading=0, terminate_on_apogee=True
         )
 
     # # Print data
@@ -41,13 +41,14 @@ if __name__ == "__main__":
     # test_flight.plots.stability_and_control_data()
 
     # Airbrakes data
-    time_list, deployment_level_list, drag_coefficient_list, predicted_apogee_list = [], [], [], []
+    time_list, deployment_level_list, drag_coefficient_list, predicted_apogee_list, mach_num_list = [], [], [], [], []
     obs_vars = test_flight.get_controller_observed_variables()
-    for time, deployment_level, drag_coefficient, predicted_apogee in obs_vars:
+    for time, deployment_level, drag_coefficient, predicted_apogee, mach_num in obs_vars:
         time_list.append(time)
         deployment_level_list.append(deployment_level)
         drag_coefficient_list.append(drag_coefficient)
         predicted_apogee_list.append(predicted_apogee)
+        mach_num_list.append(mach_num)
 
     # Plot deployment level by time
     plt.plot(time_list, deployment_level_list)
@@ -66,9 +67,17 @@ if __name__ == "__main__":
     plt.show()
 
     # Plot predicted apogee by time
-    plt.plot(time_list[20:], [x / 0.3048 for x in predicted_apogee_list[20:]])
+    plt.plot(time_list[46:], [x / 0.3048 for x in predicted_apogee_list[46:]])
     plt.xlabel("Time (s)")
     plt.ylabel("Predicted Apogee (ft)")
     plt.title("Predicted Apogee by Time")
+    plt.grid()
+    plt.show()
+
+    # Plot mach number by time
+    plt.plot(time_list[20:], [x for x in mach_num_list[20:]])
+    plt.xlabel("Time (s)")
+    plt.ylabel("Mach Number")
+    plt.title("Mach Number by Time")
     plt.grid()
     plt.show()
