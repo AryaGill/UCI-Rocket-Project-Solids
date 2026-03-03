@@ -132,14 +132,14 @@ void Success_Pattern(void)
 
     // 2 distinct quick beeps
     for(int i = 0; i < 2; i++) {
-        HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
-        HAL_Delay(150);
-        HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);
+    	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, htim4.Init.Period / 2);
+		HAL_Delay(150);
+		__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, 0);
         HAL_Delay(150);
     }
 
     // Turn buzzer ON and keep it on
-    	HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
+    __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, htim4.Init.Period / 2);
 }
 
 // Error: Rapid LED flashing + continuous buzzer beeps, system halts
@@ -152,10 +152,13 @@ void Error_Pattern(void)
         HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
         HAL_Delay(50);
 
-        // Continuous beeping (200ms beep, 200ms pause)
-        HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
+        // Continuous beeping via PWM: 200ms tone, 200ms silence
+        // Tone ON
+        __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, htim4.Init.Period / 2); // 50% duty
         HAL_Delay(200);
-        HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);
+
+        // Tone OFF (duty = 0)
+        __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, 0);
         HAL_Delay(200);
     }
     // System halts here - never returns
@@ -209,6 +212,8 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
+  	  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+    __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, htim4.Init.Period / 2); // 50% duty
   	// Initialize counter for micros() function
   	DWT_Init();
 

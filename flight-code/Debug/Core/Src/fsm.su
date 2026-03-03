@@ -2,5 +2,5 @@
 ../Core/Src/fsm.c:34:6:update_alt_dif_buf	24	static
 ../Core/Src/fsm.c:45:6:set_flight_state	112	static
 ../Core/Src/fsm.c:57:9:sensors_indicate_flight	24	static
-../Core/Src/fsm.c:69:6:init_flight_state	24	static
-../Core/Src/fsm.c:106:6:update_flight_state	16	static
+../Core/Src/fsm.c:82:6:init_flight_state	32	static
+../Core/Src/fsm.c:119:6:update_flight_state	16	static

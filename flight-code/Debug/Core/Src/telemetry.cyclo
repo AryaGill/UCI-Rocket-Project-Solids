@@ -2,5 +2,5 @@
 ../Core/Src/telemetry.c:12:6:get_rf_msg	1
 ../Core/Src/telemetry.c:38:6:log_data	1
 ../Core/Src/telemetry.c:92:9:write_headers	1
-../Core/Src/telemetry.c:114:6:state_to_string_num	14
-../Core/Src/telemetry.c:161:6:state_to_string_name	14
+../Core/Src/telemetry.c:115:6:state_to_string_num	14
+../Core/Src/telemetry.c:162:6:state_to_string_name	14
