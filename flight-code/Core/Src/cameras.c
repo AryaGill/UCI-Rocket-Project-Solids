@@ -42,14 +42,22 @@ void turn_camera_off(int cam_num){
 	HAL_GPIO_WritePin(CAM_PORTS[cam_num], CAM_PINS[cam_num], GPIO_PIN_RESET);
 }
 
+static ADC_ChannelConfTypeDef baseConfig = {
+    .Rank = ADC_REGULAR_RANK_1,
+    .SamplingTime = ADC_SAMPLETIME_64CYCLES_5,
+    .SingleDiff = ADC_SINGLE_ENDED,
+    .OffsetNumber = ADC_OFFSET_NONE,
+    .Offset = 0,
+	.OffsetSignedSaturation = DISABLE
+};
+
 uint32_t read_adc(uint32_t channel, ADC_HandleTypeDef *hadc){
-	ADC_ChannelConfTypeDef sConfig;
+	ADC_ChannelConfTypeDef sConfig = baseConfig;
 
 	sConfig.Channel = channel;
-	HAL_ADC_ConfigChannel(hadc, &sConfig);
-
-	HAL_ADC_Start(hadc);
-	HAL_ADC_PollForConversion(hadc, HAL_MAX_DELAY);
+	if (HAL_ADC_ConfigChannel(hadc, &sConfig) != HAL_OK) return 0;
+	if (HAL_ADC_Start(hadc) != HAL_OK) return 0;
+	if (HAL_ADC_PollForConversion(hadc, 5) != HAL_OK) return 0;
 
 	uint32_t adc = HAL_ADC_GetValue(hadc);
 

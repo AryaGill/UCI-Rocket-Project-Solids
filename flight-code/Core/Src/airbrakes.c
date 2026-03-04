@@ -218,28 +218,29 @@ void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment){
 	set_airbrakes_servo_angle((uint8_t)(((uint32_t)(((float)deployment) / (float)(NUM_DEPLOYMENT_LEVELS - 1) * 180)) / NUM_DEPLOYMENT_LEVELS));
 }
 
-void perform_airbrakes_servo_sequence(){
-	for (uint8_t i = 0; i < 181; ++i){
-		set_airbrakes_servo_angle(i);
+void perform_airbrakes_servo_sequence(Telemetry_t *telemetry){
+	for (uint8_t i = 0; i < NUM_DEPLOYMENT_LEVELS; ++i){
+		set_airbrakes_deployment_level(telemetry, i);
 		HAL_Delay(10);
 	}
-	for (uint8_t i = 180; i >= 0; --i){
+	for (uint8_t i = NUM_DEPLOYMENT_LEVELS; i > 0; --i){
 		set_airbrakes_servo_angle(i);
 		HAL_Delay(10);
 	}
 
-	HAL_Delay(500);
-	set_airbrakes_servo_angle(45);
-	HAL_Delay(500);
-	set_airbrakes_servo_angle(90);
-	HAL_Delay(500);
-	set_airbrakes_servo_angle(135);
-	HAL_Delay(500);
-	set_airbrakes_servo_angle(180);
-	HAL_Delay(500);
 	set_airbrakes_servo_angle(0);
 	HAL_Delay(500);
-	set_airbrakes_servo_angle(180);
+	set_airbrakes_servo_angle(NUM_DEPLOYMENT_LEVELS/4);
+	HAL_Delay(500);
+	set_airbrakes_servo_angle(NUM_DEPLOYMENT_LEVELS/2);
+	HAL_Delay(500);
+	set_airbrakes_servo_angle(NUM_DEPLOYMENT_LEVELS*3/4);
+	HAL_Delay(500);
+	set_airbrakes_servo_angle(NUM_DEPLOYMENT_LEVELS - 1);
+	HAL_Delay(1000);
+	set_airbrakes_servo_angle(0);
+	HAL_Delay(500);
+	set_airbrakes_servo_angle(NUM_DEPLOYMENT_LEVELS - 1);
 	HAL_Delay(500);
 	set_airbrakes_servo_angle(0);
 }

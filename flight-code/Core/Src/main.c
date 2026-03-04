@@ -212,38 +212,6 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
-//  	uint32_t reset_flags = RCC->RSR;
-//  	if (reset_flags & RCC_RSR_PORRSTF){
-//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-//  		HAL_Delay(5000);
-//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-//  		HAL_Delay(100);
-//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-//  		HAL_Delay(5000);
-//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-//  		HAL_Delay(100);
-//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-//  		HAL_Delay(5000);
-//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-//  		HAL_Delay(100);
-//  	}
-//  	else{
-//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-//  		HAL_Delay(5000);
-//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-//  		HAL_Delay(100);
-//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-//  		HAL_Delay(5000);
-//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-//  		HAL_Delay(100);
-//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-//  		HAL_Delay(5000);
-//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-//  		HAL_Delay(100);
-//  	}
-
-  	  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
-    __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, htim4.Init.Period / 2); // 50% duty
   	// Initialize counter for micros() function
   	DWT_Init();
 
@@ -251,9 +219,9 @@ int main(void)
   	HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
 
 	// Initialize all sensors
-    HAL_Delay(1000);
+    HAL_Delay(100);
 	init_sensors(&hspi1);
-	HAL_Delay(1000);
+	HAL_Delay(100);
 
 	// Verify all sensors work
 	if (Verify_Sensors() == 0){
@@ -270,6 +238,11 @@ int main(void)
 	// Turn Cameras on
 	turn_camera_on(0);
 	turn_camera_on(1);
+
+	drogue_primary_off();
+	drogue_secondary_off();
+	main_primary_off();
+	main_secondary_off();
 
 	// Init rf
 	RFM9X_Init(&hspi1, RF_CS_GPIO_Port, RF_CS_Pin, RF_RST_GPIO_Port, RF_RST_Pin, RF_EN_GPIO_Port, RF_EN_Pin);
@@ -307,8 +280,8 @@ int main(void)
 	{
 		// Read sensor data
 		read_sensors(&telemetry);
-//		read_ematch_connections(&telemetry);
-//		read_camera_adcs(&telemetry);
+		read_ematch_connections(&telemetry);
+		read_camera_adcs(&telemetry);
 
 		// Filter necessary data
 		Madgwick_Update(&telemetry);
@@ -432,7 +405,7 @@ static void MX_ADC1_Init(void)
   /** Common config
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV2;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
   hadc1.Init.Resolution = ADC_RESOLUTION_16B;
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
@@ -443,7 +416,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR;
-  hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
   hadc1.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
   hadc1.Init.OversamplingMode = DISABLE;
   hadc1.Init.Oversampling.Ratio = 1;
