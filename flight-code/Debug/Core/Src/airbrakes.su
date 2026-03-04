@@ -9,3 +9,4 @@
 ../Core/Src/airbrakes.c:198:6:set_airbrakes_initial_temp	16	static
 ../Core/Src/airbrakes.c:202:6:set_airbrakes_servo_angle	24	static
 ../Core/Src/airbrakes.c:214:6:set_airbrakes_deployment_level	16	static
+../Core/Src/airbrakes.c:221:6:perform_airbrakes_servo_sequence	16	static

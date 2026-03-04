@@ -212,6 +212,36 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
+//  	uint32_t reset_flags = RCC->RSR;
+//  	if (reset_flags & RCC_RSR_PORRSTF){
+//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+//  		HAL_Delay(5000);
+//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+//  		HAL_Delay(100);
+//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+//  		HAL_Delay(5000);
+//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+//  		HAL_Delay(100);
+//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+//  		HAL_Delay(5000);
+//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+//  		HAL_Delay(100);
+//  	}
+//  	else{
+//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+//  		HAL_Delay(5000);
+//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+//  		HAL_Delay(100);
+//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+//  		HAL_Delay(5000);
+//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+//  		HAL_Delay(100);
+//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+//  		HAL_Delay(5000);
+//  		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+//  		HAL_Delay(100);
+//  	}
+
   	  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
     __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, htim4.Init.Period / 2); // 50% duty
   	// Initialize counter for micros() function
@@ -221,8 +251,9 @@ int main(void)
   	HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
 
 	// Initialize all sensors
+    HAL_Delay(1000);
 	init_sensors(&hspi1);
-	HAL_Delay(100);
+	HAL_Delay(1000);
 
 	// Verify all sensors work
 	if (Verify_Sensors() == 0){
@@ -255,6 +286,7 @@ int main(void)
 	// Read sensors a bunch to ensure correct initial values
 	for(int i = 0; i < 20; ++i){
 		read_sensors(&telemetry);
+		HAL_Delay(10);
 	}
 
 	// Init madgwick filter (need to read accel first)
@@ -275,8 +307,8 @@ int main(void)
 	{
 		// Read sensor data
 		read_sensors(&telemetry);
-		read_ematch_connections(&telemetry);
-		read_camera_adcs(&telemetry);
+//		read_ematch_connections(&telemetry);
+//		read_camera_adcs(&telemetry);
 
 		// Filter necessary data
 		Madgwick_Update(&telemetry);
@@ -467,8 +499,8 @@ static void MX_SPI1_Init(void)
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
-  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
   hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;

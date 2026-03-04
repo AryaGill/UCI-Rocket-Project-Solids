@@ -47,7 +47,7 @@ Core/Src/commands.o: ../Core/Src/commands.c ../Core/Inc/commands.h \
  ../Middlewares/Third_Party/FatFs/src/diskio.h \
  ../Middlewares/Third_Party/FatFs/src/ff.h ../FATFS/Target/user_diskio.h \
  ../Core/Inc/sensors.h ../Core/Inc/cameras.h ../Core/Inc/buzzer.h \
- ../Core/Inc/parachutes.h
+ ../Core/Inc/parachutes.h ../Core/Inc/airbrakes.h
 ../Core/Inc/commands.h:
 ../Core/Inc/fsm.h:
 ../Core/Inc/main.h:
@@ -106,3 +106,4 @@ Core/Src/commands.o: ../Core/Src/commands.c ../Core/Inc/commands.h \
 ../Core/Inc/cameras.h:
 ../Core/Inc/buzzer.h:
 ../Core/Inc/parachutes.h:
+../Core/Inc/airbrakes.h:

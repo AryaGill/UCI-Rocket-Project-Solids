@@ -70,6 +70,7 @@ static void SPI_Write(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
     SPI_CS_HIGH(port, pin);
 }
 
+uint8_t test_buf;
 // Sensor Initialization
 void init_sensors(SPI_HandleTypeDef *hspi)
 {
@@ -79,6 +80,9 @@ void init_sensors(SPI_HandleTypeDef *hspi)
     HAL_GPIO_WritePin(IMU_2_CS_GPIO_Port, IMU_2_CS_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(Mag_CS_GPIO_Port, Mag_CS_Pin, GPIO_PIN_SET);
     HAL_Delay(100);
+
+    SPI_Read(hspi, IMU_2_CS_GPIO_Port, IMU_2_CS_Pin, 0x0F, &test_buf, 1);
+//    SPI_Read(hspi, IMU_CS_GPIO_Port, IMU_CS_Pin, 0x0, test_buf, 1);
 
     // Initialize Baro
     LPS22HH_Init(hspi, Baro_CS_GPIO_Port, Baro_CS_Pin);

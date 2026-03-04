@@ -82,7 +82,9 @@ uint8_t sensors_indicate_flight(Telemetry_t *telemetry){
 	return 0;
 }
 
+uint32_t reset_flags_debug;
 void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
+	reset_flags_debug = RCC->RSR;
 	telemetry->alt_fused = 0;
 	
 	//possible start altitude after reset fix
