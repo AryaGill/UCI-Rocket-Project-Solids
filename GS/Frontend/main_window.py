@@ -16,6 +16,12 @@ class GroundStationWindow(QMainWindow):
     """
     def __init__(self, port=None, parent=None):
         super().__init__(parent)
+        if port is None:
+            argv = sys.argv[1:]
+            if "--port" in argv:
+                idx = argv.index("--port")
+                if idx + 1 < len(argv):
+                    port = argv[idx + 1]
         self.selected_port = port
         self.streamer = None
         self.pyro_panel = None  # Will hold PyroPanel instance
@@ -199,8 +205,30 @@ class GroundStationWindow(QMainWindow):
                 background-color: #e6e200;
             }
         """)
-        self.camera_btn.clicked.connect(self.open_camera_panel)
+        self.camera_btn.clicked.connect(self.toggle_camera)
         control_layout.addWidget(self.camera_btn)
+
+        # Airbrakes Servo Test button
+        self.servo_btn = QPushButton("⚙ Airbrakes Test")
+        self.servo_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #a855f7;
+                color: #ffffff;
+                border: none;
+                padding: 5px 15px;
+                font-weight: bold;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #bf7fff;
+            }
+            QPushButton:pressed {
+                background-color: #8b3dd4;
+            }
+        """)
+        
+        self.servo_btn.clicked.connect(self.test_servo_sequence)
+        control_layout.addWidget(self.servo_btn)
         
         # Clear All button
         self.clear_btn = QPushButton("Clear All")
@@ -253,66 +281,74 @@ class GroundStationWindow(QMainWindow):
         # Status bar at bottom
         self.statusBar().showMessage("Ready")
 
-    #Doesn't work yet
     def hard_reset(self):
         reply = QMessageBox.warning(
-            self,
-            "Hard Reset",
+            self, "Hard Reset",
             "This will completely restart the Ground Station.\n\n"
-            "All current data and connections will be lost.\n\n"
-            "Continue?",
+            "All current data and connections will be lost.\n\nContinue?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )
         if reply != QMessageBox.StandardButton.Yes:
             return
 
-        # Stop serial thread cleanly
         if self.streamer:
             self.streamer.stop()
             self.streamer.wait(2000)
 
-        python_exe = sys.executable
-        script_path, extra_args = self._resolve_entry_script()
+        script_path = self._resolve_entry_script()
+        if not script_path:
+            QMessageBox.critical(self, "Hard Reset Failed",
+                "Could not determine the entry script path.\n\n"
+                "Make sure the app is launched as:\n  python main.py")
+            return
 
-        # Launch new instance, then quit current Qt app cleanly
+        cmd = [sys.executable, script_path]
+        if self.selected_port:
+            cmd += ["--port", self.selected_port]
+
         try:
-            subprocess.Popen([python_exe, script_path, *extra_args], close_fds=True)
+            kwargs = {"cwd": os.path.dirname(script_path)}
+            if sys.platform == "win32":
+                kwargs["creationflags"] = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+            else:
+                kwargs["start_new_session"] = True  # Linux/macOS: detach from parent process group
+
+            subprocess.Popen(cmd, **kwargs)
         except Exception as e:
             QMessageBox.critical(self, "Hard Reset Failed", f"Could not relaunch:\n{e}")
             return
 
-        QCoreApplication.quit()
+        # Give the new process 500ms to start before this one exits
+        QTimer.singleShot(500, QCoreApplication.quit)
 
 
-    def _resolve_entry_script(self) -> tuple[str, list[str]]:
-        """
-        Try to reconstruct the script path even if sys.argv was split by spaces.
-        Returns (script_path, remaining_args).
-        """
-        argv = sys.argv[:]  # includes argv[0] = "script" when run as python script.py
-
-        # Normal case
-        if argv and argv[0].endswith(".py") and os.path.exists(argv[0]):
-            return os.path.abspath(argv[0]), argv[1:]
-
-        # If argv got split, try to join pieces until we find an existing .py
-        for i in range(1, len(argv) + 1):
-            candidate = " ".join(argv[:i])
-            if candidate.endswith(".py") and os.path.exists(candidate):
-                return os.path.abspath(candidate), argv[i:]
-
-        # Fallback: try __main__.__file__ (works in most python script launches)
+    def _resolve_entry_script(self) -> str:
+        # 1. Most reliable: set by Python itself when running a .py file directly
         try:
             import __main__
             main_file = getattr(__main__, "__file__", None)
-            if main_file and os.path.exists(main_file):
-                return os.path.abspath(main_file), []
+            if main_file:
+                path = os.path.abspath(main_file)
+                if os.path.isfile(path):
+                    return path
         except Exception:
             pass
 
-        # Last resort: just use argv[0] as-is (may fail, but at least explicit)
-        return os.path.abspath(argv[0]) if argv else "", argv[1:]
+        # 2. sys.argv[0] as a direct path
+        argv = sys.argv[:]
+        if argv:
+            candidate = os.path.abspath(argv[0])
+            if os.path.isfile(candidate):
+                return candidate
+
+        # 3. argv tokens split on spaces (paths with spaces)
+        for i in range(1, len(argv) + 1):
+            candidate = os.path.abspath(" ".join(argv[:i]))
+            if os.path.isfile(candidate):
+                return candidate
+
+        return ""
 
     def create_graphs(self, layout):
         """Create all graphs in a grid layout on one tab."""
@@ -424,6 +460,48 @@ class GroundStationWindow(QMainWindow):
                 "Cannot send command: Serial connection is not active"
             )
     
+    def toggle_camera(self):
+        """Toggle camera on/off via serial command."""
+        command = "OFF" if self.camera_is_on else "ON"
+        if self.streamer and self.streamer.isRunning():
+            self.streamer.write_command(command)
+            self.camera_pending = command
+            self.update_status(f"Camera command sent: {command}")
+        else:
+            self.update_status("Error: No serial connection active")
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Connection Error",
+                                "Cannot send command: Serial connection is not active")
+
+    def test_servo_sequence(self):
+        """Send SERVO SEQUENCE command with confirmation dialog."""
+        from PyQt6.QtWidgets import QMessageBox
+
+        reply = QMessageBox.question(
+            self,
+            "Airbrakes Servo Test",
+            "Send SERVO SEQUENCE command?\n\n"
+            "The airbrakes servo will run through its full test sequence.\n"
+            "Ensure the airbrakes are clear of obstructions before continuing.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        if self.streamer and self.streamer.isRunning():
+            self.streamer.write_command("SERVO SEQUENCE")
+            self.update_status("⚙ Airbrakes servo sequence triggered")
+        else:
+            self.update_status("Error: No serial connection active")
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self,
+                "Connection Error",
+                "Cannot send command: Serial connection is not active"
+            )
+    
     def clear_all_graphs(self):
         """Clear data from all graphs."""
         if hasattr(self, 'altitude_graph'):
@@ -491,6 +569,12 @@ class GroundStationWindow(QMainWindow):
         if hasattr(self, 'flight_state_display') and data.get('flight_state') is not None:
             self.flight_state_display.update_state(data.get('flight_state'))
         
+        new_state = data.get('flight_state')
+        if new_state == 2 and getattr(self, '_last_flight_state', None) != 2:
+            self.clear_all_graphs()
+            self.update_status("Launch detected - graphs cleared")
+        self._last_flight_state = new_state
+
         # Update altitude graph
         if hasattr(self, 'altitude_graph') and data.get('Time') is not None and data.get('Alt') is not None:
             self.altitude_graph.update_data(data.get('Time'), data.get('Alt'), data.get('Filtered_Alt'), max_points=self.max_points)
