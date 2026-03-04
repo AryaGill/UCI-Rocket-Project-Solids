@@ -1,13 +1,30 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox,
                              QGridLayout, QPushButton, QLabel, QSlider, QLineEdit)
-from PyQt6.QtCore import (Qt, QTimer, QProcess, QCoreApplication)
+from PyQt6.QtCore import (Qt, QTimer, QThread, pyqtSignal, QCoreApplication)
 from PyQt6.QtGui import QAction
 from Backend.backend import SerialStreamer
+from Frontend.flight_state_display import FlightStateDisplay
 
 import csv
 import sys
 import os
 import subprocess
+
+class TTSWorker(QThread):
+    """Speaks a message"""
+    def __init__(self, message, parent=None):
+        super().__init__(parent)
+        self.message = message
+    
+    def run(self):
+        try:
+            import pyttsx3
+            engine = pyttsx3.init()
+            engine.setProperty('rate', 160)
+            engine.say(self.message)
+            engine.runAndWait()
+        except Exception as e:
+            print(f"[TTS] Error: {e}")
 
 class GroundStationWindow(QMainWindow):
     """
@@ -33,6 +50,9 @@ class GroundStationWindow(QMainWindow):
         self.max_points = 100 #Default value, allows us to manually control how many data points we want to see
         self.setWindowTitle("Ground Station - Rocket Telemetry")
         #self.setGeometry(100, 100, 1400, 900)
+
+        self._last_flight_state = None
+        self._tts_worker = None
 
         self.setFixedSize(1500, 1000)
         self.move(100, 100)
@@ -136,7 +156,6 @@ class GroundStationWindow(QMainWindow):
         
         # Add Flight State Display
         try:
-            from Frontend.flight_state_display import FlightStateDisplay
             self.flight_state_display = FlightStateDisplay()
             control_layout.addWidget(self.flight_state_display)
         except ImportError as e:
@@ -280,6 +299,10 @@ class GroundStationWindow(QMainWindow):
         
         # Status bar at bottom
         self.statusBar().showMessage("Ready")
+
+        # Announce app startup
+        self._tts_worker = TTSWorker("Ground station online")
+        self._tts_worker.start()
 
     def hard_reset(self):
         reply = QMessageBox.warning(
@@ -567,9 +590,15 @@ class GroundStationWindow(QMainWindow):
 
         # Update flight state display
         if hasattr(self, 'flight_state_display') and data.get('flight_state') is not None:
+            new_state = data.get('flight_state')
             self.flight_state_display.update_state(data.get('flight_state'))
-        
-        new_state = data.get('flight_state')
+
+            if new_state != self._last_flight_state:
+                state_name = FlightStateDisplay.FLIGHT_STATES.get(new_state, "Unknown state")
+                self._tts_worker = TTSWorker(state_name)
+                self._tts_worker.start()
+                self._last_flight_state = new_state
+
         if new_state == 2 and getattr(self, '_last_flight_state', None) != 2:
             self.clear_all_graphs()
             self.update_status("Launch detected - graphs cleared")
