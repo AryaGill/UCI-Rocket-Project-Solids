@@ -20,6 +20,8 @@ class GroundStationWindow(QMainWindow):
         self.streamer = None
         self.pyro_panel = None  # Will hold PyroPanel instance
         self.camera_panel = None  # Will hold CameraPanel instance
+        self.camera_is_on = False   # confirmed state from rocket
+        self.camera_pending = None  # "ON" or "OFF" waiting for confirmation
         self.max_points = 100 #Default value, allows us to manually control how many data points we want to see
         self.setWindowTitle("Ground Station - Rocket Telemetry")
         #self.setGeometry(100, 100, 1400, 900)
@@ -178,7 +180,7 @@ class GroundStationWindow(QMainWindow):
         control_layout.addWidget(self.pyro_btn)
         
         # Camera button
-        self.camera_btn = QPushButton("Camera")
+        self.camera_btn = QPushButton("Camera OFF")
         self.camera_btn.setStyleSheet("""
             QPushButton {
                 background-color: #fffb00;
@@ -372,10 +374,26 @@ class GroundStationWindow(QMainWindow):
                 "Cannot send command: Serial connection is not active"
             )
     
+    '''
     def send_camera_command(self, command):
         """Send camera command via serial."""
         if self.streamer and self.streamer.isRunning():
             self.streamer.write_command(command)
+            self.update_status(f"Camera command sent: {command}")
+        else:
+            self.update_status("Error: No serial connection active")
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self,
+                "Connection Error",
+                "Cannot send command: Serial connection is not active"
+            )
+    '''
+    def send_camera_command(self, command):
+        """Send camera command via serial and wait for confirmation."""
+        if self.streamer and self.streamer.isRunning():
+            self.streamer.write_command(command)
+            self.camera_pending = command  # store requested state
             self.update_status(f"Camera command sent: {command}")
         else:
             self.update_status("Error: No serial connection active")
@@ -421,7 +439,23 @@ class GroundStationWindow(QMainWindow):
         Accel_X1, Accel_Y1, Accel_Z1, Accel_X2, Accel_Y2, Accel_Z2, flight_state
         """
 
-        self.telemetry_log.append(data.copy())
+        # Handle camera confirmation
+        if data.get("camera_status") is not None and self.camera_pending is not None:
+            confirmed = int(data.get("camera_status"))
+
+            if confirmed == 1 and self.camera_pending == "ON":
+                self.camera_is_on = True
+                self.camera_btn.setText("Camera ON")
+                self.camera_pending = None
+                self.update_status("Camera successfully turned ON")
+
+            elif confirmed == 0 and self.camera_pending == "OFF":
+                self.camera_is_on = False
+                self.camera_btn.setText("Camera OFF")
+                self.camera_pending = None
+                self.update_status("Camera successfully turned OFF")
+
+                self.telemetry_log.append(data.copy())
 
         # Update flight state display
         if hasattr(self, 'flight_state_display') and data.get('flight_state') is not None:

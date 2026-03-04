@@ -93,6 +93,10 @@ class SerialStreamer(QThread):
         "Quaternion_X",
         "Quaternion_Y",
         "Quaternion_Z",
+        "main_p_ematch_voltage",
+        "main_s_ematch_voltage",
+        "drogue_p_ematch_voltage",
+        "drogue_s_ematch_voltage",
         "flight_state"
     ]
 
@@ -184,7 +188,7 @@ class SerialStreamer(QThread):
         Parse a CSV line into a dictionary using fixed column positions.
 
         Expected format:
-        Time, Temp, Pressure, Alt, Gyro_X, Gyro_Y, Gyro_Z, Accel_X1, Accel_Y1, Accel_Z1, Accel_X2, Accel_Y2, Accel_Z2, flight_state
+        Time, Temp, Pressure, Alt, Gyro_X, Gyro_Y, Gyro_Z, Accel_X1, Accel_Y1, Accel_Z1, Accel_X2, Accel_Y2, Accel_Z2,  flight_state
 
         Returns:
             Dictionary mapping column names to values, or None if invalid
