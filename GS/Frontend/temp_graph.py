@@ -14,7 +14,6 @@ class TempGraph(QWidget):
         
         self.time_data = []
         self.temp_data = []
-        
         # Use dark background style
         plt.style.use('dark_background')
         
@@ -48,12 +47,29 @@ class TempGraph(QWidget):
         for spine in self.axes.spines.values():
             spine.set_edgecolor('#404040')
             spine.set_linewidth(1)
+
+        # Current / max value annotation (top-left, inside axes)
+        self._stats_text = self.axes.text(
+            0.02, 0.97, '',
+            transform=self.axes.transAxes,
+            fontsize=9, verticalalignment='top',
+            fontfamily='monospace',
+            bbox=dict(boxstyle='round,pad=0.4', facecolor='#1e1e1e',
+                      edgecolor='#ff6b35', alpha=0.85),
+            color='#e0e0e0'
+        )
         
         # Layout
         layout = QVBoxLayout()
         layout.addWidget(self.canvas)
         layout.setContentsMargins(5, 5, 5, 5)
         self.setLayout(layout)
+
+    def _update_stats(self):
+        if not self.temp_data:
+            self._stats_text.set_text('')
+            return
+        self._stats_text.set_text(f"Now: {self.temp_data[-1]:+.2f} °C")
         
     def update_data(self, time_value, temp_value, max_points=100):
         """Update the graph with new data point."""
@@ -66,6 +82,8 @@ class TempGraph(QWidget):
         self.line.set_xdata(self.time_data)
         self.line.set_ydata(self.temp_data)
         
+        self._update_stats()
+
         self.axes.relim()
         self.axes.autoscale_view(True, True, True)
         
@@ -77,4 +95,5 @@ class TempGraph(QWidget):
         self.temp_data = []
         self.line.set_xdata([])
         self.line.set_ydata([])
+        self._stats_text.set_text('')
         self.canvas.draw()

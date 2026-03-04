@@ -20,6 +20,7 @@ class GroundStationWindow(QMainWindow):
         self.streamer = None
         self.pyro_panel = None  # Will hold PyroPanel instance
         self.camera_panel = None  # Will hold CameraPanel instance
+        self.max_table = None     # Will hold MaxValuesTable instance
         self.ematch_panel = None
         self.camera_is_on = False   # confirmed state from rocket
         self.camera_pending = None  # "ON" or "OFF" waiting for confirmation
@@ -27,7 +28,7 @@ class GroundStationWindow(QMainWindow):
         self.setWindowTitle("Ground Station - Rocket Telemetry")
         #self.setGeometry(100, 100, 1400, 900)
 
-        self.setFixedSize(1400, 900)
+        self.setFixedSize(1500, 1000)
         self.move(100, 100)
 
         self.setup_ui()
@@ -198,30 +199,8 @@ class GroundStationWindow(QMainWindow):
                 background-color: #e6e200;
             }
         """)
-        self.camera_btn.clicked.connect(self.toggle_camera)
+        self.camera_btn.clicked.connect(self.open_camera_panel)
         control_layout.addWidget(self.camera_btn)
-
-        # Airbrakes Servo Test button
-        self.servo_btn = QPushButton("⚙ Airbrakes Test")
-        self.servo_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #a855f7;
-                color: #ffffff;
-                border: none;
-                padding: 5px 15px;
-                font-weight: bold;
-                border-radius: 3px;
-            }
-            QPushButton:hover {
-                background-color: #bf7fff;
-            }
-            QPushButton:pressed {
-                background-color: #8b3dd4;
-            }
-        """)
-        
-        self.servo_btn.clicked.connect(self.test_servo_sequence)
-        control_layout.addWidget(self.servo_btn)
         
         # Clear All button
         self.clear_btn = QPushButton("Clear All")
@@ -360,6 +339,15 @@ class GroundStationWindow(QMainWindow):
             layout.addWidget(self.accel_lis_graph, 1, 0)
             layout.addWidget(self.accel_world_graph, 1, 1)
             layout.addWidget(self.ang_graph, 1, 2)
+
+            # Max values table fills the empty slot: row 0, col 2
+            try:
+                from Frontend.max_vals import MaxValuesTable
+                self.max_table = MaxValuesTable()
+                layout.addWidget(self.max_table, 0, 2)
+            except ImportError as e:
+                print(f"Warning: Could not import MaxValuesTable: {e}")
+                self.max_table = None
             
         except ImportError as e:
             print(f"Warning: Could not import graph widgets: {e}")
@@ -381,9 +369,6 @@ class GroundStationWindow(QMainWindow):
         self.pyro_panel.raise_()
         self.pyro_panel.activateWindow()
     
-    '''
-    This is the old camera panel, I won't delete it but we are not using this anymore
-
     def open_camera_panel(self):
         """Open the camera control panel."""
         if self.camera_panel is None:
@@ -394,7 +379,6 @@ class GroundStationWindow(QMainWindow):
         self.camera_panel.show()
         self.camera_panel.raise_()
         self.camera_panel.activateWindow()
-    '''
     
     def send_pyro_command(self, command):
         """Send pyro command via serial."""
@@ -440,48 +424,6 @@ class GroundStationWindow(QMainWindow):
                 "Cannot send command: Serial connection is not active"
             )
     
-    def toggle_camera(self):
-        """Toggle camera on/off via serial command."""
-        command = "OFF" if self.camera_is_on else "ON"
-        if self.streamer and self.streamer.isRunning():
-            self.streamer.write_command(command)
-            self.camera_pending = command
-            self.update_status(f"Camera command sent: {command}")
-        else:
-            self.update_status("Error: No serial connection active")
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Connection Error",
-                                "Cannot send command: Serial connection is not active")
-
-    def test_servo_sequence(self):
-        """Send SERVO SEQUENCE command with confirmation dialog."""
-        from PyQt6.QtWidgets import QMessageBox
-
-        reply = QMessageBox.question(
-            self,
-            "Airbrakes Servo Test",
-            "Send SERVO SEQUENCE command?\n\n"
-            "The airbrakes servo will run through its full test sequence.\n"
-            "Ensure the airbrakes are clear of obstructions before continuing.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-
-        if reply != QMessageBox.StandardButton.Yes:
-            return
-
-        if self.streamer and self.streamer.isRunning():
-            self.streamer.write_command("SERVO SEQUENCE")
-            self.update_status("⚙ Airbrakes servo sequence triggered")
-        else:
-            self.update_status("Error: No serial connection active")
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.warning(
-                self,
-                "Connection Error",
-                "Cannot send command: Serial connection is not active"
-            )
-    
     def clear_all_graphs(self):
         """Clear data from all graphs."""
         if hasattr(self, 'altitude_graph'):
@@ -494,6 +436,8 @@ class GroundStationWindow(QMainWindow):
             self.accel_world_graph.clear_data()
         if hasattr(self, 'ang_graph'):
             self.ang_graph.clear_data()
+        if self.max_table is not None:
+            self.max_table.reset()
         self.update_status("All graphs cleared")
     
     def start_serial_connection(self):
@@ -523,18 +467,22 @@ class GroundStationWindow(QMainWindow):
 
             if confirmed == 1 and self.camera_pending == "ON":
                 self.camera_is_on = True
-                self.camera_btn.setText("Camera OFF")
+                self.camera_btn.setText("Camera ON")
                 self.camera_pending = None
                 self.update_status("Camera successfully turned ON")
 
             elif confirmed == 0 and self.camera_pending == "OFF":
                 self.camera_is_on = False
-                self.camera_btn.setText("Camera ON")
+                self.camera_btn.setText("Camera OFF")
                 self.camera_pending = None
                 self.update_status("Camera successfully turned OFF")
 
                 self.telemetry_log.append(data.copy())
         
+        # Update max values table
+        if self.max_table is not None:
+            self.max_table.update_data(data)
+
         # Update e-match voltage indicators
         if self.ematch_panel is not None:
             self.ematch_panel.update_data(data)
