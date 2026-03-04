@@ -198,7 +198,7 @@ class GroundStationWindow(QMainWindow):
                 background-color: #e6e200;
             }
         """)
-        self.camera_btn.clicked.connect(self.open_camera_panel)
+        self.camera_btn.clicked.connect(self.toggle_camera)
         control_layout.addWidget(self.camera_btn)
 
         # Airbrakes Servo Test button
@@ -219,6 +219,7 @@ class GroundStationWindow(QMainWindow):
                 background-color: #8b3dd4;
             }
         """)
+        
         self.servo_btn.clicked.connect(self.test_servo_sequence)
         control_layout.addWidget(self.servo_btn)
         
@@ -380,6 +381,9 @@ class GroundStationWindow(QMainWindow):
         self.pyro_panel.raise_()
         self.pyro_panel.activateWindow()
     
+    '''
+    This is the old camera panel, I won't delete it but we are not using this anymore
+
     def open_camera_panel(self):
         """Open the camera control panel."""
         if self.camera_panel is None:
@@ -390,6 +394,7 @@ class GroundStationWindow(QMainWindow):
         self.camera_panel.show()
         self.camera_panel.raise_()
         self.camera_panel.activateWindow()
+    '''
     
     def send_pyro_command(self, command):
         """Send pyro command via serial."""
@@ -434,6 +439,19 @@ class GroundStationWindow(QMainWindow):
                 "Connection Error",
                 "Cannot send command: Serial connection is not active"
             )
+    
+    def toggle_camera(self):
+        """Toggle camera on/off via serial command."""
+        command = "OFF" if self.camera_is_on else "ON"
+        if self.streamer and self.streamer.isRunning():
+            self.streamer.write_command(command)
+            self.camera_pending = command
+            self.update_status(f"Camera command sent: {command}")
+        else:
+            self.update_status("Error: No serial connection active")
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Connection Error",
+                                "Cannot send command: Serial connection is not active")
 
     def test_servo_sequence(self):
         """Send SERVO SEQUENCE command with confirmation dialog."""
