@@ -200,6 +200,27 @@ class GroundStationWindow(QMainWindow):
         """)
         self.camera_btn.clicked.connect(self.open_camera_panel)
         control_layout.addWidget(self.camera_btn)
+
+        # Airbrakes Servo Test button
+        self.servo_btn = QPushButton("⚙ Airbrakes Test")
+        self.servo_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #a855f7;
+                color: #ffffff;
+                border: none;
+                padding: 5px 15px;
+                font-weight: bold;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #bf7fff;
+            }
+            QPushButton:pressed {
+                background-color: #8b3dd4;
+            }
+        """)
+        self.servo_btn.clicked.connect(self.test_servo_sequence)
+        control_layout.addWidget(self.servo_btn)
         
         # Clear All button
         self.clear_btn = QPushButton("Clear All")
@@ -413,6 +434,35 @@ class GroundStationWindow(QMainWindow):
                 "Connection Error",
                 "Cannot send command: Serial connection is not active"
             )
+
+    def test_servo_sequence(self):
+        """Send SERVO SEQUENCE command with confirmation dialog."""
+        from PyQt6.QtWidgets import QMessageBox
+
+        reply = QMessageBox.question(
+            self,
+            "Airbrakes Servo Test",
+            "Send SERVO SEQUENCE command?\n\n"
+            "The airbrakes servo will run through its full test sequence.\n"
+            "Ensure the airbrakes are clear of obstructions before continuing.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        if self.streamer and self.streamer.isRunning():
+            self.streamer.write_command("SERVO SEQUENCE")
+            self.update_status("⚙ Airbrakes servo sequence triggered")
+        else:
+            self.update_status("Error: No serial connection active")
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self,
+                "Connection Error",
+                "Cannot send command: Serial connection is not active"
+            )
     
     def clear_all_graphs(self):
         """Clear data from all graphs."""
@@ -455,13 +505,13 @@ class GroundStationWindow(QMainWindow):
 
             if confirmed == 1 and self.camera_pending == "ON":
                 self.camera_is_on = True
-                self.camera_btn.setText("Camera ON")
+                self.camera_btn.setText("Camera OFF")
                 self.camera_pending = None
                 self.update_status("Camera successfully turned ON")
 
             elif confirmed == 0 and self.camera_pending == "OFF":
                 self.camera_is_on = False
-                self.camera_btn.setText("Camera OFF")
+                self.camera_btn.setText("Camera ON")
                 self.camera_pending = None
                 self.update_status("Camera successfully turned OFF")
 
