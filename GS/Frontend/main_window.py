@@ -20,6 +20,7 @@ class GroundStationWindow(QMainWindow):
         self.streamer = None
         self.pyro_panel = None  # Will hold PyroPanel instance
         self.camera_panel = None  # Will hold CameraPanel instance
+        self.ematch_panel = None
         self.camera_is_on = False   # confirmed state from rocket
         self.camera_pending = None  # "ON" or "OFF" waiting for confirmation
         self.max_points = 100 #Default value, allows us to manually control how many data points we want to see
@@ -230,6 +231,15 @@ class GroundStationWindow(QMainWindow):
         control_layout.addWidget(self.stop_btn)
         
         main_layout.addLayout(control_layout)
+
+         # ── E-Match status panel ─────────────────────────────────────────────
+        try:
+            from Frontend.ematch_panel import EMatchPanel
+            self.ematch_panel = EMatchPanel()
+            main_layout.addWidget(self.ematch_panel)
+        except ImportError as e:
+            print(f"Warning: Could not import EMatchPanel: {e}")
+            self.ematch_panel = None
         
         # ALL GRAPHS ON ONE TAB - using grid layout
         graphs_layout = QGridLayout()
@@ -456,6 +466,10 @@ class GroundStationWindow(QMainWindow):
                 self.update_status("Camera successfully turned OFF")
 
                 self.telemetry_log.append(data.copy())
+        
+        # Update e-match voltage indicators
+        if self.ematch_panel is not None:
+            self.ematch_panel.update_data(data)
 
         # Update flight state display
         if hasattr(self, 'flight_state_display') and data.get('flight_state') is not None:
