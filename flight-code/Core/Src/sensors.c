@@ -260,11 +260,11 @@ void LSM6DSL_Read(Telemetry_t *telemetry) {
     // Conversion Factors (Based on +/- 4g and 2000dps)
     // Accel: 4g range = 0.122 mg/LSB. 0.122 * 9.81 / 1000 = 0.001197 m/s^2
     telemetry->lsm_accel_r = ay * 0.001197f;
-    telemetry->lsm_accel_p = -ax * 0.001197f;
-    telemetry->lsm_accel_y = az * 0.001197f;
+    telemetry->lsm_accel_p = ax * 0.001197f;
+    telemetry->lsm_accel_y = -az * 0.001197f;
 
     // Gyro: 2000dps range = 70 mdps/LSB. 70 * (PI/180) / 1000 = 0.0012217 rad/s
-    telemetry->lsm_gyro_r = -gy * 0.0012217f;
+    telemetry->lsm_gyro_r = gy * 0.0012217f;
     telemetry->lsm_gyro_p = gx * 0.0012217f;
     telemetry->lsm_gyro_y = -gz * 0.0012217f;
 }
@@ -274,11 +274,6 @@ uint8_t LSM6DSL_WhoAmI(void) {
     SPI_Read(LSM_hspi, LSM_port, LSM_pin, LSM6DSL_WHO_AM_I, &id, 1);
     return id;
 }
-
-
-
-
-
 
 /**
  * Switch SPI1 to Mode 3 (CPOL=1, CPHA=1)
@@ -326,9 +321,6 @@ static inline void SPI_RestoreMode(void)
 	HAL_SPI_Init(ADXL_hspi);   // Re-initialize with new settings
 }
 
-uint8_t power;
-uint8_t format;
-uint8_t rate;
 void ADXL375_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin)
 {
 	ADXL_port = cs_port;
@@ -337,20 +329,16 @@ void ADXL375_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pi
 
 	SPI_SwitchToMode3();
 
-	SPI_Write(hspi, cs_port, cs_pin, ADXL375_POWER_CTL, 0x00); // standby
+//	SPI_Write(hspi, cs_port, cs_pin, ADXL375_POWER_CTL, 0x00); // standby
 
     // Data format: Full resolution, ±200g (range bits = 00 for 200g)
-    SPI_Write(hspi, cs_port, cs_pin, ADXL375_DATA_FORMAT, 0x08);
+//    SPI_Write(hspi, cs_port, cs_pin, ADXL375_DATA_FORMAT, 0x04);
 
     // Set bandwidth to 800 Hz (example)
-    SPI_Write(hspi, cs_port, cs_pin, ADXL375_BW_RATE, 0x0D);
+    SPI_Write(hspi, cs_port, cs_pin, ADXL375_BW_RATE, 0x0F);
 
     // Measurement mode
     SPI_Write(hspi, cs_port, cs_pin, ADXL375_POWER_CTL, 0x08);
-
-    SPI_Read(ADXL_hspi, ADXL_port, ADXL_pin, ADXL375_POWER_CTL, &power, 1);
-    SPI_Read(ADXL_hspi, ADXL_port, ADXL_pin, ADXL375_DATA_FORMAT, &format, 1);
-    SPI_Read(ADXL_hspi, ADXL_port, ADXL_pin, ADXL375_BW_RATE, &rate, 1);
 
     SPI_RestoreMode();
 
@@ -361,7 +349,7 @@ void ADXL375_Read(Telemetry_t *telemetry)
 {
 	SPI_SwitchToMode3();
 
-    uint8_t buffer[6];
+	uint8_t buffer[6];
 
     SPI_Read_Multi(ADXL_hspi, ADXL_port, ADXL_pin, ADXL375_DATAX0, buffer, 6);
 
@@ -370,8 +358,8 @@ void ADXL375_Read(Telemetry_t *telemetry)
     int16_t accel_z = (int16_t)(buffer[5] << 8 | buffer[4]);
 
     telemetry->adxl_accel_r = accel_x * 0.4805f;   // 0.049g * 9.80665
-    telemetry->adxl_accel_p = accel_y * 0.4805f;   // 0.049g * 9.80665
-    telemetry->adxl_accel_y = accel_z * 0.4805f;   // 0.049g * 9.80665
+    telemetry->adxl_accel_p = -accel_y * 0.4805f;   // 0.049g * 9.80665
+    telemetry->adxl_accel_y = -accel_z * 0.4805f;   // 0.049g * 9.80665
 
     SPI_RestoreMode();
 }
@@ -386,16 +374,6 @@ uint8_t ADXL375_WhoAmI(void) {
 
     return id;
 }
-
-
-
-
-
-
-
-
-
-
 
 void LIS3MDLTR_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin) {
     LIS_port = cs_port;
@@ -432,9 +410,9 @@ void LIS3MDLTR_Read(Telemetry_t *telemetry) {
     // Let's compute factor: 1 G = 100 µT, so 0.14 mG = 0.014 µT
     float factor = 0.014f;
 
-    telemetry->mag_r = mx * factor;
+    telemetry->mag_r = -mx * factor;
     telemetry->mag_p = my * factor;
-    telemetry->mag_y = mz * factor;
+    telemetry->mag_y = -mz * factor;
 }
 
 uint8_t LIS3MDLTR_WhoAmI(void) {
@@ -445,8 +423,8 @@ uint8_t LIS3MDLTR_WhoAmI(void) {
 
 void transform_accel_to_world(Telemetry_t *telemetry) {
   // Average IMUs (body frame)
-  float ax = telemetry->lsm_accel_y;
-  float ay = telemetry->lsm_accel_p;
+  float ax = telemetry->lsm_accel_p;
+  float ay = telemetry->lsm_accel_y;
   float az = telemetry->lsm_accel_r;
 
   // Quaternion (w, x, y, z)

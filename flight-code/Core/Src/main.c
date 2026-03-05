@@ -239,7 +239,7 @@ int main(void)
 	turn_camera_on(1);
 
 	// Init rf
-//	RFM9X_Init(&hspi1, RF_CS_GPIO_Port, RF_CS_Pin, RF_RST_GPIO_Port, RF_RST_Pin, RF_EN_GPIO_Port, RF_EN_Pin);
+	RFM9X_Init(&hspi1, RF_CS_GPIO_Port, RF_CS_Pin, RF_RST_GPIO_Port, RF_RST_Pin, RF_EN_GPIO_Port, RF_EN_Pin);
 
 	// Init airbrakes servos
 	init_airbrakes_servo();
