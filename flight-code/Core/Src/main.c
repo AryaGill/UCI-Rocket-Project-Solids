@@ -288,26 +288,26 @@ int main(void)
 		set_optimal_deployment(flight_state, &telemetry);
 
 		// Handle Commands
-//		RFM9X_Poll();
-//		len = RFM9X_Receive(rxbuf, sizeof(rxbuf));
-//		if(len > 0)
-//		{
-//			handle_rf_command((char *)rxbuf, &flight_state, &telemetry);
-//		}
-//
-//		// Send RF data
-//		uint32_t cur_time = HAL_GetTick();
-//		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD){
-//			prev_rf_transmit_time = cur_time;
-//			char msg[128];
-//			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
-//			RFM9X_Send((uint8_t *)msg, sizeof(msg));
-//		}
+		RFM9X_Poll();
+		len = RFM9X_Receive(rxbuf, sizeof(rxbuf));
+		if(len > 0)
+		{
+			handle_rf_command((char *)rxbuf, &flight_state, &telemetry);
+		}
+
+		// Send RF data
+		uint32_t cur_time = HAL_GetTick();
+		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD){
+			prev_rf_transmit_time = cur_time;
+			char msg[128];
+			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
+			RFM9X_Send((uint8_t *)msg, sizeof(msg));
+		}
 
 		// Log telemetry
 		log_data(flight_state, &telemetry);
 
-		HAL_Delay(100); // 10 Hz update rate
+		HAL_Delay(1); // 10 Hz update rate
 
     /* USER CODE END WHILE */
 

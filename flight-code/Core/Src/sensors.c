@@ -21,9 +21,6 @@ volatile uint8_t lsm_whoami = 0; // Should be 0x6A
 volatile uint8_t adxl_whoami = 0; // Should be 0xE5
 volatile uint8_t lis_whoami = 0; // Should be 0x3D
 
-static uint32_t spi_saved_polarity;
-static uint32_t spi_saved_phase;
-
 uint8_t Verify_Sensors(void){
 	// Check Barometer
 	lps_whoami = LPS22HH_WhoAmI();
@@ -302,8 +299,6 @@ static inline void SPI_SwitchToMode3(void)
 //    SET_BIT(SPI1->CR1, SPI_CR1_SPE);
 
 	HAL_SPI_DeInit(ADXL_hspi); // Disable SPI and clean up
-	spi_saved_polarity = ADXL_hspi->Init.CLKPolarity;
-	spi_saved_phase = ADXL_hspi->Init.CLKPhase;
 	ADXL_hspi->Init.CLKPolarity = SPI_POLARITY_HIGH; // CPOL 1
 	ADXL_hspi->Init.CLKPhase = SPI_PHASE_2EDGE;      // CPHA 1
 	HAL_SPI_Init(ADXL_hspi);   // Re-initialize with new settings
@@ -326,29 +321,36 @@ static inline void SPI_RestoreMode(void)
 //    SET_BIT(SPI1->CR1, SPI_CR1_SPE);
 
 	HAL_SPI_DeInit(ADXL_hspi); // Disable SPI and clean up
-//	ADXL_hspi->Init.CLKPolarity = spi_saved_polarity;
-//	ADXL_hspi->Init.CLKPhase = spi_saved_phase;
 	ADXL_hspi->Init.CLKPolarity = SPI_POLARITY_LOW;
 	ADXL_hspi->Init.CLKPhase = SPI_PHASE_1EDGE;
 	HAL_SPI_Init(ADXL_hspi);   // Re-initialize with new settings
 }
 
+uint8_t power;
+uint8_t format;
+uint8_t rate;
 void ADXL375_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin)
 {
-	SPI_SwitchToMode3();
-
-    ADXL_port = cs_port;
+	ADXL_port = cs_port;
     ADXL_pin = cs_pin;
 	ADXL_hspi = hspi;
 
+	SPI_SwitchToMode3();
+
+	SPI_Write(hspi, cs_port, cs_pin, ADXL375_POWER_CTL, 0x00); // standby
+
     // Data format: Full resolution, ±200g (range bits = 00 for 200g)
-    SPI_Write(hspi, cs_port, cs_pin, ADXL375_DATA_FORMAT, 0x0B);
+    SPI_Write(hspi, cs_port, cs_pin, ADXL375_DATA_FORMAT, 0x08);
 
     // Set bandwidth to 800 Hz (example)
     SPI_Write(hspi, cs_port, cs_pin, ADXL375_BW_RATE, 0x0D);
 
     // Measurement mode
     SPI_Write(hspi, cs_port, cs_pin, ADXL375_POWER_CTL, 0x08);
+
+    SPI_Read(ADXL_hspi, ADXL_port, ADXL_pin, ADXL375_POWER_CTL, &power, 1);
+    SPI_Read(ADXL_hspi, ADXL_port, ADXL_pin, ADXL375_DATA_FORMAT, &format, 1);
+    SPI_Read(ADXL_hspi, ADXL_port, ADXL_pin, ADXL375_BW_RATE, &rate, 1);
 
     SPI_RestoreMode();
 

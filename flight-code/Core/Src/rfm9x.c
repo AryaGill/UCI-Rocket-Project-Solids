@@ -41,48 +41,6 @@ GPIO_TypeDef *en_port;
 uint16_t en_pin;
 uint8_t tx_busy;
 
-static uint8_t spi_num_saved = 0;
-static uint32_t spi1_saved_mode;
-
-/**
- * Switch SPI1 to Mode 0 (CPOL=0, CPHA=0)
- * Saves previous CPOL/CPHA settings
- */
-static inline void SPI_SwitchToMode0_Save(void)
-{
-	if (++spi_num_saved > 1) return;  // nested calls support
-
-	// Save current CPOL/CPHA (in CFG2 register)
-	spi1_saved_mode = SPI1->CFG2 & (SPI_CFG2_CPOL | SPI_CFG2_CPHA);
-
-	// Disable SPI before changing mode
-	CLEAR_BIT(SPI1->CR1, SPI_CR1_SPE);
-
-	// Set Mode 0 (CPOL=0, CPHA=0)
-	CLEAR_BIT(SPI1->CFG2, SPI_CFG2_CPOL | SPI_CFG2_CPHA);
-
-	// Re-enable SPI
-	SET_BIT(SPI1->CR1, SPI_CR1_SPE);
-}
-
-
-/**
- * Restore previous SPI1 CPOL/CPHA settings
- */
-static inline void SPI_RestoreMode(void)
-{
-	if (--spi_num_saved > 0) return;  // still in nested call, don't restore yet
-
-	// Disable SPI before restoring
-	CLEAR_BIT(SPI1->CR1, SPI_CR1_SPE);
-
-	// Restore saved CPOL/CPHA
-	MODIFY_REG(SPI1->CFG2, SPI_CFG2_CPOL | SPI_CFG2_CPHA, spi1_saved_mode);
-
-	// Re-enable SPI
-	SET_BIT(SPI1->CR1, SPI_CR1_SPE);
-}
-
 /* -------------------------------------------------- */
 /* Low-level SPI helpers */
 /* -------------------------------------------------- */
@@ -153,9 +111,6 @@ void RFM9X_Init(SPI_HandleTypeDef *hspi_p, GPIO_TypeDef *cs_port_p, uint16_t cs_
     /* Hardware reset */
 	RFM9X_Reset();
 
-	/* Switch SPI mode */
-	SPI_SwitchToMode0_Save();
-
 	/* Enter sleep mode with LoRa enabled */
 	write_reg(REG_OP_MODE, MODE_SLEEP);
 	HAL_Delay(1);
@@ -198,36 +153,25 @@ void RFM9X_Init(SPI_HandleTypeDef *hspi_p, GPIO_TypeDef *cs_port_p, uint16_t cs_
 
 	write_reg(REG_OP_MODE, MODE_RX_CONTINUOUS);
 	HAL_Delay(1);
-
-	/* Restore SPI mode */
-	SPI_RestoreMode();
 }
 
 /* -------------------------------------------------- */
 
 void RFM9X_SetFrequency(uint32_t freq_hz)
 {
-	SPI_SwitchToMode0_Save();
-
 	uint64_t frf = ((uint64_t)freq_hz << 19) / 32000000;
 
     write_reg(REG_FRF_MSB, (uint8_t)(frf >> 16));
     write_reg(REG_FRF_MID, (uint8_t)(frf >> 8));
     write_reg(REG_FRF_LSB, (uint8_t)(frf));
-
-    SPI_RestoreMode();
 }
 
 /* -------------------------------------------------- */
 
 void RFM9X_SetTxPower(uint8_t power)
 {
-	SPI_SwitchToMode0_Save();
-
 	if(power > 17) power = 17;
     write_reg(REG_PA_CONFIG, 0x80 | (power - 2));
-
-    SPI_RestoreMode();
 }
 
 /* -------------------------------------------------- */
@@ -235,8 +179,6 @@ void RFM9X_SetTxPower(uint8_t power)
 void RFM9X_Send(uint8_t *data, uint8_t len)
 {
     if(tx_busy) return;
-
-    SPI_SwitchToMode0_Save();
 
     /* MUST enter standby first */
     write_reg(REG_OP_MODE, MODE_STDBY);
@@ -259,16 +201,12 @@ void RFM9X_Send(uint8_t *data, uint8_t len)
     write_reg(REG_OP_MODE, MODE_TX);
 
     tx_busy = 1;
-
-    SPI_RestoreMode();
 }
 
 /* -------------------------------------------------- */
 
 void RFM9X_Poll()
 {
-	SPI_SwitchToMode0_Save();
-
 	uint8_t irq = read_reg(REG_IRQ_FLAGS);
 
 	/* TX finished */
@@ -283,8 +221,6 @@ void RFM9X_Poll()
 		/* Immediately return to RX */
 		write_reg(REG_OP_MODE, MODE_RX_CONTINUOUS);
 	}
-
-	SPI_RestoreMode();
 }
 
 /* -------------------------------------------------- */
@@ -298,8 +234,6 @@ uint8_t RFM9X_IsTxBusy()
 
 uint8_t RFM9X_Receive(uint8_t *buf, uint8_t max_len)
 {
-	SPI_SwitchToMode0_Save();
-
 	uint8_t irq = read_reg(REG_IRQ_FLAGS);
 
 	if(!(irq & IRQ_RX_DONE))
@@ -322,8 +256,6 @@ uint8_t RFM9X_Receive(uint8_t *buf, uint8_t max_len)
 	buf[len] = '\0';
 
 	write_reg(REG_IRQ_FLAGS, 0xFF);
-
-	SPI_RestoreMode();
 
 	return len;
 }
