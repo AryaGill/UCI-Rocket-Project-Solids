@@ -19,6 +19,13 @@
 #define LSM6DSL_OUTX_L_G            0x22
 #define LSM6DSL_OUTX_L_XL           0x28
 
+// ADXL375BCCZ-RL7 (IMU) Registers
+#define ADXL375_DEVID        0x00
+#define ADXL375_BW_RATE      0x2C
+#define ADXL375_POWER_CTL    0x2D
+#define ADXL375_DATA_FORMAT  0x31
+#define ADXL375_DATAX0       0x32
+
 // LIS (Mag) Registers
 #define LIS3MDLTR_WHO_AM_I    0x0F
 #define LIS3MDLTR_CTRL_REG1   0x20
@@ -43,6 +50,11 @@ void set_start_alt(Telemetry_t *telemetry);
 void LSM6DSL_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
 void LSM6DSL_Read(Telemetry_t *telemetry);
 uint8_t LSM6DSL_WhoAmI(void);
+
+// ADXL375BCCZ-RL7 Functions
+void ADXL375_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
+void ADXL375_Read(Telemetry_t *telemetry);
+uint8_t ADXL375_WhoAmI(void);
 
 // LIS3MDLTR Functions
 void LIS3MDLTR_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);

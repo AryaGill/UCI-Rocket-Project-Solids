@@ -71,12 +71,9 @@ typedef struct {
 	float lsm_gyro_r;
 	float lsm_gyro_p;
 	float lsm_gyro_y;
-	float icm_accel_r;
-	float icm_accel_p;
-	float icm_accel_y;
-	float icm_gyro_r;
-	float icm_gyro_p;
-	float icm_gyro_y;
+	float adxl_accel_r;
+	float adxl_accel_p;
+	float adxl_accel_y;
 	float predicted_apogee;
 	uint8_t airbrake_deployment;
 	float mag_r;

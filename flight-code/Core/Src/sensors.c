@@ -8,13 +8,21 @@ GPIO_TypeDef *LSM_port;
 uint16_t LSM_pin;
 SPI_HandleTypeDef *LSM_hspi;
 
+GPIO_TypeDef *ADXL_port;
+uint16_t ADXL_pin;
+SPI_HandleTypeDef *ADXL_hspi;
+
 GPIO_TypeDef *LIS_port;
 uint16_t LIS_pin;
 SPI_HandleTypeDef *LIS_hspi;
 
 volatile uint8_t lps_whoami = 0; // Should be 0xB3 for LPS22HH
 volatile uint8_t lsm_whoami = 0; // Should be 0x6A
+volatile uint8_t adxl_whoami = 0; // Should be 0xE5
 volatile uint8_t lis_whoami = 0; // Should be 0x3D
+
+static uint32_t spi_saved_polarity;
+static uint32_t spi_saved_phase;
 
 uint8_t Verify_Sensors(void){
 	// Check Barometer
@@ -26,6 +34,11 @@ uint8_t Verify_Sensors(void){
 	// Check LSM6DSL IMU
 	lsm_whoami = LSM6DSL_WhoAmI();
 	if (lsm_whoami != 0x6a){
+		return 1;
+	}
+
+	adxl_whoami = ADXL375_WhoAmI();
+	if (adxl_whoami != 0xE5){
 		return 1;
 	}
 
@@ -59,6 +72,16 @@ static void SPI_Read(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
     SPI_CS_HIGH(port, pin);
 }
 
+static void SPI_Read_Multi(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
+                     uint8_t reg, uint8_t *buf, uint8_t len)
+{
+    reg |= 0xC0; // Set read bit and auto increment
+    SPI_CS_LOW(port, pin);
+    HAL_SPI_Transmit(hspi, &reg, 1, HAL_MAX_DELAY);
+    HAL_SPI_Receive(hspi, buf, len, HAL_MAX_DELAY);
+    SPI_CS_HIGH(port, pin);
+}
+
 static void SPI_Write(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
                       uint8_t reg, uint8_t val)
 {
@@ -86,6 +109,10 @@ void init_sensors(SPI_HandleTypeDef *hspi)
     LSM6DSL_Init(hspi, IMU_2_CS_GPIO_Port, IMU_2_CS_Pin);
     HAL_Delay(20);
 
+    // Initialize ADXL
+    ADXL375_Init(hspi, IMU_CS_GPIO_Port, IMU_CS_Pin);
+    HAL_Delay(20);
+
     // Initialize LIS
     LIS3MDLTR_Init(hspi, Mag_CS_GPIO_Port, Mag_CS_Pin);
     HAL_Delay(20);
@@ -96,6 +123,7 @@ void read_sensors(Telemetry_t *telemetry)
 {
     LPS22HH_Read(telemetry);
     LSM6DSL_Read(telemetry);
+    ADXL375_Read(telemetry);
     LIS3MDLTR_Read(telemetry);
 
     transform_accel_to_world(telemetry);
@@ -250,15 +278,122 @@ uint8_t LSM6DSL_WhoAmI(void) {
     return id;
 }
 
-static void SPI_Read_LIS(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
-                     uint8_t reg, uint8_t *buf, uint8_t len)
+
+
+
+
+
+/**
+ * Switch SPI1 to Mode 3 (CPOL=1, CPHA=1)
+ * Saves previous CPOL/CPHA settings
+ */
+static inline void SPI_SwitchToMode3(void)
 {
-    reg |= 0xC0; // Set read bit and auto increment
-    SPI_CS_LOW(port, pin);
-    HAL_SPI_Transmit(hspi, &reg, 1, HAL_MAX_DELAY);
-    HAL_SPI_Receive(hspi, buf, len, HAL_MAX_DELAY);
-    SPI_CS_HIGH(port, pin);
+//	// Disable SPI before changing mode
+//	CLEAR_BIT(SPI1->CR1, SPI_CR1_SPE);
+//
+//	// Save current CPOL/CPHA (in CFG2 register)
+//	spi_saved_mode = SPI1->CFG2 & (SPI_CFG2_CPOL | SPI_CFG2_CPHA);
+//
+//    // Set Mode 3 (CPOL=1, CPHA=1)
+//    SET_BIT(SPI1->CFG2, SPI_CFG2_CPOL | SPI_CFG2_CPHA);
+//
+//    // Re-enable SPI
+//    SET_BIT(SPI1->CR1, SPI_CR1_SPE);
+
+	HAL_SPI_DeInit(ADXL_hspi); // Disable SPI and clean up
+	spi_saved_polarity = ADXL_hspi->Init.CLKPolarity;
+	spi_saved_phase = ADXL_hspi->Init.CLKPhase;
+	ADXL_hspi->Init.CLKPolarity = SPI_POLARITY_HIGH; // CPOL 1
+	ADXL_hspi->Init.CLKPhase = SPI_PHASE_2EDGE;      // CPHA 1
+	HAL_SPI_Init(ADXL_hspi);   // Re-initialize with new settings
 }
+
+/**
+ * Restore previous SPI1 CPOL/CPHA settings
+ */
+static inline void SPI_RestoreMode(void)
+{
+//    // Disable SPI before restoring
+//    CLEAR_BIT(SPI1->CR1, SPI_CR1_SPE);
+//
+//    // Restore saved CPOL/CPHA bits
+//    MODIFY_REG(SPI1->CFG2,
+//               SPI_CFG2_CPOL | SPI_CFG2_CPHA,
+//               spi_saved_mode);
+//
+//    // Re-enable SPI
+//    SET_BIT(SPI1->CR1, SPI_CR1_SPE);
+
+	HAL_SPI_DeInit(ADXL_hspi); // Disable SPI and clean up
+//	ADXL_hspi->Init.CLKPolarity = spi_saved_polarity;
+//	ADXL_hspi->Init.CLKPhase = spi_saved_phase;
+	ADXL_hspi->Init.CLKPolarity = SPI_POLARITY_LOW;
+	ADXL_hspi->Init.CLKPhase = SPI_PHASE_1EDGE;
+	HAL_SPI_Init(ADXL_hspi);   // Re-initialize with new settings
+}
+
+void ADXL375_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin)
+{
+	SPI_SwitchToMode3();
+
+    ADXL_port = cs_port;
+    ADXL_pin = cs_pin;
+	ADXL_hspi = hspi;
+
+    // Data format: Full resolution, ±200g (range bits = 00 for 200g)
+    SPI_Write(hspi, cs_port, cs_pin, ADXL375_DATA_FORMAT, 0x0B);
+
+    // Set bandwidth to 800 Hz (example)
+    SPI_Write(hspi, cs_port, cs_pin, ADXL375_BW_RATE, 0x0D);
+
+    // Measurement mode
+    SPI_Write(hspi, cs_port, cs_pin, ADXL375_POWER_CTL, 0x08);
+
+    SPI_RestoreMode();
+
+    HAL_Delay(10);
+}
+
+void ADXL375_Read(Telemetry_t *telemetry)
+{
+	SPI_SwitchToMode3();
+
+    uint8_t buffer[6];
+
+    SPI_Read_Multi(ADXL_hspi, ADXL_port, ADXL_pin, ADXL375_DATAX0, buffer, 6);
+
+    int16_t accel_x = (int16_t)(buffer[1] << 8 | buffer[0]);
+    int16_t accel_y = (int16_t)(buffer[3] << 8 | buffer[2]);
+    int16_t accel_z = (int16_t)(buffer[5] << 8 | buffer[4]);
+
+    telemetry->adxl_accel_r = accel_x * 0.4805f;   // 0.049g * 9.80665
+    telemetry->adxl_accel_p = accel_y * 0.4805f;   // 0.049g * 9.80665
+    telemetry->adxl_accel_y = accel_z * 0.4805f;   // 0.049g * 9.80665
+
+    SPI_RestoreMode();
+}
+
+uint8_t ADXL375_WhoAmI(void) {
+	SPI_SwitchToMode3();
+
+    uint8_t id = 0;
+    SPI_Read(ADXL_hspi, ADXL_port, ADXL_pin, ADXL375_DEVID, &id, 1);
+
+    SPI_RestoreMode();
+
+    return id;
+}
+
+
+
+
+
+
+
+
+
+
 
 void LIS3MDLTR_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin) {
     LIS_port = cs_port;
@@ -283,7 +418,7 @@ void LIS3MDLTR_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_
 void LIS3MDLTR_Read(Telemetry_t *telemetry) {
 	uint8_t buf[6];
     // Read 6 bytes starting from OUT_X_L
-	SPI_Read_LIS(LIS_hspi, LIS_port, LIS_pin, LIS3MDLTR_OUT_X_L, buf, 6);
+	SPI_Read_Multi(LIS_hspi, LIS_port, LIS_pin, LIS3MDLTR_OUT_X_L, buf, 6);
 
     // Raw values (Little Endian)
     int16_t mx = (int16_t)((buf[1] << 8) | buf[0]);
