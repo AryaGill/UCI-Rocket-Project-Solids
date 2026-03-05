@@ -8,13 +8,13 @@ GPIO_TypeDef *LSM_port;
 uint16_t LSM_pin;
 SPI_HandleTypeDef *LSM_hspi;
 
-GPIO_TypeDef *ICM45_port;
-uint16_t ICM45_pin;
-SPI_HandleTypeDef *ICM45_hspi;
+GPIO_TypeDef *LIS_port;
+uint16_t LIS_pin;
+SPI_HandleTypeDef *LIS_hspi;
 
 volatile uint8_t lps_whoami = 0; // Should be 0xB3 for LPS22HH
 volatile uint8_t lsm_whoami = 0; // Should be 0x6A
-volatile uint8_t icm_whoami = 0;
+volatile uint8_t lis_whoami = 0; // Should be 0x3D
 
 uint8_t Verify_Sensors(void){
 	// Check Barometer
@@ -28,13 +28,11 @@ uint8_t Verify_Sensors(void){
 	if (lsm_whoami != 0x6a){
 		return 1;
 	}
-	// TODO CURRENTLY NOT WORKING. CHANGE AFTER
 
-	// Check ICM45686 IMU
-//	icm_whoami = ICM45686_WhoAmI();
-//	if (icm_whoami != 0xE9){
-//		return 1;
-//	}
+	lis_whoami = LIS3MDLTR_WhoAmI();
+	if (lis_whoami != 0x3D){
+		return 1;
+	}
 
 	return 0;
 
@@ -70,7 +68,6 @@ static void SPI_Write(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
     SPI_CS_HIGH(port, pin);
 }
 
-uint8_t test_buf;
 // Sensor Initialization
 void init_sensors(SPI_HandleTypeDef *hspi)
 {
@@ -81,9 +78,6 @@ void init_sensors(SPI_HandleTypeDef *hspi)
     HAL_GPIO_WritePin(Mag_CS_GPIO_Port, Mag_CS_Pin, GPIO_PIN_SET);
     HAL_Delay(100);
 
-    SPI_Read(hspi, IMU_2_CS_GPIO_Port, IMU_2_CS_Pin, 0x0F, &test_buf, 1);
-//    SPI_Read(hspi, IMU_CS_GPIO_Port, IMU_CS_Pin, 0x0, test_buf, 1);
-
     // Initialize Baro
     LPS22HH_Init(hspi, Baro_CS_GPIO_Port, Baro_CS_Pin);
     HAL_Delay(20);
@@ -92,9 +86,9 @@ void init_sensors(SPI_HandleTypeDef *hspi)
     LSM6DSL_Init(hspi, IMU_2_CS_GPIO_Port, IMU_2_CS_Pin);
     HAL_Delay(20);
 
-    // Initialize ICM - Use the correct IMU_2 defines
-//    ICM45686_Init(hspi, IMU_CS_GPIO_Port, IMU_CS_Pin);
-//    HAL_Delay(20);
+    // Initialize LIS
+    LIS3MDLTR_Init(hspi, Mag_CS_GPIO_Port, Mag_CS_Pin);
+    HAL_Delay(20);
 }
 
 // Sensor Reading
@@ -102,7 +96,7 @@ void read_sensors(Telemetry_t *telemetry)
 {
     LPS22HH_Read(telemetry);
     LSM6DSL_Read(telemetry);
-//    ICM45686_Read(telemetry);
+    LIS3MDLTR_Read(telemetry);
 
     transform_accel_to_world(telemetry);
 }
@@ -141,8 +135,8 @@ void LPS22HH_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pi
 
 void LPS22HH_Read(Telemetry_t *telemetry)
 {
-    uint8_t buf[5];
-    int32_t raw_p;
+	uint8_t buf[5];
+	int32_t raw_p;
     int16_t raw_t;
 
     // Read pressure (3 bytes) and temperature (2 bytes) - 5 bytes total
@@ -256,70 +250,60 @@ uint8_t LSM6DSL_WhoAmI(void) {
     return id;
 }
 
-void ICM45686_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin) {
-    ICM45_port = cs_port;
-    ICM45_pin = cs_pin;
-    ICM45_hspi = hspi;
-
-    // 1. Ensure we are in Bank 0
-    SPI_Write(hspi, cs_port, cs_pin, ICM45_REG_REG_BANK_SEL, 0x00);
-    HAL_Delay(10);
-
-    // 2. Soft Reset (Toggle bit in DEVICE_CONFIG or similar)
-    // For ICM45 series, a power management wake-up is usually enough
-
-    // 3. Set PWR_MGMT0: Enable Accel and Gyro in Low Noise (LN) Mode
-    // Bits [3:2] Gyro: 11 (LN), Bits [1:0] Accel: 11 (LN) -> 0x0F
-    SPI_Write(hspi, cs_port, cs_pin, ICM45_REG_PWR_MGMT0, 0x0F);
-    HAL_Delay(50); // Wait for sensors to stabilize
+static void SPI_Read_LIS(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
+                     uint8_t reg, uint8_t *buf, uint8_t len)
+{
+    reg |= 0xC0; // Set read bit and auto increment
+    SPI_CS_LOW(port, pin);
+    HAL_SPI_Transmit(hspi, &reg, 1, HAL_MAX_DELAY);
+    HAL_SPI_Receive(hspi, buf, len, HAL_MAX_DELAY);
+    SPI_CS_HIGH(port, pin);
 }
 
-uint8_t ICM45686_WhoAmI(void) {
+void LIS3MDLTR_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin) {
+    LIS_port = cs_port;
+    LIS_pin = cs_pin;
+    LIS_hspi = hspi;
+
+    // 1. Reset the device (CTRL_REG2: soft reset)
+    SPI_Write(hspi, cs_port, cs_pin, LIS3MDLTR_CTRL_REG2, 0x0C); // soft reset + reboot
+    HAL_Delay(50);
+
+    // 2. Enable Block Data Update (BDU) and continuous mode
+    // CTRL_REG1: Temp sensor off, Ultra-high-performance XY, 80Hz ODR
+    SPI_Write(hspi, cs_port, cs_pin, LIS3MDLTR_CTRL_REG1, 0x70); // 0111 0000
+
+    // 3. Set full-scale to ±4 gauss, ultra-high-performance Z
+    SPI_Write(hspi, cs_port, cs_pin, LIS3MDLTR_CTRL_REG2, 0x00); // FS = ±4 gauss
+
+    // 4. Enable continuous-conversion mode
+    SPI_Write(hspi, cs_port, cs_pin, LIS3MDLTR_CTRL_REG3, 0x00); // Continuous-conversion
+}
+
+void LIS3MDLTR_Read(Telemetry_t *telemetry) {
+	uint8_t buf[6];
+    // Read 6 bytes starting from OUT_X_L
+	SPI_Read_LIS(LIS_hspi, LIS_port, LIS_pin, LIS3MDLTR_OUT_X_L, buf, 6);
+
+    // Raw values (Little Endian)
+    int16_t mx = (int16_t)((buf[1] << 8) | buf[0]);
+    int16_t my = (int16_t)((buf[3] << 8) | buf[2]);
+    int16_t mz = (int16_t)((buf[5] << 8) | buf[4]);
+
+    // Conversion to microteslas
+    // ±4 gauss full-scale = 0.14 mG/LSB = 0.014 µT/LSB * 100? Actually LIS3MDLTR FS=4G => 0.14 mG/LSB
+    // Let's compute factor: 1 G = 100 µT, so 0.14 mG = 0.014 µT
+    float factor = 0.014f;
+
+    telemetry->mag_r = mx * factor;
+    telemetry->mag_p = my * factor;
+    telemetry->mag_y = mz * factor;
+}
+
+uint8_t LIS3MDLTR_WhoAmI(void) {
     uint8_t id = 0;
-    uint8_t bank_reg = 0x76; // REG_BANK_SEL is usually 0x76 or 0x00 depending on variant
-    uint8_t bank0 = 0x00;
-    uint8_t who_am_i_reg = 0x75 | 0x80; // 0x75 with Read Bit
-
-    SPI_CS_LOW(GPIOB, IMU_2_CS_Pin);
-    // Ensure we are in Bank 0
-    HAL_SPI_Transmit(ICM45_hspi, &bank_reg, 1, 10);
-    HAL_SPI_Transmit(ICM45_hspi, &bank0, 1, 10);
-    SPI_CS_HIGH(GPIOB, IMU_2_CS_Pin);
-
-    HAL_Delay(1);
-
-    SPI_CS_LOW(GPIOB, IMU_2_CS_Pin);
-    HAL_SPI_Transmit(ICM45_hspi, &who_am_i_reg, 1, 10);
-    HAL_SPI_Receive(ICM45_hspi, &id, 1, 10);
-    SPI_CS_HIGH(GPIOB, IMU_2_CS_Pin);
-
+    SPI_Read(LIS_hspi, LIS_port, LIS_pin, LIS3MDLTR_WHO_AM_I, &id, 1);
     return id;
-}
-
-void ICM45686_Read(Telemetry_t *telemetry) {
-    uint8_t buf[12];
-    // ICM-45686 data registers are usually 20-bit or 16-bit.
-    // We will read 12 bytes starting at Accel X
-    SPI_Read(ICM45_hspi, ICM45_port, ICM45_pin, ICM45_REG_ACCEL_DATA_X1, buf, 12);
-
-    // Raw 16-bit values (Big Endian usually for InvenSense!)
-    // Note: Check your specific variant, but most ICMs are Big Endian
-    int16_t ax = (int16_t)((buf[0] << 8) | buf[1]);
-    int16_t ay = (int16_t)((buf[2] << 8) | buf[3]);
-    int16_t az = (int16_t)((buf[4] << 8) | buf[5]);
-
-    int16_t gx = (int16_t)((buf[6] << 8) | buf[7]);
-    int16_t gy = (int16_t)((buf[8] << 8) | buf[9]);
-    int16_t gz = (int16_t)((buf[10] << 8) | buf[11]);
-
-    // Simple Scaling (Assuming default +/- 8g and 2000 dps)
-    telemetry->icm_accel_r = ax * (8.0f / 32768.0f);
-    telemetry->icm_accel_p = ay * (8.0f / 32768.0f);
-    telemetry->icm_accel_y = az * (8.0f / 32768.0f);
-
-    telemetry->icm_gyro_r  = gx * (2000.0f / 32768.0f);
-    telemetry->icm_gyro_p  = gy * (2000.0f / 32768.0f);
-    telemetry->icm_gyro_y  = gz * (2000.0f / 32768.0f);
 }
 
 void transform_accel_to_world(Telemetry_t *telemetry) {

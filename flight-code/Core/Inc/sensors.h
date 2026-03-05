@@ -19,13 +19,13 @@
 #define LSM6DSL_OUTX_L_G            0x22
 #define LSM6DSL_OUTX_L_XL           0x28
 
-// ICM45 (IMU2) Registers
-#define ICM45_REG_WHO_AM_I          0x72  // Should return 0xE9
-#define ICM45_REG_REG_BANK_SEL      0x76
-#define ICM45_REG_INTF_CONFIG1      0x4D
-#define ICM45_REG_PWR_MGMT0         0x10
-#define ICM45_REG_ACCEL_DATA_X1     0x03
-#define ICM45_REG_GYRO_DATA_X1      0x09
+// LIS (Mag) Registers
+#define LIS3MDLTR_WHO_AM_I    0x0F
+#define LIS3MDLTR_CTRL_REG1   0x20
+#define LIS3MDLTR_CTRL_REG2   0x21
+#define LIS3MDLTR_CTRL_REG3   0x22
+#define LIS3MDLTR_CTRL_REG5	  0x24
+#define LIS3MDLTR_OUT_X_L     0x28
 
 // Function Declarations
 uint8_t Verify_Sensors(void);
@@ -44,14 +44,10 @@ void LSM6DSL_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pi
 void LSM6DSL_Read(Telemetry_t *telemetry);
 uint8_t LSM6DSL_WhoAmI(void);
 
-// ICM45 Functions
-void ICM45686_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
-void ICM45686_Read(Telemetry_t *telemetry);
-uint8_t ICM45686_WhoAmI(void);
-
-// IIS2MDCTR Functions
-void IIS2MDCTR_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin, GPIO_TypeDef *sdio_port, uint16_t sdio_pin);
-void IIS2MDCTR_Read(Telemetry_t *telemetry);
+// LIS3MDLTR Functions
+void LIS3MDLTR_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
+void LIS3MDLTR_Read(Telemetry_t *telemetry);
+uint8_t LIS3MDLTR_WhoAmI(void);
 
 // Test/Debug Functions
 uint8_t LPS22HH_WhoAmI(void);

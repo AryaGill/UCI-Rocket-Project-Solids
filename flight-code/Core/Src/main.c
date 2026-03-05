@@ -231,21 +231,15 @@ int main(void)
 	}
 	HAL_Delay(500);
 
-	// Turn buzzer and LED ON for normal operation
+	// Turn buzzer ON for normal operation
 	buzzer_set_frequency(4000);
-	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);  // LED stays ON
 
 	// Turn Cameras on
 	turn_camera_on(0);
 	turn_camera_on(1);
 
-	drogue_primary_off();
-	drogue_secondary_off();
-	main_primary_off();
-	main_secondary_off();
-
 	// Init rf
-	RFM9X_Init(&hspi1, RF_CS_GPIO_Port, RF_CS_Pin, RF_RST_GPIO_Port, RF_RST_Pin, RF_EN_GPIO_Port, RF_EN_Pin);
+//	RFM9X_Init(&hspi1, RF_CS_GPIO_Port, RF_CS_Pin, RF_RST_GPIO_Port, RF_RST_Pin, RF_EN_GPIO_Port, RF_EN_Pin);
 
 	// Init airbrakes servos
 	init_airbrakes_servo();
@@ -294,21 +288,21 @@ int main(void)
 		set_optimal_deployment(flight_state, &telemetry);
 
 		// Handle Commands
-		RFM9X_Poll();
-		len = RFM9X_Receive(rxbuf, sizeof(rxbuf));
-		if(len > 0)
-		{
-			handle_rf_command((char *)rxbuf, &flight_state, &telemetry);
-		}
-
-		// Send RF data
-		uint32_t cur_time = HAL_GetTick();
-		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD){
-			prev_rf_transmit_time = cur_time;
-			char msg[128];
-			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
-			RFM9X_Send((uint8_t *)msg, sizeof(msg));
-		}
+//		RFM9X_Poll();
+//		len = RFM9X_Receive(rxbuf, sizeof(rxbuf));
+//		if(len > 0)
+//		{
+//			handle_rf_command((char *)rxbuf, &flight_state, &telemetry);
+//		}
+//
+//		// Send RF data
+//		uint32_t cur_time = HAL_GetTick();
+//		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD){
+//			prev_rf_transmit_time = cur_time;
+//			char msg[128];
+//			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
+//			RFM9X_Send((uint8_t *)msg, sizeof(msg));
+//		}
 
 		// Log telemetry
 		log_data(flight_state, &telemetry);
