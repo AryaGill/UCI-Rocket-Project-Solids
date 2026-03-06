@@ -95,6 +95,17 @@ typedef struct {
 	uint32_t drogue_s_ematch_voltage;
 } Telemetry_t;
 
+typedef struct{
+	float adxl_accel_r_bias;
+	float adxl_accel_p_bias;
+	float adxl_accel_y_bias;
+
+	float lsm_accel_r_bias;
+	float lsm_accel_p_bias;
+	float lsm_accel_y_bias;
+
+	uint32_t bias_count;
+} Bias_t;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

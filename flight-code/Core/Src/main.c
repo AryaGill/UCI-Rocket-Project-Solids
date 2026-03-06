@@ -34,6 +34,7 @@
 #include "rfm9x.h"
 #include "commands.h"
 #include "parachutes.h"
+#include "bias.h"
 #include <string.h>
 #include <math.h>
 
@@ -72,7 +73,7 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 // Telemetry structure
 Telemetry_t telemetry = {0};
-
+Bias_t bias = {0};
 // Flight State
 FlightState_t flight_state = LAUNCH_PAD;
 
@@ -265,6 +266,9 @@ int main(void)
 	// Set the initial temperature for airbrakes algorithm. Used for drag force.
 	set_airbrakes_initial_temp(&telemetry);
 
+	//Initialize bias calcs
+	Bias_Init(&bias);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -276,7 +280,15 @@ int main(void)
 		read_sensors(&telemetry);
 		read_ematch_connections(&telemetry);
 		read_camera_adcs(&telemetry);
-
+		//Bias measurement in LAUNCH_PAD else apply it
+		    if (flight_state == LAUNCH_PAD)
+		    {
+		        Bias_Calculate(&bias, &telemetry);
+		    }
+		    else
+		    {
+		        Apply_Bias(&bias, &telemetry);
+		    }
 		// Filter necessary data
 		Madgwick_Update(&telemetry);
 		complementary_filter(&telemetry);
@@ -307,7 +319,7 @@ int main(void)
 		// Log telemetry
 		log_data(flight_state, &telemetry);
 
-		HAL_Delay(1); // 10 Hz update rate
+		HAL_Delay(1000); // 10 Hz update rate
 
     /* USER CODE END WHILE */
 
