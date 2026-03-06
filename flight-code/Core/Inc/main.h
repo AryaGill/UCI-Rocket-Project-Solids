@@ -54,6 +54,7 @@ typedef enum {
 } FlightState_t;
 
 typedef struct {
+	uint32_t time;
 	float pressure;
 	float altitude;
 	float startAlt;
