@@ -69,17 +69,6 @@ uint8_t sensors_indicate_flight(Telemetry_t *telemetry){
 		return 1;
 	}
 	return 0;
-
-
-//	for (int i = 0; i < 50; ++i){
-//		read_sensors(telemetry);
-//		// read accel world z for half a second. If all about 9.8, then not in flight
-//		if (telemetry->accel_world_z < 9.61 || telemetry->accel_world_z > 10.01){
-//			return 1;
-//		}
-//		HAL_Delay(10);
-//	}
-	return 0;
 }
 
 void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {

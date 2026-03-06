@@ -248,9 +248,6 @@ int main(void)
 	// Get Inital state string
 	init_data_file(&hspi1);
 
-	// Set starting altitude
-	set_start_alt(&telemetry);
-
 	// Read sensors a bunch to ensure correct initial values
 	for(int i = 0; i < 20; ++i){
 		read_sensors(&telemetry);
