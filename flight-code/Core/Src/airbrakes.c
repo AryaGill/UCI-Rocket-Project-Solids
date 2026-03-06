@@ -10,7 +10,7 @@ extern TIM_HandleTypeDef htim3;
 #define g 9.80665 // Gravity
 #define L 0.0065 // Temperature Lapse Rate
 #define DESIRED_SEARCH_TIME 200 // ms
-#define TIME_PER_SIM_STEP 0.015 // ms
+#define TIME_PER_SIM_STEP 0.057 // ms
 float deltaT_coefficient = TIME_PER_SIM_STEP * log2f(NUM_DEPLOYMENT_LEVELS) / DESIRED_SEARCH_TIME / g;
 float ground_temp = 300;
 

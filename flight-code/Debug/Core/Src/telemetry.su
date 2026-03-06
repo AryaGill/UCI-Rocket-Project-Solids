@@ -1,6 +1,6 @@
 ../Core/Src/telemetry.c:6:6:init_data_file	16	static
-../Core/Src/telemetry.c:12:6:get_rf_msg	200	static
-../Core/Src/telemetry.c:38:6:log_data	1064	static
-../Core/Src/telemetry.c:92:9:write_headers	16	static
-../Core/Src/telemetry.c:115:6:state_to_string_num	16	static
-../Core/Src/telemetry.c:162:6:state_to_string_name	24	static
+../Core/Src/telemetry.c:12:6:get_rf_msg	272	static
+../Core/Src/telemetry.c:42:6:log_data	1064	static
+../Core/Src/telemetry.c:96:9:write_headers	16	static
+../Core/Src/telemetry.c:119:6:state_to_string_num	16	static
+../Core/Src/telemetry.c:166:6:state_to_string_name	24	static

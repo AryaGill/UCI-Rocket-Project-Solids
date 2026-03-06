@@ -9,7 +9,7 @@
 #include "airbrakes.h"
 #include <stdio.h>
 
-uint8_t last_received_command[32];
+char last_received_command[32];
 uint32_t last_command_time = 0;
 
 void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *telemetry) {
