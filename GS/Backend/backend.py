@@ -93,6 +93,8 @@ class SerialStreamer(QThread):
         "Quaternion_X",
         "Quaternion_Y",
         "Quaternion_Z",
+        "Cam1V",
+        "Cam2V",
         "main_p_ematch_voltage",
         "main_s_ematch_voltage",
         "drogue_p_ematch_voltage",
@@ -197,6 +199,7 @@ class SerialStreamer(QThread):
 
         if len(parts) != len(self.COLUMNS):
             self.status.emit(f"Warning: Expected {len(self.COLUMNS)} columns, got {len(parts)}")
+            print(parts)
             return None
 
         data = {}
