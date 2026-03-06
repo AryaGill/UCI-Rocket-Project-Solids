@@ -57,12 +57,12 @@ void Madgwick_UpdateIMU(Telemetry_t* telemetry)
 	float q2 = telemetry->q2;
 	float q3 = telemetry->q3;
 
-    float ax = telemetry->lsm_accel_y;
-	float ay = telemetry->lsm_accel_p;
+    float ax = telemetry->lsm_accel_p;
+	float ay = telemetry->lsm_accel_y;
 	float az = telemetry->lsm_accel_r;
 
-	float gx = telemetry->lsm_gyro_y;
-	float gy = telemetry->lsm_gyro_p;
+	float gx = telemetry->lsm_gyro_p;
+	float gy = telemetry->lsm_gyro_y;
 	float gz = telemetry->lsm_gyro_r;
 
     float recipNorm;
@@ -146,16 +146,16 @@ void Madgwick_Update(Telemetry_t* telemetry)
     float q2 = telemetry->q2;
     float q3 = telemetry->q3;
 
-    float ax = telemetry->lsm_accel_y;
-    float ay = telemetry->lsm_accel_p;
+    float ax = telemetry->lsm_accel_p;
+    float ay = telemetry->lsm_accel_y;
     float az = telemetry->lsm_accel_r;
 
-    float gx = telemetry->lsm_gyro_y;
-	float gy = telemetry->lsm_gyro_p;
+    float gx = telemetry->lsm_gyro_p;
+	float gy = telemetry->lsm_gyro_y;
 	float gz = telemetry->lsm_gyro_r;
 
-	float mx = telemetry->mag_y;
-	float my = telemetry->mag_p;
+	float mx = telemetry->mag_p;
+	float my = telemetry->mag_y;
 	float mz = telemetry->mag_r;
 
     float recipNorm;
