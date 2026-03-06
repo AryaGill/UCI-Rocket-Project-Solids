@@ -446,3 +446,13 @@ void transform_accel_to_world(Telemetry_t *telemetry) {
   telemetry->accel_world_y = R21*ax + R22*ay + R23*az;
   telemetry->accel_world_z = R31*ax + R32*ay + R33*az - 9.81f;
 }
+
+void deselect_all_spi(){
+	HAL_GPIO_WritePin(RF_CS_GPIO_Port, RF_CS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(IMU_2_CS_GPIO_Port, IMU_2_CS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(Mag_CS_GPIO_Port, Mag_CS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(Baro_CS_GPIO_Port, Baro_CS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(Flash_CS_GPIO_Port, Flash_CS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_SET);
+}

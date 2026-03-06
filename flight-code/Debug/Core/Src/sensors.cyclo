@@ -24,3 +24,4 @@
 ../Core/Src/sensors.c:393:6:LIS3MDLTR_Read	1
 ../Core/Src/sensors.c:413:9:LIS3MDLTR_WhoAmI	1
 ../Core/Src/sensors.c:419:6:transform_accel_to_world	1
+../Core/Src/sensors.c:450:6:deselect_all_spi	1

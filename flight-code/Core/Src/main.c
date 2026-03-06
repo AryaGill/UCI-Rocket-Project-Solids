@@ -165,9 +165,6 @@ void Error_Pattern(void)
     // System halts here - never returns
 }
 
-FRESULT sd_res;
-char line[128];
-
 /* USER CODE END 0 */
 
 /**
@@ -219,6 +216,12 @@ int main(void)
   	// Initialize ADC
   	HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
 
+  	deselect_all_spi();
+
+
+  	// Init rf
+  	RFM9X_Init(&hspi1, RF_CS_GPIO_Port, RF_CS_Pin, RF_RST_GPIO_Port, RF_RST_Pin, RF_EN_GPIO_Port, RF_EN_Pin);
+
 	// Initialize all sensors
     HAL_Delay(100);
 	init_sensors(&hspi1);
@@ -238,9 +241,6 @@ int main(void)
 	// Turn Cameras on
 	turn_camera_on(0);
 	turn_camera_on(1);
-
-	// Init rf
-	RFM9X_Init(&hspi1, RF_CS_GPIO_Port, RF_CS_Pin, RF_RST_GPIO_Port, RF_RST_Pin, RF_EN_GPIO_Port, RF_EN_Pin);
 
 	// Init airbrakes servos
 	init_airbrakes_servo();
@@ -306,17 +306,17 @@ int main(void)
 
 		// Send RF data
 		uint32_t cur_time = HAL_GetTick();
-		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD){
+		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD && !RFM9X_IsTxBusy()){
 			prev_rf_transmit_time = cur_time;
 			char msg[128];
-			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
+			get_rf_msg(flight_state, &telemetry, msg, strlen(msg));
 			RFM9X_Send((uint8_t *)msg, sizeof(msg));
 		}
 
 		// Log telemetry
 		log_data(flight_state, &telemetry);
 
-		HAL_Delay(1000); // 10 Hz update rate
+//		HAL_Delay(1);
 
     /* USER CODE END WHILE */
 

@@ -9,21 +9,23 @@
 #include "airbrakes.h"
 #include <stdio.h>
 
+uint8_t last_received_command[32];
+uint32_t last_command_time = 0;
+
 void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *telemetry) {
-	char line[30];
+	// Check if receiving command from burst from gs
+	uint32_t cur_time = HAL_GetTick();
+	if (strcmp(last_received_command, cmd) == 0 && cur_time - last_command_time < 2300){
+		return;
+	}
+
+	strcpy(last_received_command, cmd);
+	last_command_time = cur_time;
+
+	char line[64];
 	snprintf(line, sizeof(line), "Received command: %s", cmd);
 	write_sd(FLIGHT_DATA_FILE, line);
-	if(strcmp(cmd, "ON") == 0){
-//		Serial.println("Camera On Recieved");
-//	    HWSERIAL.println("TEENSY Camera on");
-//		digitalWrite(camera1,HIGH);
-//		digitalWrite(camera2,HIGH);
-	}else if (strcmp(cmd, "OFF") == 0){
-//		Serial.println("Camera Off Recieved");
-//		HWSERIAL.println("TEENSY Camera off");
-//		digitalWrite(camera1, LOW);
-//		digitalWrite(camera2, LOW);
-	}else if (strcmp(cmd, "Fire Main P") == 0){
+	if (strcmp(cmd, "Fire Main P") == 0){
 	  	main_primary_on();
 	  	HAL_Delay(CHARGE_DELAY);
 	  	main_primary_off();
@@ -46,7 +48,7 @@ void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *tele
 	} else if (strcmp(cmd, "CAM1OFF") == 0){
 		turn_camera_off(0);
 	} else if (strcmp(cmd, "CAM2OFF") == 0){
-		turn_camera_on(1);
+		turn_camera_off(1);
 	} else if (strcmp(cmd, "ARM") == 0){
 		set_flight_state(LAUNCH_PAD, flight_state, telemetry);
 		buzzer_set_frequency(4500);
