@@ -561,6 +561,7 @@ class GroundStationWindow(QMainWindow):
         Time, Temp, Pressure, Alt, Gyro_X, Gyro_Y, Gyro_Z,
         Accel_X1, Accel_Y1, Accel_Z1, Accel_X2, Accel_Y2, Accel_Z2, flight_state
         """
+        new_state = data.get('flight_state')
 
         # Handle camera confirmation
         if data.get("camera_status") is not None and self.camera_pending is not None:
@@ -595,14 +596,15 @@ class GroundStationWindow(QMainWindow):
 
             if new_state != self._last_flight_state:
                 state_name = FlightStateDisplay.FLIGHT_STATES.get(new_state, "Unknown state")
+                print(state_name)
                 self._tts_worker = TTSWorker(state_name)
                 self._tts_worker.start()
-                self._last_flight_state = new_state
+                
 
-        if new_state == 2 and getattr(self, '_last_flight_state', None) != 2:
-            self.clear_all_graphs()
-            self.update_status("Launch detected - graphs cleared")
-        self._last_flight_state = new_state
+            if new_state == 2 and getattr(self, '_last_flight_state', None) != 2:
+                self.clear_all_graphs()
+                self.update_status("Launch detected - graphs cleared")
+            self._last_flight_state = new_state
 
         # Update altitude graph
         if hasattr(self, 'altitude_graph') and data.get('Time') is not None and data.get('Alt') is not None:
@@ -810,6 +812,7 @@ class GroundStationWindow(QMainWindow):
             with open(path, "r", newline="", encoding="utf-8", errors="ignore") as f:
                 reader = csv.DictReader(f)
                 for r in reader:
+                    r = {k.lower(): v for k, v in r.items()}  # ← add this line
                     t_ms = to_float(r.get("time"))
                     if t_ms is None:
                         continue
@@ -853,29 +856,29 @@ class GroundStationWindow(QMainWindow):
         t_sec = (t_ms - self.csv_t0_ms) / 1000.0
 
         data = {
-            "Time": t_sec,
-            "Alt": to_float(r.get("alt")),
-            "Filtered_Alt": None,
+            "Time":          t_sec,
+            "Alt":           to_float(r.get("alt")),
+            "Filtered_Alt":  to_float(r.get("filtered_alt")),   # was None hardcoded
 
-            "Gyro_X": to_float(r.get("gyro_x")),
-            "Gyro_Y": to_float(r.get("gyro_y")),
-            "Gyro_Z": to_float(r.get("gyro_z")),
+            "Gyro_X":        to_float(r.get("gyro_x")),
+            "Gyro_Y":        to_float(r.get("gyro_y")),
+            "Gyro_Z":        to_float(r.get("gyro_z")),
 
-            "Accel_X1": to_float(r.get("acc_x")),
-            "Accel_Y1": to_float(r.get("acc_y")),
-            "Accel_Z1": to_float(r.get("acc_z")),
+            "Accel_X1":      to_float(r.get("accel_x1")),       # was "acc_x"
+            "Accel_Y1":      to_float(r.get("accel_y1")),       # was "acc_y"
+            "Accel_Z1":      to_float(r.get("accel_z1")),       # was "acc_z"
 
-            "Accel_world_x": to_float(r.get("acc_x_2")),
-            "Accel_world_y": to_float(r.get("acc_y_2")),
-            "Accel_world_z": to_float(r.get("acc_z_2")),
+            "Accel_world_x": to_float(r.get("accel_world_x")),  # was "acc_x_2"
+            "Accel_world_y": to_float(r.get("accel_world_y")),  # was "acc_y_2"
+            "Accel_world_z": to_float(r.get("accel_world_z")),  # was "acc_z_2"
 
-            "Mag_X": to_float(r.get("mag_x")),
-            "Mag_Y": to_float(r.get("mag_y")),
-            "Mag_Z": to_float(r.get("mag_z")),
+            "Mag_X":         to_float(r.get("mag_x")),
+            "Mag_Y":         to_float(r.get("mag_y")),
+            "Mag_Z":         to_float(r.get("mag_z")),
 
-            "Temp": None,
-            "Pressure": None,
-            "flight_state": None,
+            "Temp":          to_float(r.get("temp")),
+            "Pressure":      to_float(r.get("pressure")),
+            "flight_state":  to_float(r.get("flight_state")),
         }
 
         self.handle_new_data(data)
