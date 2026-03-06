@@ -13,7 +13,7 @@ void get_rf_msg(FlightState_t flight_state, Telemetry_t *t, char* msg, size_t ms
 	char state_str[3];
 	state_to_string_num(flight_state, state_str);
 	snprintf(msg, msg_size,
-			"%lu,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%lu,%lu,%lu,%lu,%s\r\n",
+			"%lu,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%lu,%lu,%lu,%lu,%lu,%lu,%s\r\n",
 			  t->time,
 			  t->temperature,
 			  t->pressure,
@@ -32,6 +32,8 @@ void get_rf_msg(FlightState_t flight_state, Telemetry_t *t, char* msg, size_t ms
 			  t->q1,
 			  t->q2,
 			  t->q3,
+			  t->cam1_on,
+			  t->cam2_on,
 			  t->main_p_ematch_voltage,
 			  t->main_s_ematch_voltage,
 			  t->drogue_p_ematch_voltage,

@@ -165,6 +165,8 @@ void Error_Pattern(void)
     // System halts here - never returns
 }
 
+char msg[128];
+
 /* USER CODE END 0 */
 
 /**
@@ -308,9 +310,8 @@ int main(void)
 		uint32_t cur_time = HAL_GetTick();
 		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD && !RFM9X_IsTxBusy()){
 			prev_rf_transmit_time = cur_time;
-			char msg[128];
-			get_rf_msg(flight_state, &telemetry, msg, strlen(msg));
-			RFM9X_Send((uint8_t *)msg, sizeof(msg));
+			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
+			RFM9X_Send((uint8_t *)msg, strlen(msg));
 		}
 
 		// Log telemetry
