@@ -124,6 +124,7 @@ void read_sensors(Telemetry_t *telemetry)
     LIS3MDLTR_Read(telemetry);
 
     transform_accel_to_world(telemetry);
+    telemetry->time = HAL_GetTick();
 }
 
 // Calculate altitude from pressure (standard atmosphere model)

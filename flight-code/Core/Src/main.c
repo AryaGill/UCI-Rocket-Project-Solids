@@ -81,7 +81,7 @@ FlightState_t flight_state = LAUNCH_PAD;
 uint32_t prev_rf_transmit_time = 0;
 uint8_t rxbuf[32];
 uint8_t len;
-
+//HAL_GetTick()
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
