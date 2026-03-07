@@ -1,6 +1,6 @@
 import sys
 from PyQt6.QtWidgets import QApplication
-# import qdarktheme
+import qdarktheme
 from Backend.backend import select_serial_port
 from Frontend.main_window import GroundStationWindow
 
@@ -13,7 +13,7 @@ def main():
     app = QApplication(sys.argv)
 
     # Apply modern dark theme
-    # app.setStyleSheet(qdarktheme.load_stylesheet())
+    app.setStyleSheet(qdarktheme.load_stylesheet())
 
     # Pass port directly to window constructor
     window = GroundStationWindow(port=selected_port)
