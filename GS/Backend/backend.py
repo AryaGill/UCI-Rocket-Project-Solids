@@ -218,12 +218,15 @@ class SerialStreamer(QThread):
         except Exception:
             return s
 
-    def write_command(self, cmd: str):
+    def write_command(self, cmd: str, burst: int = 20):
         """Send command back to the serial device."""
         try:
             if self._ser and self._ser.is_open:
-                self._ser.write((cmd.strip() + "\n").encode('utf-8'))
-                self.status.emit(f"Sent: {cmd.strip()}")
+                encoded = (cmd.strip() + "\n").encode('utf-8')
+                for _ in range(burst):
+                    self._ser.write(encoded)
+                    time.sleep(0.1)
+                self.status.emit(f"Sent (x{burst}): {cmd.strip()}")
         except Exception as e:
             self.status.emit(f"Write error: {e}")
 
