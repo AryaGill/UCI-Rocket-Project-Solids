@@ -7,3 +7,4 @@
 ../Core/Src/sd_card.c:137:9:read_sd_state	6
 ../Core/Src/sd_card.c:174:9:sd_file_exists	2
 ../Core/Src/sd_card.c:187:9:sd_delete_file	1
+../Core/Src/sd_card.c:195:9:write_mag	4

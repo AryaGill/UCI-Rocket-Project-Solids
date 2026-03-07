@@ -4,9 +4,9 @@
 ../Core/Src/airbrakes.c:112:7:get_mag2	16	static
 ../Core/Src/airbrakes.c:116:7:get_mag3	24	static
 ../Core/Src/airbrakes.c:120:7:predict_apogee	96	static
-../Core/Src/airbrakes.c:158:6:set_optimal_deployment	48	static
-../Core/Src/airbrakes.c:193:6:init_airbrakes_servo	8	static
-../Core/Src/airbrakes.c:198:6:set_airbrakes_initial_temp	16	static
-../Core/Src/airbrakes.c:202:6:set_airbrakes_servo_angle	24	static
-../Core/Src/airbrakes.c:214:6:set_airbrakes_deployment_level	16	static
-../Core/Src/airbrakes.c:221:6:perform_airbrakes_servo_sequence	24	static
+../Core/Src/airbrakes.c:160:6:set_optimal_deployment	48	static
+../Core/Src/airbrakes.c:195:6:init_airbrakes_servo	8	static
+../Core/Src/airbrakes.c:200:6:set_airbrakes_initial_temp	16	static
+../Core/Src/airbrakes.c:204:6:set_airbrakes_servo_angle	24	static
+../Core/Src/airbrakes.c:216:6:set_airbrakes_deployment_level	16	static
+../Core/Src/airbrakes.c:223:6:perform_airbrakes_servo_sequence	24	static

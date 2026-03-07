@@ -77,6 +77,7 @@ FlightState_t flight_state = LAUNCH_PAD;
 
 // RF
 uint32_t prev_rf_transmit_time = 0;
+uint32_t prev_log_time = 0;
 uint8_t rxbuf[32];
 uint8_t len;
 //HAL_GetTick()
@@ -305,7 +306,10 @@ int main(void)
 		}
 
 		// Log telemetry
-		log_data(flight_state, &telemetry);
+		if (cur_time - prev_log_time >= 100){
+			prev_log_time = cur_time;
+			log_data(flight_state, &telemetry);
+		}
 
 //		HAL_Delay(1);
 

@@ -128,6 +128,7 @@ float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 	float pressure_Pa = telemetry->pressure * 100.0f;
 	float temperature_K = fmaxf(ground_temp - (L * telemetry->altitude), 1);
 
+//	uint32_t cur_time = HAL_GetTick()
 	for (int i = 0; i < 100000; ++i){
 		float vz_sim_before = vz_sim;
 		float T_local = fmaxf(temperature_K - (L * (alt_sim - telemetry->altitude)), 1);
@@ -148,6 +149,7 @@ float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 		alt_sim += ((vz_sim + vz_sim_before) / 2) * deltaT;
 
 		if (vz_sim < 0){
+//			continue;
 			break;
 		}
 	}

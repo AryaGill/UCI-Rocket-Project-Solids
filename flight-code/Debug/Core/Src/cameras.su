@@ -1,4 +1,4 @@
 ../Core/Src/cameras.c:10:6:turn_camera_on	16	static
 ../Core/Src/cameras.c:41:6:turn_camera_off	16	static
 ../Core/Src/cameras.c:54:10:read_adc	56	static
-../Core/Src/cameras.c:69:6:read_camera_adcs	16	static
+../Core/Src/cameras.c:71:6:read_camera_adcs	16	static

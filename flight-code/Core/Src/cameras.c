@@ -66,10 +66,14 @@ uint32_t read_adc(uint32_t channel, ADC_HandleTypeDef *hadc){
 	return adc;
 }
 
+uint32_t cam1_adc;
+uint32_t cam2_adc;
 void read_camera_adcs(Telemetry_t *telemetry){
 	// Read ADC 1
-	telemetry->cam1_on = (read_adc(CAM_ADC_CHANNELS[0], CAM_ADCs[0]) < 1000) ? 1 : 0;
+	cam1_adc = read_adc(CAM_ADC_CHANNELS[0], CAM_ADCs[0]);
+	telemetry->cam1_on = (cam1_adc < 1000) ? 1 : 0;
 
 	// Read ADC 2
-	telemetry->cam2_on = (read_adc(CAM_ADC_CHANNELS[1], CAM_ADCs[1]) < 1000) ? 1 : 0;
+	cam2_adc = read_adc(CAM_ADC_CHANNELS[1], CAM_ADCs[1]);
+	telemetry->cam2_on = (cam2_adc < 1000) ? 1 : 0;
 }

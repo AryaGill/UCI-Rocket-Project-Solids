@@ -187,3 +187,37 @@ uint8_t sd_file_exists(const char *filename)
 FRESULT sd_delete_file(const char *filename) {
     return f_unlink(filename);
 }
+
+
+
+char line[120];
+FRESULT res;
+FRESULT write_mag(const char *filename, float max_r, float max_p, float max_y, float min_r, float min_p, float min_y){
+	FIL file;
+	UINT bytes_written;
+
+
+	// Open file: create new or overwrite existing
+	res = f_open(&file, filename, FA_OPEN_ALWAYS | FA_WRITE);
+	if (res != FR_OK)
+		return res;
+
+	// Move write pointer to end of file
+	res = f_lseek(&file, f_size(&file));
+	if (res != FR_OK) {
+		f_close(&file);
+		return res;
+	}
+
+	// Write state
+	// Write start alt
+	snprintf(line, sizeof(line), "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n", max_r, max_p, max_y, min_r, min_p, min_y);
+	res = f_write(&file, line, strlen(line), &bytes_written);
+	if (res != FR_OK) {
+		f_close(&file);
+		return res;
+	}
+
+	f_close(&file);
+	return FR_OK;
+}

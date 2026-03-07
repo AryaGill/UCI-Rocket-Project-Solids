@@ -13,7 +13,7 @@ void get_rf_msg(FlightState_t flight_state, Telemetry_t *t, char* msg, size_t ms
 	char state_str[3];
 	state_to_string_num(flight_state, state_str);
 	snprintf(msg, msg_size,
-			"%lu,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%lu,%lu,%lu,%lu,%lu,%lu,%s\r\n",
+			"%lu,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%u,%u,%lu,%lu,%lu,%lu,%s\r\n",
 			  t->time,
 			  t->temperature,
 			  t->pressure,
@@ -46,7 +46,7 @@ void log_data(FlightState_t flight_state, Telemetry_t *t){
 	char state_str[3];
 	state_to_string_num(flight_state, state_str);
 	snprintf(data_string, sizeof(data_string),
-	        "%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%u,%u,%lu,%lu,%lu,%lu",
+	        "%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%u,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%u,%u,%lu,%lu,%lu,%lu",
 	        state_str,
 			t->pressure,
 	        t->altitude,

@@ -1,4 +1,7 @@
 #include "sensors.h"
+#include "sd_card.h"
+#include <stdio.h>
+#include <string.h>
 
 GPIO_TypeDef *LPS22HH_port;
 uint16_t LPS22HH_pin;
@@ -22,6 +25,13 @@ volatile uint8_t lps_whoami = 0; // Should be 0xB3 for LPS22HH
 volatile uint8_t lsm_whoami = 0; // Should be 0x6A
 volatile uint8_t adxl_whoami = 0; // Should be 0xE5
 volatile uint8_t lis_whoami = 0; // Should be 0x3D
+
+float max_r;
+float max_p;
+float max_y;
+float min_r;
+float min_p;
+float min_y;
 
 uint8_t Verify_Sensors(void){
 	// Check Barometer
@@ -119,6 +129,10 @@ void init_sensors(SPI_HandleTypeDef *hspi)
     Bias_Init(&bias);
 }
 
+void log_mag(){
+	write_mag("MAG_CALIB.csv", max_r, max_p, max_y, min_r, min_p, min_y);
+}
+
 // Sensor Reading
 void read_sensors(Telemetry_t *telemetry)
 {
@@ -127,10 +141,24 @@ void read_sensors(Telemetry_t *telemetry)
     ADXL375_Read(telemetry);
     LIS3MDLTR_Read(telemetry);
 
+    Apply_Bias(&bias, telemetry);
+
+//    if (max_r == 0) max_r = telemetry->lsm_accel_r;
+//    if (max_p == 0) max_p = telemetry->lsm_accel_p;
+//    if (max_y == 0) max_y = telemetry->lsm_accel_y;
+//    if (min_r == 0) min_r = telemetry->lsm_accel_r;
+//    if (min_y == 0) min_y = telemetry->lsm_accel_y;
+//    if (min_p == 0) min_p = telemetry->lsm_accel_p;
+//
+//    if (telemetry->lsm_accel_r > max_r) max_r = telemetry->lsm_accel_r;
+//    if (telemetry->lsm_accel_p > max_p) max_p = telemetry->lsm_accel_p;
+//    if (telemetry->lsm_accel_y > max_y) max_y = telemetry->lsm_accel_y;
+//    if (telemetry->lsm_accel_r < min_r) min_r = telemetry->lsm_accel_r;
+//	if (telemetry->lsm_accel_p < min_p) min_p = telemetry->lsm_accel_p;
+//	if (telemetry->lsm_accel_y < min_y) min_y = telemetry->lsm_accel_y;
+
     transform_accel_to_world(telemetry);
     telemetry->time = HAL_GetTick();
-
-    Apply_Bias(&bias, telemetry);
 }
 
 // Calculate altitude from pressure (standard atmosphere model)
@@ -466,17 +494,17 @@ void deselect_all_spi(){
 
 void Bias_Init(Bias_t *bias)
 {
-    bias->lsm_accel_r_bias = 0.15f;
-    bias->lsm_accel_p_bias = -0.4f;
-    bias->lsm_accel_y_bias = -0.2;
+    bias->lsm_accel_r_bias = 0.0251505f;
+    bias->lsm_accel_p_bias = 0.1621935f;
+    bias->lsm_accel_y_bias = -0.271719f;
 
     bias->adxl_accel_r_bias = 0.0f;
     bias->adxl_accel_p_bias = 0.0f;
     bias->adxl_accel_y_bias = 0.0f;
 
-    bias->mag_r_bias = 0.0f;
-    bias->mag_p_bias = 0.0f;
-    bias->mag_y_bias = 0.0f;
+    bias->mag_r_bias = 25.816f; // 25.83, 25.305, 26.313
+    bias->mag_p_bias = 2.196f; // 3.934, 1.547, 1.106
+    bias->mag_y_bias = 20.629f; // 22.043, 21.798, 18.046
 
     bias->bias_count = 0;
 }
@@ -505,4 +533,8 @@ void Apply_Bias(Bias_t *bias, Telemetry_t *t)
     t->lsm_accel_r -= bias->lsm_accel_r_bias;
     t->lsm_accel_p -= bias->lsm_accel_p_bias;
     t->lsm_accel_y -= bias->lsm_accel_y_bias;
+
+    t->mag_r -= bias->mag_r_bias;
+    t->mag_p -= bias->mag_p_bias;
+    t->mag_y -= bias->mag_y_bias;
 }
