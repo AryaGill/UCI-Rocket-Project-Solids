@@ -3,10 +3,15 @@
 #include <stdio.h>
 #include <string.h>
 
+File_t data_file = {0};
+
 void init_data_file(SPI_HandleTypeDef *hspi){
 	init_sd(hspi);
-	write_sd(FLIGHT_DATA_FILE, "FLIGHT BEGIN");
+	strcpy(data_file.file_name, FLIGHT_DATA_FILE);
+	open_file(&data_file);
+	write_sd(&data_file, "FLIGHT BEGIN");
 	write_headers();
+	flush_file(&data_file);
 }
 
 void get_rf_msg(FlightState_t flight_state, Telemetry_t *t, char* msg, size_t msg_size){
@@ -92,7 +97,15 @@ void log_data(FlightState_t flight_state, Telemetry_t *t){
 			t->drogue_s_ematch_voltage
 	    );
 
-	write_sd(FLIGHT_DATA_FILE, data_string);
+	write_sd(&data_file, data_string);
+}
+
+void save_data_file(){
+	flush_file(&data_file);
+}
+
+void write_datafile_message(char* msg){
+	write_sd(&data_file, msg);
 }
 
 FRESULT write_headers(void)
@@ -115,7 +128,7 @@ FRESULT write_headers(void)
     	  "alt_fused,cam1_on,cam2_on,main_p_ematch_voltage,main_s_ematch_voltage,"
     	  "drogue_p_ematch_voltage,drogue_s_ematch_voltage";
 
-    return write_sd(FLIGHT_DATA_FILE, header);
+    return write_sd(&data_file, header);
 }
 
 void state_to_string_num(FlightState_t state, char* str) {

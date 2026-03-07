@@ -3,18 +3,16 @@
 #include "stm32h7xx_hal.h"
 #include "fatfs.h"
 
-//void mount_sd();
-//void write_sd(char* file_name, char* data);
-//void read_sd(char* file_name, uint32_t line_number, char* RW_buffer, size_t buffer_size);
-//void delete_file(char* file_name);
-//void unmount_sd(char* file_name);
-
-
-
-
+typedef struct {
+	FIL file;
+	char file_name[20];
+	uint8_t file_open;
+} File_t;
 
 void init_sd(SPI_HandleTypeDef *hspi);
-FRESULT write_sd(const char *filename, const char *line);
+FRESULT open_file(File_t *f);
+FRESULT write_sd(File_t *f, const char *line);
+FRESULT flush_file(File_t *f);
 //FRESULT read_sd_line(const char *filename, char *buffer, UINT buffer_size);
 FRESULT write_sd_state(const char *filename, FlightState_t state, float start_alt);
 FRESULT read_sd_state(const char *filename, FlightState_t *state, float *start_alt);

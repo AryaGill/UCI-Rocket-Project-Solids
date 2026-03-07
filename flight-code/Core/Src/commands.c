@@ -7,6 +7,7 @@
 #include "buzzer.h"
 #include "parachutes.h"
 #include "airbrakes.h"
+#include "telemetry.h"
 #include <stdio.h>
 
 char last_received_command[32];
@@ -24,7 +25,7 @@ void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *tele
 
 	char line[64];
 	snprintf(line, sizeof(line), "Received command: %s", cmd);
-	write_sd(FLIGHT_DATA_FILE, line);
+	write_datafile_message(line);
 	if (strcmp(cmd, "Fire Main P") == 0){
 	  	main_primary_on();
 	  	HAL_Delay(CHARGE_DELAY);

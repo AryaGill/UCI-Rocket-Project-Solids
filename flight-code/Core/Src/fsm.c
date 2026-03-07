@@ -4,6 +4,7 @@
 #include "main.h"
 #include "telemetry.h"
 #include "sd_card.h"
+#include "telemetry.h"
 #include "parachutes.h"
 #include <stdio.h>
 
@@ -53,7 +54,7 @@ void set_flight_state(FlightState_t new_state, FlightState_t *flight_state, Tele
 	char state_str[30];
 	state_to_string_name(new_state, state_str);
 	snprintf(line, sizeof(line), "Entering state: %s", state_str);
-	write_sd(FLIGHT_DATA_FILE, line);
+	write_datafile_message(line);
 	write_sd_state(STATE_FILE, *flight_state, telemetry->startAlt);
 }
 
@@ -95,7 +96,7 @@ void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 		// If Power-on reset (power removed and restored) and sensors indicate in flight and alt > threshold
 		if ((reset_flags & RCC_RSR_PORRSTF) && (telemetry->altitude - sd_start_alt > MIN_RESET_ALT) && sensors_indicate_flight(telemetry) == 1){
 			// Print message in data file
-			write_sd(FLIGHT_DATA_FILE, "POWER RESET DETECTED");
+			write_datafile_message("POWER RESET DETECTED");
 
 			// Go to correct state and start altitude
 			set_flight_state(sd_state, flight_state, telemetry);
@@ -159,7 +160,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 
     		// Combine with if statement below once verified to work
     		if (num_neg_accel > 20){
-    			write_sd(FLIGHT_DATA_FILE, "Detected motor burn finished using accel");
+    			write_datafile_message("Detected motor burn finished using accel");
     		}
 
     		if (HAL_GetTick() - state_start_time > MOTOR_BURN_TIME /* || num_neg_accel > 20 */){

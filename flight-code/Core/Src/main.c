@@ -309,6 +309,7 @@ int main(void)
 		if (cur_time - prev_log_time >= 100){
 			prev_log_time = cur_time;
 			log_data(flight_state, &telemetry);
+			save_data_file();
 		}
 
 //		HAL_Delay(1);

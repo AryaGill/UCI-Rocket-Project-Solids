@@ -30,40 +30,74 @@ void SD_SendDummyClocks(SPI_HandleTypeDef *hspi,
 
 void init_sd(SPI_HandleTypeDef *hspi){
 	SD_SendDummyClocks(hspi, SD_CS_GPIO_Port, SD_CS_Pin);
+
+	SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
 	f_mount(&USERFatFS, USERPath, 1);
+	SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 }
 
-FRESULT write_sd(const char *filename, const char *line)
+FRESULT open_file(File_t *f){
+	FRESULT res;
+
+	SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
+
+	// Open file (create if it doesn't exist)
+	res = f_open(&f->file, f->file_name, FA_OPEN_ALWAYS | FA_WRITE);
+	if (res != FR_OK){
+		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+		return res;
+	}
+
+	// Move write pointer to end of file
+	res = f_lseek(&f->file, f_size(&f->file));
+	if (res != FR_OK) {
+		f_close(&f->file);
+		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+		return res;
+	}
+
+	SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+
+	f->file_open = 1;
+	return FR_OK;
+}
+
+FRESULT write_sd(File_t *f, const char *line)
 {
-    FIL file;
+	FRESULT res;
+
+	if (!f->file_open){
+		res = open_file(f);
+		if (res != FR_OK){
+			return res;
+		}
+	}
+
     UINT bytes_written;
-    FRESULT res;
-
-    // Open file (create if it doesn't exist)
-    res = f_open(&file, filename, FA_OPEN_ALWAYS | FA_WRITE);
-    if (res != FR_OK)
-        return res;
-
-    // Move write pointer to end of file
-    res = f_lseek(&file, f_size(&file));
-    if (res != FR_OK) {
-        f_close(&file);
-        return res;
-    }
+    SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
 
     // Write the line
-    res = f_write(&file, line, strlen(line), &bytes_written);
+    res = f_write(&f->file, line, strlen(line), &bytes_written);
     if (res != FR_OK) {
-        f_close(&file);
+        f_close(&f->file);
+        SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
         return res;
     }
 
-    // Optional: newline
+    // newline
     const char newline[] = "\r\n";
-    f_write(&file, newline, 2, &bytes_written);
+    f_write(&f->file, newline, 2, &bytes_written);
 
-    f_close(&file);
+    SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
     return FR_OK;
+}
+
+FRESULT flush_file(File_t *f)
+{
+    if (!f->file_open)
+        return FR_INVALID_OBJECT;
+
+    return f_sync(&f->file);
 }
 
 //FRESULT read_sd_line(const char *filename, char *buffer, UINT buffer_size)
@@ -91,10 +125,14 @@ FRESULT write_sd_state(const char *filename, FlightState_t state, float start_al
 	UINT bytes_written;
 	FRESULT res;
 
+	SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
+
 	// Open file: create new or overwrite existing
 	res = f_open(&file, filename, FA_WRITE | FA_CREATE_ALWAYS);
-	if (res != FR_OK)
+	if (res != FR_OK){
+		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 		return res;
+	}
 
 	// Write state
 	char line[20];
@@ -102,6 +140,7 @@ FRESULT write_sd_state(const char *filename, FlightState_t state, float start_al
 	res = f_write(&file, line, strlen(line), &bytes_written);
 	if (res != FR_OK) {
 		f_close(&file);
+		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 		return res;
 	}
 
@@ -114,6 +153,7 @@ FRESULT write_sd_state(const char *filename, FlightState_t state, float start_al
 	res = f_write(&file, line, strlen(line), &bytes_written);
 	if (res != FR_OK) {
 		f_close(&file);
+		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 		return res;
 	}
 
@@ -121,6 +161,8 @@ FRESULT write_sd_state(const char *filename, FlightState_t state, float start_al
 	f_write(&file, newline, 2, &bytes_written);
 
 	f_close(&file);
+
+	SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 	return FR_OK;
 }
 
@@ -140,14 +182,19 @@ FRESULT read_sd_state(const char *filename, FlightState_t *state, float *start_a
 
 	char buf[20];
 
+	SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
+
 	// Open file for reading
 	res = f_open(&file, filename, FA_READ);
-	if (res != FR_OK)
+	if (res != FR_OK){
+		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 		return res;
+	}
 
 	// Read state line
 	if (f_gets(buf, sizeof(buf), &file) == NULL) {
 		f_close(&file);
+		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 		return FR_DISK_ERR;   // or FR_DISK_ERR if you prefer
 	}
 	strip_newline(buf);
@@ -162,12 +209,15 @@ FRESULT read_sd_state(const char *filename, FlightState_t *state, float *start_a
 	// Read start alt line
 	if (f_gets(buf, sizeof(buf), &file) == NULL) {
 		f_close(&file);
+		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 		return FR_DISK_ERR;   // or FR_DISK_ERR if you prefer
 	}
 	strip_newline(buf);
 	*start_alt = strtof(buf, NULL);
 
 	f_close(&file);
+
+	SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 	return FR_OK;
 }
 
@@ -176,7 +226,11 @@ uint8_t sd_file_exists(const char *filename)
     FILINFO fno;
     FRESULT res;
 
+    SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
+
     res = f_stat(filename, &fno);
+
+    SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 
     if (res == FR_OK)
         return 1;   // file exists
@@ -185,27 +239,32 @@ uint8_t sd_file_exists(const char *filename)
 }
 
 FRESULT sd_delete_file(const char *filename) {
-    return f_unlink(filename);
+	SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
+	FRESULT res = f_unlink(filename);
+	SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+    return res;
 }
 
-
-
-char line[120];
-FRESULT res;
 FRESULT write_mag(const char *filename, float max_r, float max_p, float max_y, float min_r, float min_p, float min_y){
 	FIL file;
 	UINT bytes_written;
+	char line[120];
+	FRESULT res;
 
+	SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
 
 	// Open file: create new or overwrite existing
 	res = f_open(&file, filename, FA_OPEN_ALWAYS | FA_WRITE);
-	if (res != FR_OK)
+	if (res != FR_OK){
+		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 		return res;
+	}
 
 	// Move write pointer to end of file
 	res = f_lseek(&file, f_size(&file));
 	if (res != FR_OK) {
 		f_close(&file);
+		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 		return res;
 	}
 
@@ -215,9 +274,12 @@ FRESULT write_mag(const char *filename, float max_r, float max_p, float max_y, f
 	res = f_write(&file, line, strlen(line), &bytes_written);
 	if (res != FR_OK) {
 		f_close(&file);
+		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 		return res;
 	}
 
 	f_close(&file);
+
+	SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 	return FR_OK;
 }
