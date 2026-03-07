@@ -1,3 +1,0 @@
-../Core/Src/bias.c:3:6:Bias_Init	16	static
-../Core/Src/bias.c:16:6:Bias_Calculate	24	static
-../Core/Src/bias.c:31:6:Apply_Bias	16	static

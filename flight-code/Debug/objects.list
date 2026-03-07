@@ -1,6 +1,5 @@
 "./Core/Src/FATFS_SD.o"
 "./Core/Src/airbrakes.o"
-"./Core/Src/bias.o"
 "./Core/Src/buzzer.o"
 "./Core/Src/cameras.o"
 "./Core/Src/commands.o"

@@ -68,3 +68,8 @@ void LPS22HH_WriteReg(uint8_t reg, uint8_t val);
 
 void transform_accel_to_world(Telemetry_t *telemetry);
 void deselect_all_spi();
+
+// Bias
+void Bias_Init(Bias_t *bias);
+void Bias_Calculate(Bias_t *bias, Telemetry_t *telemetry);
+void Apply_Bias(Bias_t *bias, Telemetry_t *telemetry);

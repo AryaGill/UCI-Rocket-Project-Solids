@@ -105,6 +105,10 @@ typedef struct{
 	float lsm_accel_p_bias;
 	float lsm_accel_y_bias;
 
+	float mag_r_bias;
+	float mag_p_bias;
+	float mag_y_bias;
+
 	uint32_t bias_count;
 } Bias_t;
 /* USER CODE END ET */

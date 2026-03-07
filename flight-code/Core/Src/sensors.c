@@ -16,6 +16,8 @@ GPIO_TypeDef *LIS_port;
 uint16_t LIS_pin;
 SPI_HandleTypeDef *LIS_hspi;
 
+Bias_t bias;
+
 volatile uint8_t lps_whoami = 0; // Should be 0xB3 for LPS22HH
 volatile uint8_t lsm_whoami = 0; // Should be 0x6A
 volatile uint8_t adxl_whoami = 0; // Should be 0xE5
@@ -113,6 +115,8 @@ void init_sensors(SPI_HandleTypeDef *hspi)
     // Initialize LIS
     LIS3MDLTR_Init(hspi, Mag_CS_GPIO_Port, Mag_CS_Pin);
     HAL_Delay(20);
+
+    Bias_Init(&bias);
 }
 
 // Sensor Reading
@@ -125,6 +129,8 @@ void read_sensors(Telemetry_t *telemetry)
 
     transform_accel_to_world(telemetry);
     telemetry->time = HAL_GetTick();
+
+    Apply_Bias(&bias, telemetry);
 }
 
 // Calculate altitude from pressure (standard atmosphere model)
@@ -456,4 +462,47 @@ void deselect_all_spi(){
 	HAL_GPIO_WritePin(Baro_CS_GPIO_Port, Baro_CS_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(Flash_CS_GPIO_Port, Flash_CS_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_SET);
+}
+
+void Bias_Init(Bias_t *bias)
+{
+    bias->lsm_accel_r_bias = 0.15f;
+    bias->lsm_accel_p_bias = -0.4f;
+    bias->lsm_accel_y_bias = -0.2;
+
+    bias->adxl_accel_r_bias = 0.0f;
+    bias->adxl_accel_p_bias = 0.0f;
+    bias->adxl_accel_y_bias = 0.0f;
+
+    bias->mag_r_bias = 0.0f;
+    bias->mag_p_bias = 0.0f;
+    bias->mag_y_bias = 0.0f;
+
+    bias->bias_count = 0;
+}
+
+void Bias_Calculate(Bias_t *bias, Telemetry_t *t)
+{
+    bias->bias_count += 1.0f;
+
+    float n = bias->bias_count;
+
+    bias->adxl_accel_r_bias += ((t->adxl_accel_r - 9.81) - bias->adxl_accel_r_bias) / n;
+    bias->adxl_accel_p_bias += (t->adxl_accel_p - bias->adxl_accel_p_bias) / n;
+    bias->adxl_accel_y_bias += (t->adxl_accel_y - bias->adxl_accel_y_bias) / n;
+
+    bias->lsm_accel_r_bias += ((t->lsm_accel_r - 9.81) - bias->lsm_accel_r_bias) / n;
+    bias->lsm_accel_p_bias += (t->lsm_accel_p - bias->lsm_accel_p_bias) / n;
+    bias->lsm_accel_y_bias += (t->lsm_accel_y - bias->lsm_accel_y_bias) / n;
+}
+
+void Apply_Bias(Bias_t *bias, Telemetry_t *t)
+{
+    t->adxl_accel_r -= bias->adxl_accel_r_bias;
+    t->adxl_accel_p -= bias->adxl_accel_p_bias;
+    t->adxl_accel_y -= bias->adxl_accel_y_bias;
+
+    t->lsm_accel_r -= bias->lsm_accel_r_bias;
+    t->lsm_accel_p -= bias->lsm_accel_p_bias;
+    t->lsm_accel_y -= bias->lsm_accel_y_bias;
 }

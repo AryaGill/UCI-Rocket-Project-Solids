@@ -17,7 +17,7 @@ void get_rf_msg(FlightState_t flight_state, Telemetry_t *t, char* msg, size_t ms
 			  t->time,
 			  t->temperature,
 			  t->pressure,
-			  t->altitude,
+			  t->altitude - t->startAlt,
 			  t->alt_fused,
 			  t->lsm_gyro_r,
 			  t->lsm_gyro_p,

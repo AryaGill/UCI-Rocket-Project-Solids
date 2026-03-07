@@ -34,7 +34,6 @@
 #include "rfm9x.h"
 #include "commands.h"
 #include "parachutes.h"
-#include "bias.h"
 #include <string.h>
 #include <math.h>
 
@@ -73,7 +72,6 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 // Telemetry structure
 Telemetry_t telemetry = {0};
-Bias_t bias = {0};
 // Flight State
 FlightState_t flight_state = LAUNCH_PAD;
 
@@ -220,7 +218,6 @@ int main(void)
 
   	deselect_all_spi();
 
-
   	// Init rf
   	RFM9X_Init(&hspi1, RF_CS_GPIO_Port, RF_CS_Pin, RF_RST_GPIO_Port, RF_RST_Pin, RF_EN_GPIO_Port, RF_EN_Pin);
 
@@ -256,17 +253,14 @@ int main(void)
 		HAL_Delay(10);
 	}
 
-	// Init madgwick filter (need to read accel first)
-	Madgwick_Init(&telemetry, 0.1f);
-
 	// Initialize flight state machine (need to read sensors first)
 	init_flight_state(&flight_state, &telemetry);
 
+	// Init madgwick filter (need to read accel first)
+	Madgwick_Init(&telemetry, 0.1f);
+
 	// Set the initial temperature for airbrakes algorithm. Used for drag force.
 	set_airbrakes_initial_temp(&telemetry);
-
-	//Initialize bias calcs
-	Bias_Init(&bias);
 
   /* USER CODE END 2 */
 
@@ -280,14 +274,10 @@ int main(void)
 		read_ematch_connections(&telemetry);
 		read_camera_adcs(&telemetry);
 		//Bias measurement in LAUNCH_PAD else apply it
-		    if (flight_state == LAUNCH_PAD)
-		    {
-		        Bias_Calculate(&bias, &telemetry);
-		    }
-		    else
-		    {
-		        Apply_Bias(&bias, &telemetry);
-		    }
+//		if (flight_state == LAUNCH_PAD)
+//		{
+//			Bias_Calculate(&bias, &telemetry);
+//		}
 		// Filter necessary data
 		Madgwick_Update(&telemetry);
 		complementary_filter(&telemetry);
