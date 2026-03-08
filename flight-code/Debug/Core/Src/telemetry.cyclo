@@ -6,3 +6,4 @@
 ../Core/Src/telemetry.c:111:9:write_headers	1
 ../Core/Src/telemetry.c:134:6:state_to_string_num	14
 ../Core/Src/telemetry.c:181:6:state_to_string_name	14
+../Core/Src/telemetry.c:228:10:telemetry_log_period	4

@@ -224,3 +224,12 @@ void state_to_string_name(FlightState_t state, char* str) {
     		break;
 	}
 }
+
+uint32_t telemetry_log_period(FlightState_t state){
+	switch(state) {
+		case DISARMED: case LAUNCH_PAD: case LANDED:
+			return 1000;
+		default:
+			return 50;
+	}
+}

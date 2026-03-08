@@ -306,7 +306,7 @@ int main(void)
 		}
 
 		// Log telemetry
-		if (cur_time - prev_log_time >= 100){
+		if (cur_time - prev_log_time >= telemetry_log_period(flight_state)){
 			prev_log_time = cur_time;
 			log_data(flight_state, &telemetry);
 			save_data_file();

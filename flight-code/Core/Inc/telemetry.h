@@ -13,3 +13,4 @@ void state_to_string_num(FlightState_t state, char* str);
 void state_to_string_name(FlightState_t state, char* str);
 void save_data_file();
 void write_datafile_message(char* msg);
+uint32_t telemetry_log_period(FlightState_t state);
