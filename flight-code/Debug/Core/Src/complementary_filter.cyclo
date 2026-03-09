@@ -1,1 +1,2 @@
-../Core/Src/complementary_filter.c:7:6:complementary_filter	3
+../Core/Src/complementary_filter.c:7:6:update_horizontal_velocity	1
+../Core/Src/complementary_filter.c:24:6:complementary_filter	3

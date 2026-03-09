@@ -14,8 +14,8 @@ void Madgwick_Init(Telemetry_t* telemetry, float b)
 {
     beta = b;
 
-    float ax = telemetry->lsm_accel_y;
-	float ay = telemetry->lsm_accel_p;
+    float ax = telemetry->lsm_accel_p;
+	float ay = telemetry->lsm_accel_y;
 	float az = telemetry->lsm_accel_r;
 
     // Normalize accel
