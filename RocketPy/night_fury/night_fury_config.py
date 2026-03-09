@@ -38,7 +38,9 @@ class config:
 
         # Rocket
         self.radius = 0.078867
-        self.mass = 17.78
+        # self.radius = 0.0824373459
+        # self.mass = 17.78
+        self.mass = 18.27
         self.inertia = (10.020, 10.020, 0.067) # Guess
         self.power_off_drag = "RocketPy/night_fury/nf_power_on_drag.csv"
         self.power_on_drag = "RocketPy/night_fury/nf_power_on_drag.csv"
@@ -64,7 +66,8 @@ class config:
         self.fin_span = 0.1778
         self.fin_position = -2.8956
         self.cant_angle = 0
-        # self.airfoil = ("../data/airfoils/NACA0012-radians.txt","radians") # Guess
+        # self.airfoil = ("RocketPy/night_fury/rounded_rectangular_fin_airfoil.csv","radians") # Guess
+        # self.airfoil = ("NACA0012", "naca0012.dat") #guess
 
         # Tail
         self.tail_top_radius = 0.07886715773
@@ -89,8 +92,7 @@ class config:
         self.drogue_noise = (0, 8.3, 0.5) # Guess
 
         # Airbrakes
-        # self.drag_coefficient_curve = "RocketPy/night_fury/nf_air_brakes_drag_coefficient_curve.csv"
-        self.drag_coefficient_curve = "RocketPy/night_fury/incorrect_nf_air_brakes_drag_coefficient_curve.csv"
+        self.drag_coefficient_curve = "RocketPy/night_fury/nf_air_brakes_drag_coefficient_curve.csv"
         self.air_brakes_sampling_rate = 10
         self.air_brakes_reference_area = None
         self.air_brakes_clamp = True

@@ -67,7 +67,7 @@ if __name__ == "__main__":
     plt.show()
 
     # Plot predicted apogee by time
-    plt.plot(time_list[46:], [x / 0.3048 for x in predicted_apogee_list[46:]])
+    plt.plot(time_list[55:], [x / 0.3048 for x in predicted_apogee_list[55:]])
     plt.xlabel("Time (s)")
     plt.ylabel("Predicted Apogee (ft)")
     plt.title("Predicted Apogee by Time")
