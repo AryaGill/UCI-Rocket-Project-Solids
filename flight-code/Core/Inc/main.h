@@ -189,8 +189,6 @@ uint32_t micros(void);
 #define Main_Parachute_2_GPIO_Port GPIOA
 #define Main_Parachute_1_Pin GPIO_PIN_10
 #define Main_Parachute_1_GPIO_Port GPIOA
-#define BuzzerD0_Pin GPIO_PIN_0
-#define BuzzerD0_GPIO_Port GPIOD
 #define Airbrakes_PWM_1_Pin GPIO_PIN_4
 #define Airbrakes_PWM_1_GPIO_Port GPIOB
 #define Airbrakes_PWM_2_Pin GPIO_PIN_5

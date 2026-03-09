@@ -834,7 +834,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, IMU_2_CS_Pin|IMU_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, Camera_1_Pin|Camera_2_Pin|BuzzerD0_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, Camera_1_Pin|Camera_2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : RF_EN_Pin RF_CS_Pin RF_RST_Pin SD_CS_Pin
                            Baro_CS_Pin */
@@ -872,8 +872,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(SD_CD_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : Camera_1_Pin Camera_2_Pin BuzzerD0_Pin */
-  GPIO_InitStruct.Pin = Camera_1_Pin|Camera_2_Pin|BuzzerD0_Pin;
+  /*Configure GPIO pins : Camera_1_Pin Camera_2_Pin */
+  GPIO_InitStruct.Pin = Camera_1_Pin|Camera_2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
