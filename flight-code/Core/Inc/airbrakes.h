@@ -3,8 +3,8 @@
 #include "main.h"
 
 // Change before flight - check fsm.h as well
-#define MASS 25.71 // kg
-#define TARGET_APOGEE_FT 3500
+#define MASS 23.77 // kg
+#define TARGET_APOGEE_FT 8000
 #define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
 
 #define NUM_DEPLOYMENT_LEVELS 64

@@ -9,8 +9,8 @@ extern TIM_HandleTypeDef htim3;
 #define R 287.05287
 #define g 9.80665 // Gravity
 #define L 0.0065 // Temperature Lapse Rate
-#define DESIRED_SEARCH_TIME 200 // ms
-#define TIME_PER_SIM_STEP 0.057 // ms
+#define DESIRED_SEARCH_TIME 20 // ms
+#define TIME_PER_SIM_STEP 0.0132 // ms
 float deltaT_coefficient = TIME_PER_SIM_STEP * log2f(NUM_DEPLOYMENT_LEVELS) / DESIRED_SEARCH_TIME / g;
 float ground_temp = 300;
 
@@ -130,7 +130,6 @@ float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 	float pressure_Pa = telemetry->pressure * 100.0f;
 	float temperature_K = fmaxf(ground_temp - (L * telemetry->altitude), 1);
 
-//	uint32_t cur_time = HAL_GetTick()
 	for (int i = 0; i < 100000; ++i){
 		float vz_sim_before = vz_sim;
 		float T_local = fmaxf(temperature_K - (L * (alt_sim - telemetry->altitude)), 1);
@@ -151,7 +150,6 @@ float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 		alt_sim += ((vz_sim + vz_sim_before) / 2) * deltaT;
 
 		if (vz_sim < 0){
-//			continue;
 			break;
 		}
 	}
@@ -188,7 +186,7 @@ void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
 	}
 
 	// set predicted apogee variable
-	telemetry->predicted_apogee = pred_apogee;
+	telemetry->predicted_apogee = predict_apogee(telemetry, low);
 
 	// Set deployment level
 	set_airbrakes_deployment_level(telemetry, low);
