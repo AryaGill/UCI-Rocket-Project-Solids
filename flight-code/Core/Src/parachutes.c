@@ -2,15 +2,6 @@
 
 extern ADC_HandleTypeDef hadc1;
 
-static ADC_ChannelConfTypeDef baseConfig = {
-    .Rank = ADC_REGULAR_RANK_1,
-    .SamplingTime = ADC_SAMPLETIME_64CYCLES_5,
-    .SingleDiff = ADC_SINGLE_ENDED,
-    .OffsetNumber = ADC_OFFSET_NONE,
-    .Offset = 0,
-	.OffsetSignedSaturation = DISABLE
-};
-
 uint32_t read_ematch_voltage(ADC_HandleTypeDef *hadc, uint32_t channel){
 	ADC_ChannelConfTypeDef sConfig = {0};
 	  sConfig.Rank = ADC_REGULAR_RANK_1;
