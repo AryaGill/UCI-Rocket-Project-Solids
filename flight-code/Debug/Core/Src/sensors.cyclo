@@ -24,8 +24,8 @@
 ../Core/Src/sensors.c:408:6:LIS3MDLTR_Init	1
 ../Core/Src/sensors.c:428:6:LIS3MDLTR_Read	1
 ../Core/Src/sensors.c:448:9:LIS3MDLTR_WhoAmI	1
-../Core/Src/sensors.c:454:6:transform_accel_to_world	1
-../Core/Src/sensors.c:485:6:deselect_all_spi	1
-../Core/Src/sensors.c:495:6:Bias_Init	1
-../Core/Src/sensors.c:512:6:Bias_Calculate	1
-../Core/Src/sensors.c:527:6:Apply_Bias	1
+../Core/Src/sensors.c:460:6:transform_accel_to_world	1
+../Core/Src/sensors.c:491:6:deselect_all_spi	1
+../Core/Src/sensors.c:501:6:Bias_Init	1
+../Core/Src/sensors.c:521:6:Bias_Calculate	1
+../Core/Src/sensors.c:536:6:Apply_Bias	1

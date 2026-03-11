@@ -44,13 +44,14 @@ void Madgwick_Init(Telemetry_t* telemetry, float b)
 
 
 /* ================= IMU UPDATE ================= */
-
+float dt;
 void Madgwick_UpdateIMU(Telemetry_t* telemetry)
 {
 	// get dt (time in ms since last update)
-	uint32_t cur_time = micros();
-	float dt = (cur_time - prev_time_madgwick) * 1e-6f;
+	uint64_t cur_time = micros();
+	dt = (cur_time - prev_time_madgwick) * 1e-6f;
 	prev_time_madgwick = cur_time;
+	if (dt <= 0.0f || dt > 0.05f) return;
 
 	float q0 = telemetry->q0;
 	float q1 = telemetry->q1;
@@ -96,12 +97,14 @@ void Madgwick_UpdateIMU(Telemetry_t* telemetry)
 
         s3 = 4.0f*q1*q1*q3 - 2.0f*q1*ax + 4.0f*q2*q2*q3 - 2.0f*q2*ay;
 
-        recipNorm = invSqrt(s0*s0 + s1*s1 + s2*s2 + s3*s3);
-
-        s0 *= recipNorm;
-        s1 *= recipNorm;
-        s2 *= recipNorm;
-        s3 *= recipNorm;
+        float norm = s0*s0 + s1*s1 + s2*s2 + s3*s3;
+		if (norm > 0.0f) {
+			recipNorm = invSqrt(norm);
+			s0 *= recipNorm;
+			s1 *= recipNorm;
+			s2 *= recipNorm;
+			s3 *= recipNorm;
+		}
 
         qDot1 -= beta * s0;
         qDot2 -= beta * s1;
@@ -130,16 +133,25 @@ void Madgwick_UpdateIMU(Telemetry_t* telemetry)
 
 void Madgwick_Update(Telemetry_t* telemetry)
 {
-    if(telemetry->mag_r == 0 && telemetry->mag_p == 0 && telemetry->mag_y == 0)
-    {
-        Madgwick_UpdateIMU(telemetry);
-        return;
-    }
+//	Madgwick_UpdateIMU(telemetry);
+//	return;
+
+	float mx = telemetry->mag_p;
+	float my = telemetry->mag_y;
+	float mz = telemetry->mag_r;
+
+	float mag_norm = mx*mx + my*my + mz*mz;
+
+	if (mag_norm < 1e-6f) {
+	    Madgwick_UpdateIMU(telemetry);
+	    return;
+	}
 
     // get dt (time in ms since last update)
-    uint32_t cur_time = micros();
+    uint64_t cur_time = micros();
 	float dt = (cur_time - prev_time_madgwick) * 1e-6f;
 	prev_time_madgwick = cur_time;
+	if (dt <= 0.0f || dt > 0.05f) return;
 
     float q0 = telemetry->q0;
     float q1 = telemetry->q1;
@@ -154,54 +166,57 @@ void Madgwick_Update(Telemetry_t* telemetry)
 	float gy = telemetry->lsm_gyro_y;
 	float gz = telemetry->lsm_gyro_r;
 
-	float mx = telemetry->mag_p;
-	float my = telemetry->mag_y;
-	float mz = telemetry->mag_r;
+	float recipNorm;
+	float s0, s1, s2, s3;
+	float qDot1, qDot2, qDot3, qDot4;
 
-    float recipNorm;
-    float s0, s1, s2, s3;
-    float qDot1, qDot2, qDot3, qDot4;
+	float hx, hy;
+	float _2bx, _2bz;
 
-    float hx, hy;
-    float _2bx, _2bz;
-    float _2q0mx, _2q0my, _2q0mz, _2q1mx;
+	float _2q0mx, _2q0my, _2q0mz, _2q1mx;
+	float _2q0 = 2.0f * q0;
+	float _2q1 = 2.0f * q1;
+	float _2q2 = 2.0f * q2;
+	float _2q3 = 2.0f * q3;
 
-    /* Normalize accel */
-    recipNorm = invSqrt(ax*ax + ay*ay + az*az);
-    ax *= recipNorm;
-    ay *= recipNorm;
-    az *= recipNorm;
+	float q0q0 = q0*q0;
+	float q1q1 = q1*q1;
+	float q2q2 = q2*q2;
+	float q3q3 = q3*q3;
 
-    /* Normalize mag */
-    recipNorm = invSqrt(mx*mx + my*my + mz*mz);
-    mx *= recipNorm;
-    my *= recipNorm;
-    mz *= recipNorm;
+	/* normalize accel */
+	float norm = ax*ax + ay*ay + az*az;
+	if (norm == 0.0f) return;
 
+	recipNorm = invSqrt(norm);
+	ax *= recipNorm;
+	ay *= recipNorm;
+	az *= recipNorm;
 
-    /* Auxiliary variables */
-    _2q0mx = 2.0f * q0 * mx;
-    _2q0my = 2.0f * q0 * my;
-    _2q0mz = 2.0f * q0 * mz;
-    _2q1mx = 2.0f * q1 * mx;
+	/* normalize mag */
+	recipNorm = invSqrt(mx*mx + my*my + mz*mz);
+	mx *= recipNorm;
+	my *= recipNorm;
+	mz *= recipNorm;
 
-    float q0q0 = q0*q0;
-    float q1q1 = q1*q1;
-    float q2q2 = q2*q2;
-    float q3q3 = q3*q3;
+	/* reference direction of Earth's magnetic field */
+	_2q0mx = 2.0f*q0*mx;
+	_2q0my = 2.0f*q0*my;
+	_2q0mz = 2.0f*q0*mz;
+	_2q1mx = 2.0f*q1*mx;
 
-    hx = mx*q0q0 - _2q0my*q3 + _2q0mz*q2
-       + mx*q1q1 + 2.0f*q1*my*q2 + 2.0f*q1*mz*q3
-       - mx*q2q2 - mx*q3q3;
+	hx = mx*q0q0 - _2q0my*q3 + _2q0mz*q2 +
+		 mx*q1q1 + _2q1*my*q2 + _2q1*mz*q3 -
+		 mx*q2q2 - mx*q3q3;
 
-    hy = 2.0f*q0*mx*q3 + my*q0q0 - 2.0f*q0*mz*q1
-       + 2.0f*q1*mx*q2 - my*q1q1 + my*q2q2
-       + 2.0f*q2*mz*q3 - my*q3q3;
+	hy = _2q0*mx*q3 + my*q0q0 - _2q0mz*q1 +
+		 _2q1*mx*q2 - my*q1q1 + my*q2q2 +
+		 _2q2*mz*q3 - my*q3q3;
 
-    _2bx = sqrtf(hx*hx + hy*hy);
-    _2bz = -2.0f*q0*mx*q2 + 2.0f*q0*my*q1 + mz*q0q0
-         + 2.0f*q1*mx*q3 - mz*q1q1
-         + 2.0f*q2*my*q3 - mz*q2q2 + mz*q3q3;
+	_2bx = sqrtf(hx*hx + hy*hy);
+	_2bz = -_2q0*mx*q2 + _2q0*my*q1 + mz*q0q0 +
+		   _2q1*mx*q3 - mz*q1q1 +
+		   _2q2*my*q3 - mz*q2q2 + mz*q3q3;
 
 
     /* Gyro derivative */
@@ -212,27 +227,58 @@ void Madgwick_Update(Telemetry_t* telemetry)
 
 
     /* Gradient descent step (trimmed but correct) */
-    s0 = -2.0f*q2*(2*(q1*q3 - q0*q2) - ax)
-       + 2.0f*q1*(2*(q0*q1 + q2*q3) - ay)
-       - _2bz*q2*(_2bx*(0.5f - q2q2 - q3q3) + _2bz*(q1*q3 - q0*q2) - mx);
+//    s0 = -2.0f*q2*(2*(q1*q3 - q0*q2) - ax)
+//       + 2.0f*q1*(2*(q0*q1 + q2*q3) - ay)
+//       - _2bz*q2*(_2bx*(0.5f - q2q2 - q3q3) + _2bz*(q1*q3 - q0*q2) - mx);
+//
+//    s1 =  2.0f*q3*(2*(q1*q3 - q0*q2) - ax)
+//       + 2.0f*q0*(2*(q0*q1 + q2*q3) - ay)
+//       - 4.0f*q1*(1 - 2*(q1q1 + q2q2) - az);
+//
+//    s2 = -2.0f*q0*(2*(q1*q3 - q0*q2) - ax)
+//       + 2.0f*q3*(2*(q0*q1 + q2*q3) - ay)
+//       - 4.0f*q2*(1 - 2*(q1q1 + q2q2) - az);
+//
+//    s3 =  2.0f*q1*(2*(q1*q3 - q0*q2) - ax)
+//       + 2.0f*q2*(2*(q0*q1 + q2*q3) - ay);
 
-    s1 =  2.0f*q3*(2*(q1*q3 - q0*q2) - ax)
-       + 2.0f*q0*(2*(q0*q1 + q2*q3) - ay)
-       - 4.0f*q1*(1 - 2*(q1q1 + q2q2) - az);
+    s0 = -_2q2*(2*(q1*q3 - q0*q2) - ax)
+		 + _2q1*(2*(q0*q1 + q2*q3) - ay)
+		 - _2bz*q2*(_2bx*(0.5f - q2q2 - q3q3) + _2bz*(q1*q3 - q0*q2) - mx)
+		 + (-_2bx*q3 + _2bz*q1)*(_2bx*(q1*q2 - q0*q3) + _2bz*(q0*q1 + q2*q3) - my)
+		 + _2bx*q2*(_2bx*(q0*q2 + q1*q3) + _2bz*(0.5f - q1q1 - q2q2) - mz);
 
-    s2 = -2.0f*q0*(2*(q1*q3 - q0*q2) - ax)
-       + 2.0f*q3*(2*(q0*q1 + q2*q3) - ay)
-       - 4.0f*q2*(1 - 2*(q1q1 + q2q2) - az);
+	s1 = _2q3*(2*(q1*q3 - q0*q2) - ax)
+		 + _2q0*(2*(q0*q1 + q2*q3) - ay)
+		 - 4*q1*(1 - 2*(q1q1 + q2q2) - az)
+		 + _2bz*q3*(_2bx*(0.5f - q2q2 - q3q3) + _2bz*(q1*q3 - q0*q2) - mx)
+		 + (_2bx*q2 + _2bz*q0)*(_2bx*(q1*q2 - q0*q3) + _2bz*(q0*q1 + q2*q3) - my)
+		 + (_2bx*q3 - 4*_2bz*q1)*(_2bx*(q0*q2 + q1*q3) + _2bz*(0.5f - q1q1 - q2q2) - mz);
 
-    s3 =  2.0f*q1*(2*(q1*q3 - q0*q2) - ax)
-       + 2.0f*q2*(2*(q0*q1 + q2*q3) - ay);
+	s2 = -_2q0*(2*(q1*q3 - q0*q2) - ax)
+		 + _2q3*(2*(q0*q1 + q2*q3) - ay)
+		 - 4*q2*(1 - 2*(q1q1 + q2q2) - az)
+		 + (-4*_2bx*q2 - _2bz*q0)*(_2bx*(0.5f - q2q2 - q3q3) + _2bz*(q1*q3 - q0*q2) - mx)
+		 + (_2bx*q1 + _2bz*q3)*(_2bx*(q1*q2 - q0*q3) + _2bz*(q0*q1 + q2*q3) - my)
+		 + (_2bx*q0 - 4*_2bz*q2)*(_2bx*(q0*q2 + q1*q3) + _2bz*(0.5f - q1q1 - q2q2) - mz);
 
-    recipNorm = invSqrt(s0*s0 + s1*s1 + s2*s2 + s3*s3);
+	s3 = _2q1*(2*(q1*q3 - q0*q2) - ax)
+		 + _2q2*(2*(q0*q1 + q2*q3) - ay)
+		 + (-4*_2bx*q3 + _2bz*q1)*(_2bx*(0.5f - q2q2 - q3q3) + _2bz*(q1*q3 - q0*q2) - mx)
+		 + (-_2bx*q0 + _2bz*q2)*(_2bx*(q1*q2 - q0*q3) + _2bz*(q0*q1 + q2*q3) - my)
+		 + _2bx*q1*(_2bx*(q0*q2 + q1*q3) + _2bz*(0.5f - q1q1 - q2q2) - mz);
 
-    s0 *= recipNorm;
-    s1 *= recipNorm;
-    s2 *= recipNorm;
-    s3 *= recipNorm;
+
+
+
+    norm = s0*s0 + s1*s1 + s2*s2 + s3*s3;
+    if (norm > 0.0f) {
+        recipNorm = invSqrt(norm);
+        s0 *= recipNorm;
+        s1 *= recipNorm;
+        s2 *= recipNorm;
+        s3 *= recipNorm;
+    }
 
     qDot1 -= beta * s0;
     qDot2 -= beta * s1;

@@ -451,6 +451,12 @@ uint8_t LIS3MDLTR_WhoAmI(void) {
     return id;
 }
 
+
+//void calibrate_mag(){
+//	float offset_r =
+//	write_mag();
+//}
+
 void transform_accel_to_world(Telemetry_t *telemetry) {
   // Average IMUs (body frame)
   float ax = telemetry->lsm_accel_p;
@@ -494,9 +500,12 @@ void deselect_all_spi(){
 
 void Bias_Init(Bias_t *bias)
 {
-    bias->lsm_accel_r_bias = 0.0251505f;
-    bias->lsm_accel_p_bias = 0.1621935f;
-    bias->lsm_accel_y_bias = -0.271719f;
+//    bias->lsm_accel_r_bias = 0.0251505f;
+//    bias->lsm_accel_p_bias = 0.1621935f;
+//    bias->lsm_accel_y_bias = -0.271719f;
+    bias->lsm_accel_r_bias = 0.0f;
+	bias->lsm_accel_p_bias = 0.0f;
+	bias->lsm_accel_y_bias = 0.0f;
 
     bias->adxl_accel_r_bias = 0.0f;
     bias->adxl_accel_p_bias = 0.0f;

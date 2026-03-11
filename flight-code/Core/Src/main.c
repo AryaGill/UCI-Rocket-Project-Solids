@@ -26,7 +26,8 @@
 #include "sensors.h"
 #include "telemetry.h"
 #include "fsm.h"
-#include "madgwick.h"
+//#include "madgwick.h"
+#include "gyro_integration.h"
 #include "complementary_filter.h"
 #include "cameras.h"
 #include "buzzer.h"
@@ -112,9 +113,22 @@ void DWT_Init(void)
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;            // Start counter
 }
 
-uint32_t micros(void)
+uint64_t micros(void)
 {
-    return DWT->CYCCNT / (SystemCoreClock / 1000000);
+	static uint32_t last = 0;
+	static uint64_t high = 0;
+
+	uint32_t now = DWT->CYCCNT;
+
+	if (now < last) {
+		high += (1ULL << 32);
+	}
+
+	last = now;
+
+	uint64_t cycles = high | now;
+
+	return cycles / (SystemCoreClock / 1000000);
 }
 
 // Success: 3 quick LED blinks + 2 distinct buzzer tones
@@ -256,7 +270,7 @@ int main(void)
 	init_flight_state(&flight_state, &telemetry);
 
 	// Init madgwick filter (need to read accel first)
-	Madgwick_Init(&telemetry, 0.1f);
+//	Madgwick_Init(&telemetry, 0.1f);
 
 	// Set the initial temperature for airbrakes algorithm. Used for drag force.
 	set_airbrakes_initial_temp(&telemetry);
@@ -278,8 +292,10 @@ int main(void)
 //			Bias_Calculate(&bias, &telemetry);
 //		}
 		// Filter necessary data
-		Madgwick_Update(&telemetry);
+//		Madgwick_Update(&telemetry);
 		complementary_filter(&telemetry);
+
+		integrate_gyro(flight_state, &telemetry);
 
 		// Update FSM and state string
 		update_flight_state(&flight_state, &telemetry);
@@ -310,6 +326,9 @@ int main(void)
 			log_data(flight_state, &telemetry);
 			save_data_file(); // Possible change: decrease how often we save the data file
 		}
+
+
+//		HAL_Delay(1);
 
     /* USER CODE END WHILE */
 
