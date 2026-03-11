@@ -99,7 +99,10 @@ class SerialStreamer(QThread):
         "main_s_ematch_voltage",
         "drogue_p_ematch_voltage",
         "drogue_s_ematch_voltage",
-        "flight_state"
+        "flight_state",
+        "Roll",
+        "Pitch",
+        "Yaw"
     ]
 
     new_data = pyqtSignal(dict)
@@ -225,7 +228,7 @@ class SerialStreamer(QThread):
                 encoded = (cmd.strip() + "\n").encode('utf-8')
                 for _ in range(burst):
                     self._ser.write(encoded)
-                    time.sleep(0.1)
+                    time.sleep(0.25)
                 self.status.emit(f"Sent (x{burst}): {cmd.strip()}")
         except Exception as e:
             self.status.emit(f"Write error: {e}")
