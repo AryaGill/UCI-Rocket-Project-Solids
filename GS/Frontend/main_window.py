@@ -408,7 +408,7 @@ class GroundStationWindow(QMainWindow):
             for graph in (self.altitude_graph, self.temp_graph,
                           self.accel_lis_graph, self.accel_world_graph,
                           self.ang_graph, self.mag_graph):
-                graph.setMinimumSize(320, 260)
+                graph.setMinimumSize(320, 340)
 
             # Grid layout:
             # Row 0: Altitude | Temp       | MaxValues
