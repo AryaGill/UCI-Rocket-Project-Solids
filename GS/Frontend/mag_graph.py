@@ -36,11 +36,11 @@ class MagGraph(QWidget):
         
         # Stylish line plot with warm color for temperature
         self.line_x, = self.axes.plot([], [], color='#ff6b35', linewidth=2.5, 
-                                    label='X', antialiased=True)
+                                    label='Roll', antialiased=True)
         self.line_y, = self.axes.plot([], [], color="#28dc5e", linewidth=2.5, 
-                                    label='Y', antialiased=True)
+                                    label='Pitch', antialiased=True)
         self.line_z, = self.axes.plot([], [], color="#357fff", linewidth=2.5, 
-                                    label='Z', antialiased=True)
+                                    label='Yaw', antialiased=True)
         
         # Style the legend
         legend = self.axes.legend(facecolor='#2d2d2d', edgecolor='#38b0fb', 

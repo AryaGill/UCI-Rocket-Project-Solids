@@ -10,22 +10,49 @@ import csv
 import sys
 import os
 import subprocess
+import queue
+
+import queue
 
 class TTSWorker(QThread):
-    """Speaks a message"""
-    def __init__(self, message, parent=None):
+    """
+    Single persistent TTS thread with a message queue.
+    Speak requests are enqueued and processed one at a time,
+    so only one pyttsx3 engine instance ever exists.
+    """
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.message = message
-    
+        self._queue = queue.Queue()
+        self._stop = False
+
+    def say(self, message: str):
+        """Enqueue a message to be spoken."""
+        self._queue.put(message)
+
+    def stop(self):
+        self._stop = True
+        self._queue.put(None)   # unblock the queue.get()
+
     def run(self):
         try:
             import pyttsx3
             engine = pyttsx3.init()
             engine.setProperty('rate', 160)
-            engine.say(self.message)
-            engine.runAndWait()
         except Exception as e:
-            print(f"[TTS] Error: {e}")
+            print(f"[TTS] Init error: {e}")
+            return
+
+        while not self._stop:
+            try:
+                msg = self._queue.get(timeout=1.0)
+                if msg is None:
+                    break
+                engine.say(msg)
+                engine.runAndWait()
+            except queue.Empty:
+                continue
+            except Exception as e:
+                print(f"[TTS] Error: {e}")
 
 class GroundStationWindow(QMainWindow):
     """
@@ -53,7 +80,8 @@ class GroundStationWindow(QMainWindow):
         #self.setGeometry(100, 100, 1400, 900)
 
         self._last_flight_state = None
-        self._tts_worker = None
+        self._tts_worker = TTSWorker()
+        self._tts_worker.start()
 
         self.setMinimumSize(1100, 700)
         self.move(100, 100)
@@ -313,8 +341,7 @@ class GroundStationWindow(QMainWindow):
         self.statusBar().showMessage("Ready")
 
         # Announce app startup
-        self._tts_worker = TTSWorker("Ground station online")
-        self._tts_worker.start()
+        self._tts_worker.say("Ground station online")
 
     def hard_reset(self):
         reply = QMessageBox.warning(
@@ -630,8 +657,7 @@ class GroundStationWindow(QMainWindow):
             if new_state != self._last_flight_state:
                 state_name = FlightStateDisplay.FLIGHT_STATES.get(new_state, "Unknown state")
                 print(state_name)
-                self._tts_worker = TTSWorker(state_name)
-                self._tts_worker.start()
+                self._tts_worker.say(state_name)
                 
 
             if new_state == 2 and getattr(self, '_last_flight_state', None) != 2:
@@ -726,6 +752,8 @@ class GroundStationWindow(QMainWindow):
         if self.streamer:
             self.streamer.stop()
             self.streamer.wait(1000)  # Wait up to 1 second for thread to finish
+        self._tts_worker.stop()
+        self._tts_worker.wait(2000)
         event.accept()
 
     def arm_rocket(self):
