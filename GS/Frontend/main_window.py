@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox,
-                             QGridLayout, QPushButton, QLabel, QSlider, QLineEdit, QScrollArea, QSizePolicy)
+                             QGridLayout, QPushButton, QLabel, QSlider, QLineEdit,
+                             QScrollArea)
 from PyQt6.QtCore import (Qt, QTimer, QThread, pyqtSignal, QCoreApplication)
 from PyQt6.QtGui import QAction
 from Backend.backend import SerialStreamer
@@ -54,8 +55,9 @@ class GroundStationWindow(QMainWindow):
         self._last_flight_state = None
         self._tts_worker = None
 
-        self.setFixedSize(1100, 600) #1500 1000
+        self.setMinimumSize(1100, 700)
         self.move(100, 100)
+        self.showMaximized()
 
         self.setup_ui()
 
@@ -85,25 +87,9 @@ class GroundStationWindow(QMainWindow):
         system_menu.addAction(hard_reset_action)
 
         """Setup the main user interface."""
-        # Outer widget set as central — holds only the scroll area
-        outer_widget = QWidget()
-        self.setCentralWidget(outer_widget)
-        outer_layout = QVBoxLayout(outer_widget)
-        outer_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Scroll area wraps all content
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        scroll.setStyleSheet("background-color: #1e1e1e;")
-        outer_layout.addWidget(scroll)
-
-        # Inner widget is the real content container
         central_widget = QWidget()
-        scroll.setWidget(central_widget)
-
+        self.setCentralWidget(central_widget)
+        
         main_layout = QVBoxLayout(central_widget)
         
         # Menu bar
@@ -305,13 +291,23 @@ class GroundStationWindow(QMainWindow):
             print(f"Warning: Could not import EMatchPanel: {e}")
             self.ematch_panel = None
         
-        # ALL GRAPHS ON ONE TAB - using grid layout
-        graphs_layout = QGridLayout()
-        
-        # Import and create graph widgets
+        # ALL GRAPHS inside a vertical scroll area so nothing squishes
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setStyleSheet("QScrollArea { border: none; background-color: #1e1e1e; }")
+
+        graphs_container = QWidget()
+        graphs_container.setStyleSheet("background-color: #1e1e1e;")
+        graphs_layout = QGridLayout(graphs_container)
+        graphs_layout.setContentsMargins(4, 4, 4, 4)
+        graphs_layout.setSpacing(6)
+
         self.create_graphs(graphs_layout)
-        
-        main_layout.addLayout(graphs_layout)
+
+        scroll_area.setWidget(graphs_container)
+        main_layout.addWidget(scroll_area)
         
         # Status bar at bottom
         self.statusBar().showMessage("Ready")
@@ -408,33 +404,49 @@ class GroundStationWindow(QMainWindow):
             self.ang_graph = AngGraph()
             self.mag_graph = MagGraph()
 
-            # Row 0: Altitude, Temperature, MaxValues
-            # Row 1: Accel LIS, Accel World, Angular
-            # Row 2: Mag (col 0), (cols 1-2 free for future widgets)
-            layout.addWidget(self.altitude_graph, 0, 0)
-            layout.addWidget(self.temp_graph, 0, 1)
-            layout.addWidget(self.accel_lis_graph, 1, 0)
-            layout.addWidget(self.accel_world_graph, 1, 1)
-            layout.addWidget(self.ang_graph, 1, 2)
-            layout.addWidget(self.mag_graph, 2, 0)
+            # Set minimum sizes so graphs never squish
+            for graph in (self.altitude_graph, self.temp_graph,
+                          self.accel_lis_graph, self.accel_world_graph,
+                          self.ang_graph, self.mag_graph):
+                graph.setMinimumSize(320, 260)
 
-            # Max values table fills the empty slot: row 0, col 2
+            # Grid layout:
+            # Row 0: Altitude | Temp       | MaxValues
+            # Row 1: AccelLIS | AccelWorld | Angular
+            # Row 2: Mag      | (spans 2)  |
+            layout.addWidget(self.altitude_graph,   0, 0)
+            layout.addWidget(self.temp_graph,        0, 1)
+            layout.addWidget(self.accel_lis_graph,   1, 0)
+            layout.addWidget(self.accel_world_graph, 1, 1)
+            layout.addWidget(self.ang_graph,         1, 2)
+            layout.addWidget(self.mag_graph,         2, 0)  # spans 2 columns
+
+            # Equal column stretch
+            for col in range(3):
+                layout.setColumnStretch(col, 1)
+            # Row stretch
+            layout.setRowStretch(0, 1)
+            layout.setRowStretch(1, 1)
+            layout.setRowStretch(2, 1)
+
+            # Max values table: row 0, col 2
             try:
                 from Frontend.max_vals import MaxValuesTable
                 self.max_table = MaxValuesTable()
+                self.max_table.setMinimumSize(200, 260)
                 layout.addWidget(self.max_table, 0, 2)
             except ImportError as e:
                 print(f"Warning: Could not import MaxValuesTable: {e}")
                 self.max_table = None
-            
+
         except ImportError as e:
             print(f"Warning: Could not import graph widgets: {e}")
-            # Create placeholder labels if graphs not found
             layout.addWidget(QLabel("Altitude Graph - Import Failed"), 0, 0)
             layout.addWidget(QLabel("Temperature Graph - Import Failed"), 0, 1)
             layout.addWidget(QLabel("Accel LIS - Import Failed"), 1, 0)
             layout.addWidget(QLabel("Accel LSM - Import Failed"), 1, 1)
             layout.addWidget(QLabel("Angular Velocity - Import Failed"), 1, 2)
+            layout.addWidget(QLabel("Mag Graph - Import Failed"), 2, 0)
     
     def open_pyro_panel(self):
         """Open the pyro charges control panel."""
@@ -668,8 +680,8 @@ class GroundStationWindow(QMainWindow):
                     data.get('Gyro_Z'),
                     max_points=self.max_points
                 )
-        
-        # Update Magnetometer Graph
+
+        # Update Magnetometer Graph (Mag_X, Mag_Y, Mag_Z)
         if hasattr(self, 'mag_graph'):
             if all(data.get(k) is not None for k in ['Time', 'Mag_X', 'Mag_Y', 'Mag_Z']):
                 self.mag_graph.update_data(
@@ -677,7 +689,6 @@ class GroundStationWindow(QMainWindow):
                     data.get('Mag_X'),
                     data.get('Mag_Y'),
                     data.get('Mag_Z'),
-                    max_points=self.max_points
                 )
     
     def update_status(self, message):
