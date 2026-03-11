@@ -55,11 +55,33 @@ class MagGraph(QWidget):
             spine.set_edgecolor('#404040')
             spine.set_linewidth(1)
         
+        #Current
+        self._stats_text = self.axes.text(
+            0.02, 0.97, '',
+            transform=self.axes.transAxes,
+            fontsize=9, verticalalignment='top',
+            fontfamily='monospace',
+            bbox=dict(boxstyle='round,pad=0.4', facecolor='#1e1e1e',
+                        edgecolor='#38b0fb', alpha=0.85),
+            color='#e0e0e0'
+        )
+
         # Layout
         layout = QVBoxLayout()
         layout.addWidget(self.canvas)
         layout.setContentsMargins(5, 5, 5, 5)
         self.setLayout(layout)
+    
+    def _update_stats(self):
+        if not self.mag_x:
+            self._stats_text.set_text('')
+            return
+        cx, cy, cz = self.mag_x[-1], self.mag_y[-1], self.mag_z[-1]
+        self._stats_text.set_text(
+            f"X  now:{cx:+7.2f}\n"
+            f"Y  now:{cy:+7.2f}\n"
+            f"Z  now:{cz:+7.2f}"
+        )
         
     def update_data(self, t, x, y, z):
         """Update the graph with new data point."""
@@ -71,6 +93,8 @@ class MagGraph(QWidget):
         self.line_x.set_xdata(self.time_data); self.line_x.set_ydata(self.mag_x)
         self.line_y.set_xdata(self.time_data); self.line_y.set_ydata(self.mag_y)
         self.line_z.set_xdata(self.time_data); self.line_z.set_ydata(self.mag_z)
+
+        self._update_stats()
 
         self.axes.relim()
         self.axes.autoscale_view(True, True, True)
@@ -86,6 +110,7 @@ class MagGraph(QWidget):
         self.line_x.set_data([], [])
         self.line_y.set_data([], [])
         self.line_z.set_data([], [])
+        self._stats_text.set_text('')
 
         self.axes.relim()
         self.axes.autoscale_view(True, True, True)

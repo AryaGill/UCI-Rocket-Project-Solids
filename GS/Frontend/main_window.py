@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox,
-                             QGridLayout, QPushButton, QLabel, QSlider, QLineEdit)
+                             QGridLayout, QPushButton, QLabel, QSlider, QLineEdit, QScrollArea, QSizePolicy)
 from PyQt6.QtCore import (Qt, QTimer, QThread, pyqtSignal, QCoreApplication)
 from PyQt6.QtGui import QAction
 from Backend.backend import SerialStreamer
@@ -54,7 +54,7 @@ class GroundStationWindow(QMainWindow):
         self._last_flight_state = None
         self._tts_worker = None
 
-        self.setFixedSize(1500, 1000)
+        self.setFixedSize(1100, 600) #1500 1000
         self.move(100, 100)
 
         self.setup_ui()
@@ -85,9 +85,25 @@ class GroundStationWindow(QMainWindow):
         system_menu.addAction(hard_reset_action)
 
         """Setup the main user interface."""
+        # Outer widget set as central — holds only the scroll area
+        outer_widget = QWidget()
+        self.setCentralWidget(outer_widget)
+        outer_layout = QVBoxLayout(outer_widget)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Scroll area wraps all content
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setStyleSheet("background-color: #1e1e1e;")
+        outer_layout.addWidget(scroll)
+
+        # Inner widget is the real content container
         central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        
+        scroll.setWidget(central_widget)
+
         main_layout = QVBoxLayout(central_widget)
         
         # Menu bar
@@ -382,22 +398,25 @@ class GroundStationWindow(QMainWindow):
             from Frontend.accel_graphlis import AccelGraphLIS
             from Frontend.accel_graphworld import AccelGraphWorld
             from Frontend.ang_graph import AngGraph
-            
+            from Frontend.mag_graph import MagGraph
+
             # Create graph instances
             self.altitude_graph = AltitudeGraph()
             self.temp_graph = TempGraph()
             self.accel_lis_graph = AccelGraphLIS()
             self.accel_world_graph = AccelGraphWorld()
             self.ang_graph = AngGraph()
-            
-            # Add to grid layout (2x2 grid)
-            # Row 0: Altitude (left), Temperature (right)
-            # Row 1: Accel LIS (left), Accel LSM (right)
+            self.mag_graph = MagGraph()
+
+            # Row 0: Altitude, Temperature, MaxValues
+            # Row 1: Accel LIS, Accel World, Angular
+            # Row 2: Mag (col 0), (cols 1-2 free for future widgets)
             layout.addWidget(self.altitude_graph, 0, 0)
             layout.addWidget(self.temp_graph, 0, 1)
             layout.addWidget(self.accel_lis_graph, 1, 0)
             layout.addWidget(self.accel_world_graph, 1, 1)
             layout.addWidget(self.ang_graph, 1, 2)
+            layout.addWidget(self.mag_graph, 2, 0)
 
             # Max values table fills the empty slot: row 0, col 2
             try:
@@ -537,6 +556,8 @@ class GroundStationWindow(QMainWindow):
             self.accel_world_graph.clear_data()
         if hasattr(self, 'ang_graph'):
             self.ang_graph.clear_data()
+        if hasattr(self, 'mag_graph'):
+            self.mag_graph.clear_data()
         if self.max_table is not None:
             self.max_table.reset()
         self.update_status("All graphs cleared")
@@ -579,7 +600,7 @@ class GroundStationWindow(QMainWindow):
                 self.camera_pending = None
                 self.update_status("Camera successfully turned OFF")
 
-                self.telemetry_log.append(data.copy())
+        self.telemetry_log.append(data.copy())
         
         # Update max values table
         if self.max_table is not None:
@@ -645,6 +666,17 @@ class GroundStationWindow(QMainWindow):
                     data.get('Gyro_X'),
                     data.get('Gyro_Y'),
                     data.get('Gyro_Z'),
+                    max_points=self.max_points
+                )
+        
+        # Update Magnetometer Graph
+        if hasattr(self, 'mag_graph'):
+            if all(data.get(k) is not None for k in ['Time', 'Mag_X', 'Mag_Y', 'Mag_Z']):
+                self.mag_graph.update_data(
+                    data.get('Time'),
+                    data.get('Mag_X'),
+                    data.get('Mag_Y'),
+                    data.get('Mag_Z'),
                     max_points=self.max_points
                 )
     
