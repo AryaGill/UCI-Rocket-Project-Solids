@@ -100,9 +100,9 @@ class SerialStreamer(QThread):
         "drogue_p_ematch_voltage",
         "drogue_s_ematch_voltage",
         "flight_state",
-        "Roll",
-        "Pitch",
-        "Yaw"
+        "mag_r",
+        "mag_p",
+        "mag_y"
     ]
 
     new_data = pyqtSignal(dict)
