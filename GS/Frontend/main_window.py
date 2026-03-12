@@ -709,12 +709,12 @@ class GroundStationWindow(QMainWindow):
 
         # Update Magnetometer Graph (Mag_X, Mag_Y, Mag_Z)
         if hasattr(self, 'mag_graph'):
-            if all(data.get(k) is not None for k in ['Time', 'Mag_X', 'Mag_Y', 'Mag_Z']):
+            if all(data.get(k) is not None for k in ['Time', 'mag_r', 'mag_p', 'mag_y']):
                 self.mag_graph.update_data(
                     data.get('Time'),
-                    data.get('Mag_X'),
-                    data.get('Mag_Y'),
-                    data.get('Mag_Z'),
+                    data.get('mag_r'),
+                    data.get('mag_p'),
+                    data.get('mag_y'),
                 )
     
     def update_status(self, message):

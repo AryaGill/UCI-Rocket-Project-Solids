@@ -77,7 +77,7 @@ class SerialStreamer(QThread):
     COLUMNS = [
         "Time",
         "Temp",
-        "Pressure",
+        # "Pressure",
         "Alt",
         "Filtered_Alt",
         "Gyro_X",
@@ -89,20 +89,20 @@ class SerialStreamer(QThread):
         "Accel_world_x",
         "Accel_world_y",
         "Accel_world_z",
-        "Quaternion_W",
-        "Quaternion_X",
-        "Quaternion_Y",
-        "Quaternion_Z",
+        "mag_r",
+        "mag_p",
+        "mag_y",
+        # "Quaternion_W",
+        # "Quaternion_X",
+        # "Quaternion_Y",
+        # "Quaternion_Z",
         "Cam1V",
         "Cam2V",
         "main_p_ematch_voltage",
         "main_s_ematch_voltage",
         "drogue_p_ematch_voltage",
         "drogue_s_ematch_voltage",
-        "flight_state",
-        "mag_r",
-        "mag_p",
-        "mag_y"
+        "flight_state"
     ]
 
     new_data = pyqtSignal(dict)
