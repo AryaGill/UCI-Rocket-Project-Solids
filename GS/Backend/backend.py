@@ -105,6 +105,16 @@ class SerialStreamer(QThread):
         "flight_state"
     ]
 
+    COLUMNS_2 = [
+        "Time",
+        "roll",
+        "pitch",
+        "yaw",
+        "velocity_x",
+        "velocity_y",
+        "velocity_z"
+    ]
+    
     new_data = pyqtSignal(dict)
     finished = pyqtSignal()
     status = pyqtSignal(str)
@@ -200,14 +210,18 @@ class SerialStreamer(QThread):
         """
         parts = [p.strip() for p in text.split(",")]
 
-        if len(parts) != len(self.COLUMNS):
-            self.status.emit(f"Warning: Expected {len(self.COLUMNS)} columns, got {len(parts)}")
+        if (len(parts) != len(self.COLUMNS) and len(parts) != len(self.COLUMNS_2)):
+            self.status.emit(f"Warning: Expected {len(self.COLUMNS)} or {len(self.COLUMNS_2)} columns, got {len(parts)}")
             print(parts)
             return None
 
         data = {}
-        for col_name, value_str in zip(self.COLUMNS, parts):
-            data[col_name] = self._to_number(value_str)
+        if len(parts) == len(self.COLUMNS):
+            for col_name, value_str in zip(self.COLUMNS, parts):
+                data[col_name] = self._to_number(value_str)
+        else:
+            for col_name, value_str in zip(self.COLUMNS_2, parts):
+                data[col_name] = self._to_number(value_str)
 
         return data
 
