@@ -25,7 +25,7 @@ float get_mach_number(const float velocity, const float temp);
 float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level);
 void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry);
 void init_airbrakes_servo();
-void set_airbrakes_servo_angle(uint8_t angle);
+void set_airbrakes_servo_angle(float angle);
 void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment);
 void set_airbrakes_initial_temp(Telemetry_t *telemetry);
 void perform_airbrakes_servo_sequence();

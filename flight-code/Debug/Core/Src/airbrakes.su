@@ -9,5 +9,5 @@
 ../Core/Src/airbrakes.c:215:6:init_airbrakes_servo	8	static
 ../Core/Src/airbrakes.c:220:6:set_airbrakes_initial_temp	16	static
 ../Core/Src/airbrakes.c:224:6:set_airbrakes_servo_angle	24	static
-../Core/Src/airbrakes.c:236:6:set_airbrakes_deployment_level	16	static
-../Core/Src/airbrakes.c:243:6:perform_airbrakes_servo_sequence	24	static
+../Core/Src/airbrakes.c:237:6:set_airbrakes_deployment_level	24	static
+../Core/Src/airbrakes.c:249:6:perform_airbrakes_servo_sequence	24	static
