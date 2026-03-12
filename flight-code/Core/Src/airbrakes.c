@@ -14,6 +14,8 @@ extern TIM_HandleTypeDef htim3;
 float deltaT_coefficient = TIME_PER_SIM_STEP * log2f(NUM_DEPLOYMENT_LEVELS) / DESIRED_SEARCH_TIME / g;
 float ground_temp = 300;
 
+
+
 // Deployment levels should be evenly spread between least and most deployment (inclusive)
 // Mach numbers should be evenly spread between 0 and 0.7 (inclusive)
 // deployment levels: 0.0, 0.1, 0.2, ..., 1.0
@@ -62,6 +64,16 @@ static inline float clampf(float x, float min, float max)
     if (x < min) return min;
     if (x > max) return max;
     return x;
+}
+
+float angle_from_vertical(Telemetry_t *telemetry)
+{
+    float c = 1.0f - 2.0f * (telemetry->q1*telemetry->q1 + telemetry->q2*telemetry->q2);
+
+    // Clamp for numerical safety
+    c = clampf(c, -1.0f, 1.0f);
+
+    return acosf(c);   // radians
 }
 
 float get_CdA(uint8_t deployment_level, float mach)
@@ -120,11 +132,18 @@ float get_mag3(float x, float y, float z){
 }
 
 float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
+	// Get time step
 	float deltaT = clampf(telemetry->velocity_world_z * deltaT_coefficient, 0.01, 0.1);
 
+	// Get angle from vertical
+	float theta = angle_from_vertical(telemetry);
+	if(theta > 80.0f * M_PI / 180) theta = 80.0f * M_PI / 180;
+
+	// Initial conditions
 	float alt_sim = telemetry->altitude;
 	float vz_sim = telemetry->velocity_world_z;
-	float vx_sim = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
+	float vx_sim = telemetry->velocity_world_z * tanf(theta);
+//	float vx_sim = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
 
 	// Convert pressure from hPa to Pa
 	float pressure_Pa = telemetry->pressure * 100.0f;
@@ -158,8 +177,9 @@ float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 }
 
 void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
-	float horizontal_speed = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
-	float angle_of_attack = atan2f(horizontal_speed, telemetry->velocity_world_z);
+//	float horizontal_speed = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
+//	float angle_of_attack = atan2f(horizontal_speed, telemetry->velocity_world_z);
+	float angle_of_attack = angle_from_vertical(telemetry);
 	float local_temp = fmaxf(ground_temp - (L * telemetry->altitude), 1);
 	if (flight_state != GLIDING_ASCENT
 			|| get_mach_number(get_mag3(telemetry->velocity_world_x, telemetry->velocity_world_y, telemetry->velocity_world_z), local_temp) > 0.7
@@ -230,19 +250,19 @@ void perform_airbrakes_servo_sequence(Telemetry_t *telemetry){
 		HAL_Delay(10);
 	}
 
-	set_airbrakes_servo_angle(0);
+	set_airbrakes_deployment_level(telemetry, 0);
 	HAL_Delay(500);
-	set_airbrakes_servo_angle(NUM_DEPLOYMENT_LEVELS/4);
+	set_airbrakes_deployment_level(telemetry, NUM_DEPLOYMENT_LEVELS/4);
 	HAL_Delay(500);
-	set_airbrakes_servo_angle(NUM_DEPLOYMENT_LEVELS/2);
+	set_airbrakes_deployment_level(telemetry, NUM_DEPLOYMENT_LEVELS/2);
 	HAL_Delay(500);
-	set_airbrakes_servo_angle(NUM_DEPLOYMENT_LEVELS*3/4);
+	set_airbrakes_deployment_level(telemetry, NUM_DEPLOYMENT_LEVELS*3/4);
 	HAL_Delay(500);
-	set_airbrakes_servo_angle(NUM_DEPLOYMENT_LEVELS - 1);
+	set_airbrakes_deployment_level(telemetry, NUM_DEPLOYMENT_LEVELS - 1);
 	HAL_Delay(1000);
-	set_airbrakes_servo_angle(0);
+	set_airbrakes_deployment_level(telemetry, 0);
 	HAL_Delay(500);
-	set_airbrakes_servo_angle(NUM_DEPLOYMENT_LEVELS - 1);
+	set_airbrakes_deployment_level(telemetry, NUM_DEPLOYMENT_LEVELS - 1);
 	HAL_Delay(500);
-	set_airbrakes_servo_angle(0);
+	set_airbrakes_deployment_level(telemetry, 0);
 }
