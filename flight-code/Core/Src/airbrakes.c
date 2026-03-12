@@ -221,23 +221,29 @@ void set_airbrakes_initial_temp(Telemetry_t *telemetry){
 	ground_temp = telemetry->temperature + 273.15;
 }
 
-void set_airbrakes_servo_angle(uint8_t angle)
+void set_airbrakes_servo_angle(float angle)
 {
-    if (angle > 180) angle = 180;
+	if (angle < 0.0f) angle = 0.0f;
+	if (angle > 180.0f) angle = 180.0f;
 
-    uint32_t pulse =
-        SERVO_MIN_US +
-        ((SERVO_MAX_US - SERVO_MIN_US) * angle) / 180;
+	uint32_t pulse =
+		SERVO_MIN_US +
+		(uint32_t)((SERVO_MAX_US - SERVO_MIN_US) * (angle / 180.0f));
 
-    __HAL_TIM_SET_COMPARE(&htim3, AIRBRAKES_SERVO_1_CHANNEL, pulse);
-    __HAL_TIM_SET_COMPARE(&htim3, AIRBRAKES_SERVO_2_CHANNEL, pulse);
+	__HAL_TIM_SET_COMPARE(&htim3, AIRBRAKES_SERVO_1_CHANNEL, pulse);
+	__HAL_TIM_SET_COMPARE(&htim3, AIRBRAKES_SERVO_2_CHANNEL, pulse);
 }
 
 void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment){
 	// TODO: change this to be a map from deployment level to servo angle
 	// deployment is int from 0 to NUM_DEPLOYMENT_LEVELS - 1
+	if (deployment >= NUM_DEPLOYMENT_LEVELS) deployment = NUM_DEPLOYMENT_LEVELS - 1;
+
 	telemetry->airbrake_deployment = deployment;
-	set_airbrakes_servo_angle((uint8_t)(((uint32_t)(((float)deployment) / (float)(NUM_DEPLOYMENT_LEVELS - 1) * 180)) / NUM_DEPLOYMENT_LEVELS));
+
+	float t = (float)deployment / (float)(NUM_DEPLOYMENT_LEVELS - 1);
+	float angle = SERVO_ANGLE_NOT_EXTENDED + t * (SERVO_ANGLE_EXTENDED - SERVO_ANGLE_NOT_EXTENDED);
+	set_airbrakes_servo_angle(angle);
 }
 
 void perform_airbrakes_servo_sequence(Telemetry_t *telemetry){
