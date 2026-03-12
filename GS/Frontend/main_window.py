@@ -791,6 +791,7 @@ class GroundStationWindow(QMainWindow):
         if reply2 == QMessageBox.StandardButton.Yes:
             if self.streamer and self.streamer.isRunning():
                 self.streamer.write_command("ARM")
+                print(f"_ser={self.streamer._ser}, is_open={getattr(self.streamer._ser, 'is_open', 'N/A')}")
                 self.update_status("🚀 ARM command sent - ROCKET ARMED")
                 
                 # Change button appearance after arming
