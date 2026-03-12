@@ -245,41 +245,45 @@ FRESULT sd_delete_file(const char *filename) {
     return res;
 }
 
-FRESULT write_mag(const char *filename, float max_r, float max_p, float max_y, float min_r, float min_p, float min_y){
-	FIL file;
-	UINT bytes_written;
-	char line[120];
-	FRESULT res;
+FRESULT write_mag(const char *filename,
+                  float mag_r_bias, float mag_r_scale,
+                  float mag_p_bias, float mag_p_scale,
+                  float mag_y_bias, float mag_y_scale)
+{
+    FIL file;
+    UINT bytes_written;
+    char line[120];
+    FRESULT res;
 
-	SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
+    SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
 
-	// Open file: create new or overwrite existing
-	res = f_open(&file, filename, FA_OPEN_ALWAYS | FA_WRITE);
-	if (res != FR_OK){
-		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
-		return res;
-	}
+    // Open file and overwrite if it exists
+    res = f_open(&file, filename, FA_CREATE_ALWAYS | FA_WRITE);
+    if (res != FR_OK) {
+        SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+        return res;
+    }
 
-	// Move write pointer to end of file
-	res = f_lseek(&file, f_size(&file));
-	if (res != FR_OK) {
-		f_close(&file);
-		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
-		return res;
-	}
+    snprintf(line, sizeof(line),
+        "mag_r_bias: %.6f\n"
+        "mag_r_scale: %.6f\n"
+        "mag_p_bias: %.6f\n"
+        "mag_p_scale: %.6f\n"
+        "mag_y_bias: %.6f\n"
+        "mag_y_scale: %.6f\n",
+        mag_r_bias, mag_r_scale,
+        mag_p_bias, mag_p_scale,
+        mag_y_bias, mag_y_scale);
 
-	// Write state
-	// Write start alt
-	snprintf(line, sizeof(line), "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n", max_r, max_p, max_y, min_r, min_p, min_y);
-	res = f_write(&file, line, strlen(line), &bytes_written);
-	if (res != FR_OK) {
-		f_close(&file);
-		SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
-		return res;
-	}
+    res = f_write(&file, line, strlen(line), &bytes_written);
+    if (res != FR_OK) {
+        f_close(&file);
+        SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+        return res;
+    }
 
-	f_close(&file);
+    f_close(&file);
 
-	SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
-	return FR_OK;
+    SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+    return FR_OK;
 }

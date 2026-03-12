@@ -116,6 +116,10 @@ typedef struct{
 	float mag_p_bias;
 	float mag_y_bias;
 
+	float mag_r_scale;
+	float mag_p_scale;
+	float mag_y_scale;
+
 	uint32_t bias_count;
 } Bias_t;
 /* USER CODE END ET */

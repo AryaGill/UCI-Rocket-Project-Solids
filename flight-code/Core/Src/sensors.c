@@ -130,10 +130,6 @@ void init_sensors(SPI_HandleTypeDef *hspi)
     Bias_Init(&bias);
 }
 
-void log_mag(){
-	write_mag("MAG_CALIB.csv", max_r, max_p, max_y, min_r, min_p, min_y);
-}
-
 // Sensor Reading
 void read_sensors(Telemetry_t *telemetry)
 {
@@ -146,21 +142,6 @@ void read_sensors(Telemetry_t *telemetry)
 
     transform_accel_to_world(telemetry);
 
-//    if (max_r == 0) max_r = telemetry->lsm_accel_r;
-//    if (max_p == 0) max_p = telemetry->lsm_accel_p;
-//    if (max_y == 0) max_y = telemetry->lsm_accel_y;
-//    if (min_r == 0) min_r = telemetry->lsm_accel_r;
-//    if (min_y == 0) min_y = telemetry->lsm_accel_y;
-//    if (min_p == 0) min_p = telemetry->lsm_accel_p;
-//
-//    if (telemetry->lsm_accel_r > max_r) max_r = telemetry->lsm_accel_r;
-//    if (telemetry->lsm_accel_p > max_p) max_p = telemetry->lsm_accel_p;
-//    if (telemetry->lsm_accel_y > max_y) max_y = telemetry->lsm_accel_y;
-//    if (telemetry->lsm_accel_r < min_r) min_r = telemetry->lsm_accel_r;
-//	if (telemetry->lsm_accel_p < min_p) min_p = telemetry->lsm_accel_p;
-//	if (telemetry->lsm_accel_y < min_y) min_y = telemetry->lsm_accel_y;
-
-//    transform_accel_to_world(telemetry);
     telemetry->time = HAL_GetTick();
 }
 
@@ -455,10 +436,41 @@ uint8_t LIS3MDLTR_WhoAmI(void) {
 }
 
 
-//void calibrate_mag(){
-//	float offset_r =
-//	write_mag();
-//}
+void calibrate_mag(Telemetry_t *telemetry){
+	LIS3MDLTR_Read(telemetry);
+
+	// Initialize max and min
+	if (max_r == 0) max_r = telemetry->mag_r;
+	if (max_p == 0) max_p = telemetry->mag_p;
+	if (max_y == 0) max_y = telemetry->mag_y;
+	if (min_r == 0) min_r = telemetry->mag_r;
+	if (min_y == 0) min_y = telemetry->mag_y;
+	if (min_p == 0) min_p = telemetry->mag_p;
+
+	// Update max and min
+	if (telemetry->mag_r > max_r) max_r = telemetry->mag_r;
+	if (telemetry->mag_p > max_p) max_p = telemetry->mag_p;
+	if (telemetry->mag_y > max_y) max_y = telemetry->mag_y;
+	if (telemetry->mag_r < min_r) min_r = telemetry->mag_r;
+	if (telemetry->mag_p < min_p) min_p = telemetry->mag_p;
+	if (telemetry->mag_y < min_y) min_y = telemetry->mag_y;
+
+	float offset_r = (max_r + min_r) / 2.0f;
+	float offset_p = (max_p + min_p) / 2.0f;
+	float offset_y = (max_y + min_y) / 2.0f;
+
+	float radius_r = (max_r - min_r) / 2.0f;
+	float radius_p = (max_p - min_p) / 2.0f;
+	float radius_y = (max_y - min_y) / 2.0f;
+
+	float avg_radius = (radius_r + radius_p + radius_y) / 3.0f;
+
+	float scale_r = avg_radius / radius_r;
+	float scale_p = avg_radius / radius_p;
+	float scale_y = avg_radius / radius_y;
+
+	write_mag("MAG_CALIB.csv", offset_r, offset_p, offset_y, scale_r, scale_p, scale_y);
+}
 
 void transform_accel_to_world(Telemetry_t *telemetry) {
   // Average IMUs (body frame)
@@ -601,4 +613,8 @@ void Apply_Bias(Bias_t *bias, Telemetry_t *t)
     t->mag_r -= bias->mag_r_bias;
     t->mag_p -= bias->mag_p_bias;
     t->mag_y -= bias->mag_y_bias;
+
+    t->mag_r *= bias->mag_r_scale;
+    t->mag_p *= bias->mag_p_scale;
+    t->mag_y *= bias->mag_y_scale;
 }
