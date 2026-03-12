@@ -1,8 +1,43 @@
-#pragma once
-#include "main.h"
+//#pragma once
+//#include "main.h"
+//
+//// Complementary filter weights
+//#define ALPHA_VELOCITY 0.99f  // 99% IMU integrated velocity
+//#define ALPHA_ALTITUDE 0.95f  // 95% integrated fused velocity
+//
+//void complementary_filter(Telemetry_t* telemetry);
 
-// Complementary filter weights
-#define ALPHA_VELOCITY 0.99f  // 99% IMU integrated velocity
-#define ALPHA_ALTITUDE 0.95f  // 95% integrated fused velocity
+#ifndef COMPLEMENTARY_FILTER_H
+#define COMPLEMENTARY_FILTER_H
 
-void complementary_filter(Telemetry_t* telemetry);
+#include "telemetry.h"
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*
+ * Complementary filter gains
+ *
+ * ALPHA_VELOCITY:
+ *   Higher = trust IMU-integrated vertical velocity more
+ *   Lower  = trust baro-derived vertical velocity more
+ *
+ * ALPHA_ALTITUDE:
+ *   Higher = trust integrated altitude prediction more
+ *   Lower  = trust raw barometer altitude more
+ *
+ * Both should stay in the range [0.0, 1.0].
+ */
+#define ALPHA_VELOCITY   0.98f
+#define ALPHA_ALTITUDE   0.95f
+
+void complementary_filter_init(Telemetry_t *telemetry);
+void complementary_filter(Telemetry_t *telemetry);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* COMPLEMENTARY_FILTER_H */

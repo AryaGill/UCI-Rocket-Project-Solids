@@ -1,4 +1,4 @@
-../Core/Src/madgwick.c:7:14:invSqrt	1
-../Core/Src/madgwick.c:13:6:Madgwick_Init	1
-../Core/Src/madgwick.c:48:6:Madgwick_UpdateIMU	7
-../Core/Src/madgwick.c:134:6:Madgwick_Update	6
+../Core/Src/madgwick.c:15:14:invSqrt	3
+../Core/Src/madgwick.c:23:6:Madgwick_Init	3
+../Core/Src/madgwick.c:66:6:Madgwick_Update	25
+../Core/Src/madgwick.c:193:6:Madgwick_GetEuler	6

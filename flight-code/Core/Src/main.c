@@ -26,7 +26,7 @@
 #include "sensors.h"
 #include "telemetry.h"
 #include "fsm.h"
-//#include "madgwick.h"
+#include "madgwick.h"
 #include "gyro_integration.h"
 #include "complementary_filter.h"
 #include "cameras.h"
@@ -70,6 +70,9 @@ UART_HandleTypeDef huart3;
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
+
+// Bias structure
+Bias_t bias = {0};
 
 // Telemetry structure
 Telemetry_t telemetry = {0};
@@ -270,10 +273,15 @@ int main(void)
 	init_flight_state(&flight_state, &telemetry);
 
 	// Init madgwick filter (need to read accel first)
-//	Madgwick_Init(&telemetry, 0.1f);
+	Madgwick_Init(&telemetry, 0.1f);
 
 	// Set the initial temperature for airbrakes algorithm. Used for drag force.
 	set_airbrakes_initial_temp(&telemetry);
+
+
+	// ROCKET MUST BE STILL
+	Bias_Init(&bias);
+	Bias_Calculate(&bias, &telemetry, 500);
 
   /* USER CODE END 2 */
 
@@ -282,28 +290,17 @@ int main(void)
 
 	while (1)
 	{
-		// Read sensor data
+		// Read Sensors
 		read_sensors(&telemetry);
 		read_ematch_connections(&telemetry);
 		read_camera_adcs(&telemetry);
-		//Bias measurement in LAUNCH_PAD else apply it
-//		if (flight_state == LAUNCH_PAD)
-//		{
-//			Bias_Calculate(&bias, &telemetry);
-//		}
-		// Filter necessary data
-//		Madgwick_Update(&telemetry);
+		Madgwick_Update(&telemetry);
+		Madgwick_GetEuler(&telemetry);
 		complementary_filter(&telemetry);
-
-		integrate_gyro(flight_state, &telemetry);
-
-		// Update FSM and state string
 		update_flight_state(&flight_state, &telemetry);
-
-		// Control Airbrakes
 		set_optimal_deployment(flight_state, &telemetry);
 
-		// Handle Commands
+// 		Handle Commands
 		RFM9X_Poll();
 		len = RFM9X_Receive(rxbuf, sizeof(rxbuf));
 		if(len > 0)
@@ -311,7 +308,7 @@ int main(void)
 			handle_rf_command((char *)rxbuf, &flight_state, &telemetry);
 		}
 
-		// Send RF data
+//		Send RF data
 		uint32_t cur_time = HAL_GetTick();
 		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD && !RFM9X_IsTxBusy()){
 			prev_rf_transmit_time = cur_time;
@@ -320,15 +317,64 @@ int main(void)
 			RFM9X_Send((uint8_t *)msg, strlen(msg));
 		}
 
-		// Log telemetry
+// 		Log telemetry
 		if (cur_time - prev_log_time >= telemetry_log_period(flight_state)){
 			prev_log_time = cur_time;
 			log_data(flight_state, &telemetry);
 			save_data_file(); // Possible change: decrease how often we save the data file
 		}
 
+		HAL_Delay(1);
 
-//		HAL_Delay(1);
+
+//
+//		// Read sensor data
+//		read_sensors(&telemetry);
+//		read_ematch_connections(&telemetry);
+//		read_camera_adcs(&telemetry);
+//		//Bias measurement in LAUNCH_PAD else apply it
+////		if (flight_state == LAUNCH_PAD)
+////		{
+////			Bias_Calculate(&bias, &telemetry);
+////		}
+//		// Filter necessary data
+////		Madgwick_Update(&telemetry);
+//		complementary_filter(&telemetry);
+//
+//		integrate_gyro(flight_state, &telemetry);
+//
+//		// Update FSM and state string
+//		update_flight_state(&flight_state, &telemetry);
+//
+//		// Control Airbrakes
+//		set_optimal_deployment(flight_state, &telemetry);
+//
+//		// Handle Commands
+//		RFM9X_Poll();
+//		len = RFM9X_Receive(rxbuf, sizeof(rxbuf));
+//		if(len > 0)
+//		{
+//			handle_rf_command((char *)rxbuf, &flight_state, &telemetry);
+//		}
+//
+//		// Send RF data
+//		uint32_t cur_time = HAL_GetTick();
+//		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD && !RFM9X_IsTxBusy()){
+//			prev_rf_transmit_time = cur_time;
+//			char msg[128];
+//			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
+//			RFM9X_Send((uint8_t *)msg, strlen(msg));
+//		}
+//
+//		// Log telemetry
+//		if (cur_time - prev_log_time >= telemetry_log_period(flight_state)){
+//			prev_log_time = cur_time;
+//			log_data(flight_state, &telemetry);
+//			save_data_file(); // Possible change: decrease how often we save the data file
+//		}
+//
+//
+////		HAL_Delay(1);
 
     /* USER CODE END WHILE */
 

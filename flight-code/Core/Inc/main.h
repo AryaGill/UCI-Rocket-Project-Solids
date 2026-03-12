@@ -94,6 +94,9 @@ typedef struct {
 	uint32_t main_s_ematch_voltage;
 	uint32_t drogue_p_ematch_voltage;
 	uint32_t drogue_s_ematch_voltage;
+	float roll;
+	float pitch;
+	float yaw;
 } Telemetry_t;
 
 typedef struct{
@@ -104,6 +107,10 @@ typedef struct{
 	float lsm_accel_r_bias;
 	float lsm_accel_p_bias;
 	float lsm_accel_y_bias;
+
+	float lsm_gyro_r_bias;
+	float lsm_gyro_p_bias;
+	float lsm_gyro_y_bias;
 
 	float mag_r_bias;
 	float mag_p_bias;

@@ -19,7 +19,7 @@ GPIO_TypeDef *LIS_port;
 uint16_t LIS_pin;
 SPI_HandleTypeDef *LIS_hspi;
 
-Bias_t bias;
+extern Bias_t bias;
 
 volatile uint8_t lps_whoami = 0; // Should be 0xB3 for LPS22HH
 volatile uint8_t lsm_whoami = 0; // Should be 0x6A
@@ -32,6 +32,7 @@ float max_y;
 float min_r;
 float min_p;
 float min_y;
+
 
 uint8_t Verify_Sensors(void){
 	// Check Barometer
@@ -143,6 +144,8 @@ void read_sensors(Telemetry_t *telemetry)
 
     Apply_Bias(&bias, telemetry);
 
+    transform_accel_to_world(telemetry);
+
 //    if (max_r == 0) max_r = telemetry->lsm_accel_r;
 //    if (max_p == 0) max_p = telemetry->lsm_accel_p;
 //    if (max_y == 0) max_y = telemetry->lsm_accel_y;
@@ -157,7 +160,7 @@ void read_sensors(Telemetry_t *telemetry)
 //	if (telemetry->lsm_accel_p < min_p) min_p = telemetry->lsm_accel_p;
 //	if (telemetry->lsm_accel_y < min_y) min_y = telemetry->lsm_accel_y;
 
-    transform_accel_to_world(telemetry);
+//    transform_accel_to_world(telemetry);
     telemetry->time = HAL_GetTick();
 }
 
@@ -498,50 +501,102 @@ void deselect_all_spi(){
 	HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_SET);
 }
 
-void Bias_Init(Bias_t *bias)
-{
-//    bias->lsm_accel_r_bias = 0.0251505f;
-//    bias->lsm_accel_p_bias = 0.1621935f;
-//    bias->lsm_accel_y_bias = -0.271719f;
-    bias->lsm_accel_r_bias = 0.0f;
-	bias->lsm_accel_p_bias = 0.0f;
-	bias->lsm_accel_y_bias = 0.0f;
+void Gyro_CalibrateBias(Bias_t* bias, Telemetry_t* telemetry, int num_samples){
 
-    bias->adxl_accel_r_bias = 0.0f;
-    bias->adxl_accel_p_bias = 0.0f;
-    bias->adxl_accel_y_bias = 0.0f;
+	// Get avg gyro values give num_samples.
+	// WARNING! MUST BE DONE WHILE STATIONARY
 
-    bias->mag_r_bias = 25.816f; // 25.83, 25.305, 26.313
-    bias->mag_p_bias = 2.196f; // 3.934, 1.547, 1.106
-    bias->mag_y_bias = 20.629f; // 22.043, 21.798, 18.046
 
-    bias->bias_count = 0;
+	// Init calibration values at 0
+	float sum_gr = 0.0f;
+	float sum_gp = 0.0f;
+	float sum_gy = 0.0f;
+
+	// Sum all values for num_smaples
+	for (int i = 0; i < num_samples; i++){
+		read_sensors(telemetry);
+
+		sum_gr += telemetry->lsm_gyro_r;
+		sum_gp += telemetry->lsm_gyro_p;
+		sum_gy += telemetry->lsm_gyro_y;
+
+		HAL_Delay(2);
+	}
+
+	// Divide by total samples to get average
+	bias->lsm_gyro_r_bias = sum_gr / num_samples;
+	bias->lsm_gyro_p_bias = sum_gp / num_samples;
+	bias->lsm_gyro_y_bias = sum_gy / num_samples;
+
+
 }
 
-void Bias_Calculate(Bias_t *bias, Telemetry_t *t)
+void Bias_Init(Bias_t *bias)
 {
-    bias->bias_count += 1.0f;
+	bias->lsm_gyro_p_bias = 0.0f;
+	bias->lsm_gyro_y_bias = 0.0f;
+	bias->lsm_gyro_r_bias = 0.0f;
 
-    float n = bias->bias_count;
+	bias->lsm_accel_p_bias = 0.0f;
+	bias->lsm_accel_y_bias = 0.0f;
+	bias->lsm_accel_r_bias = 0.0f;
 
-    bias->adxl_accel_r_bias += ((t->adxl_accel_r - 9.81) - bias->adxl_accel_r_bias) / n;
-    bias->adxl_accel_p_bias += (t->adxl_accel_p - bias->adxl_accel_p_bias) / n;
-    bias->adxl_accel_y_bias += (t->adxl_accel_y - bias->adxl_accel_y_bias) / n;
+	bias->adxl_accel_p_bias = 0.0f;
+	bias->adxl_accel_y_bias = 0.0f;
+	bias->adxl_accel_r_bias = 0.0f;
 
-    bias->lsm_accel_r_bias += ((t->lsm_accel_r - 9.81) - bias->lsm_accel_r_bias) / n;
-    bias->lsm_accel_p_bias += (t->lsm_accel_p - bias->lsm_accel_p_bias) / n;
-    bias->lsm_accel_y_bias += (t->lsm_accel_y - bias->lsm_accel_y_bias) / n;
+	bias->mag_p_bias = 0.0f;
+	bias->mag_y_bias = 0.0f;
+	bias->mag_r_bias = 0.0f;
+
+	bias->bias_count = 0;
+
+//    bias->adxl_accel_r_bias = 0.0f;
+//    bias->adxl_accel_p_bias = 0.0f;
+//    bias->adxl_accel_y_bias = 0.0f;
+//
+//    bias->mag_r_bias = 25.816f; // 25.83, 25.305, 26.313
+//    bias->mag_p_bias = 2.196f; // 3.934, 1.547, 1.106
+//    bias->mag_y_bias = 20.629f; // 22.043, 21.798, 18.046
+//
+//    bias->bias_count = 0;
+}
+
+void Bias_Calculate(Bias_t *bias, Telemetry_t *t, int num_samples){
+
+	Gyro_CalibrateBias(bias, t, num_samples);
+
+
+	bias->bias_count = num_samples;
+
+//    bias->bias_count += 1.0f;
+//
+//    float n = bias->bias_count;
+//
+//    bias->adxl_accel_r_bias += ((t->adxl_accel_r - 9.81) - bias->adxl_accel_r_bias) / n;
+//    bias->adxl_accel_p_bias += (t->adxl_accel_p - bias->adxl_accel_p_bias) / n;
+//    bias->adxl_accel_y_bias += (t->adxl_accel_y - bias->adxl_accel_y_bias) / n;
+//
+//    bias->lsm_accel_r_bias += ((t->lsm_accel_r - 9.81) - bias->lsm_accel_r_bias) / n;
+//    bias->lsm_accel_p_bias += (t->lsm_accel_p - bias->lsm_accel_p_bias) / n;
+//    bias->lsm_accel_y_bias += (t->lsm_accel_y - bias->lsm_accel_y_bias) / n;
 }
 
 void Apply_Bias(Bias_t *bias, Telemetry_t *t)
 {
+
+	t->lsm_gyro_r -= bias->lsm_gyro_r_bias;
+	t->lsm_gyro_p -= bias->lsm_gyro_p_bias;
+	t->lsm_gyro_y -= bias->lsm_gyro_y_bias;
+
+	t->lsm_accel_r -= bias->lsm_accel_r_bias;
+	t->lsm_accel_p -= bias->lsm_accel_p_bias;
+	t->lsm_accel_y -= bias->lsm_accel_y_bias;
+
     t->adxl_accel_r -= bias->adxl_accel_r_bias;
     t->adxl_accel_p -= bias->adxl_accel_p_bias;
     t->adxl_accel_y -= bias->adxl_accel_y_bias;
 
-    t->lsm_accel_r -= bias->lsm_accel_r_bias;
-    t->lsm_accel_p -= bias->lsm_accel_p_bias;
-    t->lsm_accel_y -= bias->lsm_accel_y_bias;
 
     t->mag_r -= bias->mag_r_bias;
     t->mag_p -= bias->mag_p_bias;
