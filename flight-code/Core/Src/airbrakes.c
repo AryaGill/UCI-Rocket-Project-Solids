@@ -252,7 +252,7 @@ void perform_airbrakes_servo_sequence(Telemetry_t *telemetry){
 		HAL_Delay(10);
 	}
 	for (uint8_t i = NUM_DEPLOYMENT_LEVELS; i > 0; --i){
-		set_airbrakes_servo_angle(i);
+		set_airbrakes_deployment_level(telemetry, i);
 		HAL_Delay(10);
 	}
 
