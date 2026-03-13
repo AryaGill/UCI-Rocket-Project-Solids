@@ -77,7 +77,7 @@ class SerialStreamer(QThread):
     COLUMNS = [
         "Time",
         "Temp",
-        # "Pressure",
+        "Pressure",
         "Alt",
         "Filtered_Alt",
         "Gyro_X",
@@ -92,10 +92,6 @@ class SerialStreamer(QThread):
         "mag_r",
         "mag_p",
         "mag_y",
-        # "Quaternion_W",
-        # "Quaternion_X",
-        # "Quaternion_Y",
-        # "Quaternion_Z",
         "Cam1V",
         "Cam2V",
         "main_p_ematch_voltage",
@@ -112,7 +108,11 @@ class SerialStreamer(QThread):
         "yaw",
         "velocity_x",
         "velocity_y",
-        "velocity_z"
+        "velocity_z",
+        "Quaternion_W",
+        "Quaternion_X",
+        "Quaternion_Y",
+        "Quaternion_Z",
     ]
     
     new_data = pyqtSignal(dict)
@@ -222,7 +222,7 @@ class SerialStreamer(QThread):
         else:
             for col_name, value_str in zip(self.COLUMNS_2, parts):
                 data[col_name] = self._to_number(value_str)
-
+        print(data)
         return data
 
     @staticmethod
