@@ -422,6 +422,9 @@ class GroundStationWindow(QMainWindow):
             from Frontend.accel_graphworld import AccelGraphWorld
             from Frontend.ang_graph import AngGraph
             from Frontend.mag_graph import MagGraph
+            from Frontend.rpy_graph import RPYGraph
+            from Frontend.velocity_graph import VelocityGraph
+            from Frontend.quaternion_graph import QuaternionGraph
 
             # Create graph instances
             self.altitude_graph = AltitudeGraph()
@@ -430,11 +433,16 @@ class GroundStationWindow(QMainWindow):
             self.accel_world_graph = AccelGraphWorld()
             self.ang_graph = AngGraph()
             self.mag_graph = MagGraph()
+            self.rpy_graph = RPYGraph()
+            self.velocity_graph = VelocityGraph()
+            self.quaternion_graph = QuaternionGraph()
 
             # Set minimum sizes so graphs never squish
             for graph in (self.altitude_graph, self.temp_graph,
-                          self.accel_lis_graph, self.accel_world_graph,
-                          self.ang_graph, self.mag_graph):
+                    self.accel_lis_graph, self.accel_world_graph,
+                    self.ang_graph, self.mag_graph,
+                    self.rpy_graph, self.velocity_graph,
+                    self.quaternion_graph):
                 graph.setMinimumSize(320, 340)
 
             # Grid layout:
@@ -447,6 +455,9 @@ class GroundStationWindow(QMainWindow):
             layout.addWidget(self.accel_world_graph, 1, 1)
             layout.addWidget(self.ang_graph,         1, 2)
             layout.addWidget(self.mag_graph,         2, 0)  # spans 2 columns
+            layout.addWidget(self.rpy_graph,        2, 1)
+            layout.addWidget(self.velocity_graph,   2, 2)
+            layout.addWidget(self.quaternion_graph, 3, 1)
 
             # Equal column stretch
             for col in range(3):
@@ -455,6 +466,7 @@ class GroundStationWindow(QMainWindow):
             layout.setRowStretch(0, 1)
             layout.setRowStretch(1, 1)
             layout.setRowStretch(2, 1)
+            layout.setRowStretch(3, 1)
 
             # Max values table: row 0, col 2
             try:
@@ -597,6 +609,12 @@ class GroundStationWindow(QMainWindow):
             self.ang_graph.clear_data()
         if hasattr(self, 'mag_graph'):
             self.mag_graph.clear_data()
+        if hasattr(self, 'rpy_graph'):        
+            self.rpy_graph.clear_data()
+        if hasattr(self, 'velocity_graph'):   
+            self.velocity_graph.clear_data()
+        if hasattr(self, 'quaternion_graph'): 
+            self.quaternion_graph.clear_data()
         if self.max_table is not None:
             self.max_table.reset()
         self.update_status("All graphs cleared")
@@ -716,6 +734,25 @@ class GroundStationWindow(QMainWindow):
                     data.get('mag_p'),
                     data.get('mag_y'),
                 )
+        
+        if hasattr(self, 'rpy_graph'):
+            if all(data.get(k) is not None for k in ['Time', 'roll', 'pitch', 'yaw']):
+                self.rpy_graph.update_data(
+                    data['Time'], data['roll'], data['pitch'], data['yaw'],
+                    max_points=self.max_points)
+
+        if hasattr(self, 'velocity_graph'):
+            if all(data.get(k) is not None for k in ['Time', 'velocity_x', 'velocity_y', 'velocity_z']):
+                self.velocity_graph.update_data(
+                    data['Time'], data['velocity_x'], data['velocity_y'], data['velocity_z'],
+                    max_points=self.max_points)
+
+        if hasattr(self, 'quaternion_graph'):
+            if all(data.get(k) is not None for k in ['Time', 'Quaternion_W', 'Quaternion_X', 'Quaternion_Y', 'Quaternion_Z']):
+                self.quaternion_graph.update_data(
+                    data['Time'], data['Quaternion_W'], data['Quaternion_X'],
+                    data['Quaternion_Y'], data['Quaternion_Z'],
+                    max_points=self.max_points)
     
     def update_status(self, message):
         """Update status label and status bar with messages."""
