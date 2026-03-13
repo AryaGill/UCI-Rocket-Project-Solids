@@ -84,6 +84,7 @@ uint32_t prev_rf_transmit_time = 0;
 uint32_t prev_log_time = 0;
 uint8_t rxbuf[32];
 uint8_t len;
+static uint8_t rf_toggle = 0;
 //HAL_GetTick()
 /* USER CODE END PV */
 
@@ -319,7 +320,14 @@ int main(void)
 		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD && !RFM9X_IsTxBusy()){
 			prev_rf_transmit_time = cur_time;
 			char msg[128];
-			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
+			if (rf_toggle == 0) {
+			    get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
+			    rf_toggle = 1;
+			}
+			else {
+			    get_rf_msg_2(flight_state, &telemetry, msg, sizeof(msg));
+			    rf_toggle = 0;
+			}
 			RFM9X_Send((uint8_t *)msg, strlen(msg));
 		}
 

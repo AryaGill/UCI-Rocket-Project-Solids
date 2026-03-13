@@ -18,35 +18,24 @@ void get_rf_msg(FlightState_t flight_state, Telemetry_t *t, char* msg, size_t ms
 	char state_str[3];
 	state_to_string_num(flight_state, state_str);
 	snprintf(msg, msg_size,
-			"%lu,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%u,%u,%lu,%lu,%lu,%lu,%s\r\n",
+			"%lu,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%u,%u,%lu,%lu,%lu,%lu,%s\r\n",
 			  t->time,
 			  t->temperature,
+			  t->pressure,
 			  t->altitude - t->startAlt,
 			  t->alt_fused,
-
-
 			  t->lsm_gyro_r,
 			  t->lsm_gyro_p,
 			  t->lsm_gyro_y,
-//			  t->q0,
-//			  t->q1,
-//			  t->q2,
-
 			  t->lsm_accel_r,
 			  t->lsm_accel_p,
 			  t->lsm_accel_y,
 			  t->accel_world_x,
 			  t->accel_world_y,
 			  t->accel_world_z,
-//			  t->mag_r,
-//			  t->mag_p,
-//			  t->mag_y,
-//			  t->roll,
-//			  t->pitch,
-//			  t->yaw,
-			  t->velocity_world_x,
-			  t->velocity_world_y,
-			  t->velocity_world_z,
+			  t->mag_r,
+			  t->mag_p,
+			  t->mag_y,
 			  t->cam1_on,
 			  t->cam2_on,
 			  t->main_p_ematch_voltage,
@@ -54,6 +43,23 @@ void get_rf_msg(FlightState_t flight_state, Telemetry_t *t, char* msg, size_t ms
 			  t->drogue_p_ematch_voltage,
 			  t->drogue_s_ematch_voltage,
 			  state_str);
+}
+
+void get_rf_msg_2(FlightState_t flight_state, Telemetry_t *t, char* msg, size_t msg_size){
+    snprintf(msg, msg_size,
+            "%lu,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n",
+            t->time,
+            t->roll,
+            t->pitch,
+            t->yaw,
+            t->velocity_world_x,
+            t->velocity_world_y,
+            t->velocity_world_z,
+            t->q0,
+            t->q1,
+            t->q2,
+            t->q3
+    );
 }
 
 void log_data(FlightState_t flight_state, Telemetry_t *t){

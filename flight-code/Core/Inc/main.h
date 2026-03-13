@@ -127,7 +127,7 @@ typedef struct{
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
 
-#define RF_TRANSMIT_PERIOD 500 // ms
+#define RF_TRANSMIT_PERIOD 250 // ms
 
 /* USER CODE END EC */
 
