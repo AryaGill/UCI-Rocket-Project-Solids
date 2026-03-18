@@ -67,7 +67,7 @@ void complementary_filter(Telemetry_t *telemetry)
     prev_baro_alt = baro_alt;
 
     const float baro_vel_alpha = 0.90f;
-    baro_velocity_filt =
+    telemetry->baro_vz =
         baro_vel_alpha * baro_velocity_filt +
         (1.0f - baro_vel_alpha) * velocity_baro_raw;
 
@@ -76,7 +76,7 @@ void complementary_filter(Telemetry_t *telemetry)
 
     telemetry->velocity_world_z =
         ALPHA_VELOCITY * velocity_imu +
-        (1.0f - ALPHA_VELOCITY) * baro_velocity_filt;
+        (1.0f - ALPHA_VELOCITY) * telemetry->baro_vz;
 
     float altitude_pred =
         telemetry->alt_fused + telemetry->velocity_world_z * dt;
