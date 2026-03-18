@@ -274,15 +274,14 @@ int main(void)
 	init_flight_state(&flight_state, &telemetry);
 
 	// Init madgwick filter (need to read accel first)
-	Madgwick_Init(&telemetry, 0.1f);
+	Madgwick_Init(&telemetry, 0.1f); // TODO: Test different b's
 
 	// Set the initial temperature for airbrakes algorithm. Used for drag force.
-	set_airbrakes_initial_temp(&telemetry);
+	set_airbrakes_initial_temp(&telemetry); // TODO: Go over this again
 
 
 	// ROCKET MUST BE STILL
 	Bias_Init(&bias);
-	Bias_Calculate(&bias, &telemetry, 500);
 
   /* USER CODE END 2 */
 
@@ -319,15 +318,15 @@ int main(void)
 		uint32_t cur_time = HAL_GetTick();
 		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD && !RFM9X_IsTxBusy()){
 			prev_rf_transmit_time = cur_time;
-			char msg[128];
-			if (rf_toggle == 0) {
+			char msg[256];
+//			if (rf_toggle == 0) {
 			    get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
-			    rf_toggle = 1;
-			}
-			else {
-			    get_rf_msg_2(flight_state, &telemetry, msg, sizeof(msg));
-			    rf_toggle = 0;
-			}
+//			    rf_toggle = 1;
+//			}
+//			else {
+//			    get_rf_msg_2(flight_state, &telemetry, msg, sizeof(msg));
+//			    rf_toggle = 0;
+//			}
 			RFM9X_Send((uint8_t *)msg, strlen(msg));
 		}
 

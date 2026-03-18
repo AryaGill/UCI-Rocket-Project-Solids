@@ -2,6 +2,7 @@
 #include <math.h>
 #include <float.h>
 
+// TODO: Double check these
 #define ACCEL_LOW_G   (0.75f * 9.81f)
 #define ACCEL_HIGH_G  (2.00f * 9.81f)
 

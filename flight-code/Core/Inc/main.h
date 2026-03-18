@@ -97,6 +97,14 @@ typedef struct {
 	float roll;
 	float pitch;
 	float yaw;
+	uint32_t t_burnout;
+	uint32_t t_apogee;
+	uint32_t t_drogue;
+	uint32_t t_main;
+	uint32_t t_land;
+	float baro_vz;
+	int drogue_validated_baro;
+	int main_validated_baro;
 } Telemetry_t;
 
 typedef struct{

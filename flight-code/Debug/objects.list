@@ -9,6 +9,7 @@
 "./Core/Src/kalman_filter.o"
 "./Core/Src/madgwick.o"
 "./Core/Src/main.o"
+"./Core/Src/parachute.o"
 "./Core/Src/parachutes.o"
 "./Core/Src/rfm9x.o"
 "./Core/Src/sd_card.o"

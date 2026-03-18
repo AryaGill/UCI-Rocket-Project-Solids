@@ -13,6 +13,8 @@
 char last_received_command[32];
 uint32_t last_command_time = 0;
 
+extern Bias_t bias;
+
 void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *telemetry) {
 	// Check if receiving command from burst from gs
 	uint32_t cur_time = HAL_GetTick();
@@ -56,5 +58,7 @@ void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *tele
 	}
 	else if (strcmp(cmd, "SERVO SEQUENCE") == 0){
 		perform_airbrakes_servo_sequence();
+	} else if (strcmp(cmd, "GYROCAL") == 0){
+		Bias_Calculate(&bias, &telemetry, 500);
 	}
 }
