@@ -121,10 +121,10 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 	switch(*flight_state) {
 		case DISARMED:
 			uint32_t cur_time = HAL_GetTick();
-			if (cur_time - prev_led_toggle_time > 50){
+			if (cur_time - prev_led_toggle_time > 100){
 				HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+				prev_led_toggle_time = cur_time;
 			}
-			prev_led_toggle_time = cur_time;
 
     	case LAUNCH_PAD:
     		// Detect if launched
