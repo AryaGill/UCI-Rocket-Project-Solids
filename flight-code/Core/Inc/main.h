@@ -105,6 +105,7 @@ typedef struct {
 	float baro_vz;
 	int drogue_validated_baro;
 	int main_validated_baro;
+	char cmd_echo[32];
 } Telemetry_t;
 
 typedef struct{

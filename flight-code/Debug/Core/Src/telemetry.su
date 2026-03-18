@@ -1,9 +1,9 @@
 ../Core/Src/telemetry.c:8:6:init_data_file	24	static
-../Core/Src/telemetry.c:17:6:get_rf_msg	456	static
-../Core/Src/telemetry.c:77:6:log_data	1112	static
-../Core/Src/telemetry.c:131:6:save_data_file	8	static
-../Core/Src/telemetry.c:135:6:write_datafile_message	16	static
-../Core/Src/telemetry.c:139:9:write_headers	16	static
-../Core/Src/telemetry.c:162:6:state_to_string_num	16	static
-../Core/Src/telemetry.c:209:6:state_to_string_name	24	static
-../Core/Src/telemetry.c:256:10:telemetry_log_period	16	static
+../Core/Src/telemetry.c:17:6:get_rf_msg	464	static
+../Core/Src/telemetry.c:61:6:log_data	1112	static
+../Core/Src/telemetry.c:115:6:save_data_file	8	static
+../Core/Src/telemetry.c:119:6:write_datafile_message	16	static
+../Core/Src/telemetry.c:123:9:write_headers	16	static
+../Core/Src/telemetry.c:146:6:state_to_string_num	16	static
+../Core/Src/telemetry.c:193:6:state_to_string_name	24	static
+../Core/Src/telemetry.c:240:10:telemetry_log_period	16	static

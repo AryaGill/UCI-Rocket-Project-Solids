@@ -27,6 +27,7 @@ void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *tele
 
 	char line[64];
 	snprintf(line, sizeof(line), "Received command: %s", cmd);
+	snprintf(telemetry->cmd_echo, sizeof(telemetry->cmd_echo), cmd);
 	write_datafile_message(line);
 	if (strcmp(cmd, "Fire Main P") == 0){
 	  	main_primary_on();

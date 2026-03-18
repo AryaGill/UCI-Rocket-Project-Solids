@@ -5,7 +5,6 @@
 "./Core/Src/commands.o"
 "./Core/Src/complementary_filter.o"
 "./Core/Src/fsm.o"
-"./Core/Src/gyro_integration.o"
 "./Core/Src/kalman_filter.o"
 "./Core/Src/madgwick.o"
 "./Core/Src/main.o"
