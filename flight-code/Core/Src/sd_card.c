@@ -252,7 +252,7 @@ FRESULT write_mag(const char *filename,
 {
     FIL file;
     UINT bytes_written;
-    char line[120];
+    char line[256];
     FRESULT res;
 
     SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);

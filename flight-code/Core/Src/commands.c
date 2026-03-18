@@ -59,6 +59,6 @@ void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *tele
 	else if (strcmp(cmd, "SERVO SEQUENCE") == 0){
 		perform_airbrakes_servo_sequence();
 	} else if (strcmp(cmd, "GYROCAL") == 0){
-		Bias_Calculate(&bias, &telemetry, 500);
+		Bias_Calculate(&bias, telemetry, 500);
 	}
 }

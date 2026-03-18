@@ -82,9 +82,9 @@ FlightState_t flight_state = LAUNCH_PAD;
 // RF
 uint32_t prev_rf_transmit_time = 0;
 uint32_t prev_log_time = 0;
+uint32_t prev_flush_time = 0;
 uint8_t rxbuf[32];
 uint8_t len;
-static uint8_t rf_toggle = 0;
 //HAL_GetTick()
 /* USER CODE END PV */
 
@@ -304,7 +304,7 @@ int main(void)
 		update_flight_state(&flight_state, &telemetry);
 
 		// Control Airbrakes
-//		set_optimal_deployment(flight_state, &telemetry);
+		set_optimal_deployment(flight_state, &telemetry);
 
 		// Handle Commands
 		RFM9X_Poll();
@@ -319,22 +319,20 @@ int main(void)
 		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD && !RFM9X_IsTxBusy()){
 			prev_rf_transmit_time = cur_time;
 			char msg[256];
-//			if (rf_toggle == 0) {
-			    get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
-//			    rf_toggle = 1;
-//			}
-//			else {
-//			    get_rf_msg_2(flight_state, &telemetry, msg, sizeof(msg));
-//			    rf_toggle = 0;
-//			}
+			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
 			RFM9X_Send((uint8_t *)msg, strlen(msg));
 		}
 
 		// Log telemetry
 		if (cur_time - prev_log_time >= telemetry_log_period(flight_state)){
 			prev_log_time = cur_time;
-			log_data(flight_state, &telemetry);
-			save_data_file(); // Possible change: decrease how often we save the data file
+			log_data(flight_state, &telemetry); // Possible change: decrease how often we save the data file
+		}
+
+		// Flush data file
+		if (cur_time - prev_flush_time >= 500) {
+			prev_flush_time = cur_time;
+			save_data_file();
 		}
 
 //		HAL_Delay(1);

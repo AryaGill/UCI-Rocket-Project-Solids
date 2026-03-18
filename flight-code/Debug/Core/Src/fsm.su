@@ -1,6 +1,6 @@
-../Core/Src/fsm.c:26:7:get_avg_alt_dif	24	static
-../Core/Src/fsm.c:38:6:update_alt_dif_buf	24	static
-../Core/Src/fsm.c:49:6:set_flight_state	112	static
-../Core/Src/fsm.c:61:9:sensors_indicate_flight	24	static
-../Core/Src/fsm.c:75:6:init_flight_state	32	static
-../Core/Src/fsm.c:115:6:update_flight_state	16	static
+../Core/Src/fsm.c:28:7:get_avg_alt_dif	24	static
+../Core/Src/fsm.c:40:6:update_alt_dif_buf	24	static
+../Core/Src/fsm.c:51:6:set_flight_state	112	static
+../Core/Src/fsm.c:63:9:sensors_indicate_flight	24	static
+../Core/Src/fsm.c:77:6:init_flight_state	32	static
+../Core/Src/fsm.c:117:6:update_flight_state	24	static

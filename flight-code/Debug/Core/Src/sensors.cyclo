@@ -27,6 +27,6 @@
 ../Core/Src/sensors.c:475:6:transform_accel_to_world	1
 ../Core/Src/sensors.c:506:6:deselect_all_spi	1
 ../Core/Src/sensors.c:516:6:Gyro_CalibrateBias	2
-../Core/Src/sensors.c:546:6:Bias_Init	1
-../Core/Src/sensors.c:577:6:Bias_Calculate	1
-../Core/Src/sensors.c:597:6:Apply_Bias	1
+../Core/Src/sensors.c:544:6:Bias_Init	1
+../Core/Src/sensors.c:575:6:Bias_Calculate	1
+../Core/Src/sensors.c:595:6:Apply_Bias	1

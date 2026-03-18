@@ -539,8 +539,6 @@ void Gyro_CalibrateBias(Bias_t* bias, Telemetry_t* telemetry, int num_samples){
 	bias->lsm_gyro_r_bias = sum_gr / num_samples;
 	bias->lsm_gyro_p_bias = sum_gp / num_samples;
 	bias->lsm_gyro_y_bias = sum_gy / num_samples;
-
-
 }
 
 void Bias_Init(Bias_t *bias)

@@ -23,6 +23,8 @@ unsigned int negative_accel_counter = 0;
 // Motor Burn to Gliding Ascent detection variables
 uint32_t num_neg_accel = 0;
 
+uint32_t prev_led_toggle_time = 0;
+
 float get_avg_alt_dif() {
 	float sum = 0;
 	float largest = alt_dif_buffer[0];
@@ -118,7 +120,11 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 	// Determine Next State
 	switch(*flight_state) {
 		case DISARMED:
-			HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+			uint32_t cur_time = HAL_GetTick();
+			if (cur_time - prev_led_toggle_time > 50){
+				HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+			}
+			prev_led_toggle_time = cur_time;
 
     	case LAUNCH_PAD:
     		// Detect if launched
