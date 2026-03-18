@@ -127,13 +127,13 @@ class EMatchPanel(QWidget):
         outer.setContentsMargins(6, 4, 6, 4)
         outer.setSpacing(0)
 
-        # ── section title ────────────────────────────────────────────────────
-        title = QLabel("E-Match\nStatus")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet(
-            "color: #b0b0b0; font-size: 10px; font-weight: bold; padding: 0 8px;"
-        )
-        outer.addWidget(title)
+        # # ── section title ────────────────────────────────────────────────────
+        # title = QLabel("E-Match\nStatus")
+        # title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # title.setStyleSheet(
+        #     "color: #b0b0b0; font-size: 10px; font-weight: bold; padding: 0 8px;"
+        # )
+        # outer.addWidget(title)
 
         # thin divider
         div = QFrame()
@@ -149,7 +149,6 @@ class EMatchPanel(QWidget):
             outer.addWidget(ind)
             self._indicators[key] = ind
 
-            # thin divider between cards (skip after last)
             if key != self.CHANNELS[-1][0]:
                 sep = QFrame()
                 sep.setFrameShape(QFrame.Shape.VLine)
@@ -159,6 +158,7 @@ class EMatchPanel(QWidget):
 
         self.setStyleSheet("background-color: #232323; border-radius: 6px;")
         self.setFixedHeight(90)
+        self.setMaximumWidth(400)
 
     # ── public API ───────────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox,
                              QGridLayout, QPushButton, QLabel, QSlider, QLineEdit,
-                             QScrollArea)
+                             QScrollArea,)
 from PyQt6.QtCore import (Qt, QTimer, QThread, pyqtSignal, QCoreApplication)
 from PyQt6.QtGui import QAction
 from Backend.backend import SerialStreamer
@@ -73,6 +73,7 @@ class GroundStationWindow(QMainWindow):
         self.camera_panel = None  # Will hold CameraPanel instance
         self.max_table = None     # Will hold MaxValuesTable instance
         self.ematch_panel = None
+        self.airbrakes_panel = None
         self.camera_is_on = False   # confirmed state from rocket
         self.camera_pending = None  # "ON" or "OFF" waiting for confirmation
         self.max_points = 100 #Default value, allows us to manually control how many data points we want to see
@@ -313,8 +314,21 @@ class GroundStationWindow(QMainWindow):
          # ── E-Match status panel ─────────────────────────────────────────────
         try:
             from Frontend.ematch_panel import EMatchPanel
+            from Frontend.airbrakes_panel import AirbrakesPanel
+            
             self.ematch_panel = EMatchPanel()
-            main_layout.addWidget(self.ematch_panel)
+            self.airbrakes_panel = AirbrakesPanel()
+
+            top_row = QHBoxLayout()
+            top_row.setContentsMargins(0, 0, 0, 0)
+            top_row.setSpacing(12)
+
+            top_row.addWidget(self.airbrakes_panel)
+            top_row.addStretch()
+            top_row.addWidget(self.ematch_panel)
+            
+
+            main_layout.addLayout(top_row)
         except ImportError as e:
             print(f"Warning: Could not import EMatchPanel: {e}")
             self.ematch_panel = None
@@ -667,6 +681,10 @@ class GroundStationWindow(QMainWindow):
         if self.ematch_panel is not None:
             self.ematch_panel.update_data(data)
 
+        # Update airbrakes status
+        if self.airbrakes_panel is not None:
+            self.airbrakes_panel.update_data(data)
+
         # Update flight state display
         if hasattr(self, 'flight_state_display') and data.get('flight_state') is not None:
             new_state = data.get('flight_state')
@@ -729,10 +747,10 @@ class GroundStationWindow(QMainWindow):
         if hasattr(self, 'mag_graph'):
             if all(data.get(k) is not None for k in ['Time', 'mag_r', 'mag_p', 'mag_y']):
                 self.mag_graph.update_data(
-                    data.get('Time'),
-                    data.get('mag_r'),
-                    data.get('mag_p'),
-                    data.get('mag_y'),
+                    data['Time'],
+                    data['mag_r'],   # roll
+                    data['mag_p'],   # pitch
+                    data['mag_y'],   # yaw
                 )
         
         if hasattr(self, 'rpy_graph'):
@@ -981,9 +999,9 @@ class GroundStationWindow(QMainWindow):
             "Accel_world_y": to_float(r.get("accel_world_y")),  # was "acc_y_2"
             "Accel_world_z": to_float(r.get("accel_world_z")),  # was "acc_z_2"
 
-            "Mag_X":         to_float(r.get("mag_x")),
-            "Mag_Y":         to_float(r.get("mag_y")),
-            "Mag_Z":         to_float(r.get("mag_z")),
+            "mag_r":         to_float(r.get("mag_r")),
+            "mag_p":         to_float(r.get("mag_p")),
+            "mag_y":         to_float(r.get("mag_y")),
 
             "Temp":          to_float(r.get("temp")),
             "Pressure":      to_float(r.get("pressure")),

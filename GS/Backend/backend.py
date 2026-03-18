@@ -92,17 +92,6 @@ class SerialStreamer(QThread):
         "mag_r",
         "mag_p",
         "mag_y",
-        "Cam1V",
-        "Cam2V",
-        "main_p_ematch_voltage",
-        "main_s_ematch_voltage",
-        "drogue_p_ematch_voltage",
-        "drogue_s_ematch_voltage",
-        "flight_state"
-    ]
-
-    COLUMNS_2 = [
-        "Time",
         "roll",
         "pitch",
         "yaw",
@@ -113,6 +102,15 @@ class SerialStreamer(QThread):
         "Quaternion_X",
         "Quaternion_Y",
         "Quaternion_Z",
+        "pred_apo",
+        "AB_Deployment",
+        "Cam1V",
+        "Cam2V",
+        "main_p_ematch_voltage",
+        "main_s_ematch_voltage",
+        "drogue_p_ematch_voltage",
+        "drogue_s_ematch_voltage",
+        "flight_state"
     ]
     
     new_data = pyqtSignal(dict)
@@ -139,6 +137,7 @@ class SerialStreamer(QThread):
 
     def run(self):
         """Main thread loop - opens serial connection and reads data continuously."""
+        print(f"Starting SerialStreamer thread for port: {self.port}")
         try:
             import serial
 
@@ -175,6 +174,9 @@ class SerialStreamer(QThread):
                 if not line:
                     continue
 
+                # print(f"RAW BYTES: {line!r}") 
+
+
                 try:
                     text = line.decode('utf-8', errors='ignore').strip()
                 except Exception:
@@ -185,6 +187,7 @@ class SerialStreamer(QThread):
 
                 data = self._parse_line(text)
                 if data:
+                    # print(f"Parsed data: {data}")
                     self.new_data.emit(data)
 
         except Exception as e:
@@ -210,19 +213,15 @@ class SerialStreamer(QThread):
         """
         parts = [p.strip() for p in text.split(",")]
 
-        if (len(parts) != len(self.COLUMNS) and len(parts) != len(self.COLUMNS_2)):
-            self.status.emit(f"Warning: Expected {len(self.COLUMNS)} or {len(self.COLUMNS_2)} columns, got {len(parts)}")
+        if len(parts) != len(self.COLUMNS):
+            self.status.emit(f"Warning: Expected {len(self.COLUMNS)} columns, got {len(parts)}")
             print(parts)
             return None
 
         data = {}
-        if len(parts) == len(self.COLUMNS):
-            for col_name, value_str in zip(self.COLUMNS, parts):
-                data[col_name] = self._to_number(value_str)
-        else:
-            for col_name, value_str in zip(self.COLUMNS_2, parts):
-                data[col_name] = self._to_number(value_str)
-        print(data)
+        for col_name, value_str in zip(self.COLUMNS, parts):
+            data[col_name] = self._to_number(value_str)
+
         return data
 
     @staticmethod
