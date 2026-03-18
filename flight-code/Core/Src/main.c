@@ -182,8 +182,6 @@ void Error_Pattern(void)
     // System halts here - never returns
 }
 
-char msg[256];
-
 /* USER CODE END 0 */
 
 /**
@@ -281,7 +279,6 @@ int main(void)
 	// Set the initial temperature for airbrakes algorithm. Used for drag force.
 	set_airbrakes_initial_temp(&telemetry); // TODO: Go over this again
 
-
 	// ROCKET MUST BE STILL
 	Bias_Init(&bias);
 
@@ -320,7 +317,7 @@ int main(void)
 		uint32_t cur_time = HAL_GetTick();
 		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD && !RFM9X_IsTxBusy()){
 			prev_rf_transmit_time = cur_time;
-//			char msg[256];
+			char msg[256];
 			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
 			RFM9X_Send((uint8_t *)msg, strlen(msg));
 		}

@@ -528,9 +528,9 @@ void Gyro_CalibrateBias(Bias_t* bias, Telemetry_t* telemetry, int num_samples){
 	for (int i = 0; i < num_samples; i++){
 		read_sensors(telemetry);
 
-		sum_gr += telemetry->lsm_gyro_r;
-		sum_gp += telemetry->lsm_gyro_p;
-		sum_gy += telemetry->lsm_gyro_y;
+		sum_gr += telemetry->lsm_gyro_r + bias->lsm_gyro_r_bias;
+		sum_gp += telemetry->lsm_gyro_p + bias->lsm_gyro_p_bias;
+		sum_gy += telemetry->lsm_gyro_y + bias->lsm_gyro_y_bias;
 
 		HAL_Delay(2);
 	}
@@ -543,21 +543,17 @@ void Gyro_CalibrateBias(Bias_t* bias, Telemetry_t* telemetry, int num_samples){
 
 void Bias_Init(Bias_t *bias)
 {
-	bias->lsm_gyro_p_bias = 0.0f;
-	bias->lsm_gyro_y_bias = 0.0f;
-	bias->lsm_gyro_r_bias = 0.0f;
+	bias->lsm_gyro_r_bias = -0.0784721822f;
+	bias->lsm_gyro_p_bias = 0.0172601528f;
+	bias->lsm_gyro_y_bias = 0.0110466592f;
 
+	bias->lsm_accel_r_bias = 0.0f;
 	bias->lsm_accel_p_bias = 0.0f;
 	bias->lsm_accel_y_bias = 0.0f;
-	bias->lsm_accel_r_bias = 0.0f;
 
+	bias->adxl_accel_r_bias = 0.0f;
 	bias->adxl_accel_p_bias = 0.0f;
 	bias->adxl_accel_y_bias = 0.0f;
-	bias->adxl_accel_r_bias = 0.0f;
-
-	bias->mag_p_bias = 0.0f;
-	bias->mag_y_bias = 0.0f;
-	bias->mag_r_bias = 0.0f;
 
 	bias->bias_count = 0;
 
@@ -565,10 +561,14 @@ void Bias_Init(Bias_t *bias)
 //    bias->adxl_accel_p_bias = 0.0f;
 //    bias->adxl_accel_y_bias = 0.0f;
 //
-//    bias->mag_r_bias = 25.816f; // 25.83, 25.305, 26.313
-//    bias->mag_p_bias = 2.196f; // 3.934, 1.547, 1.106
-//    bias->mag_y_bias = 20.629f; // 22.043, 21.798, 18.046
-//
+    bias->mag_r_bias = 25.816f; // 25.83, 25.305, 26.313
+    bias->mag_p_bias = 2.196f; // 3.934, 1.547, 1.106
+    bias->mag_y_bias = 20.629f; // 22.043, 21.798, 18.046
+
+    bias->mag_r_scale = 1.0;
+    bias->mag_p_scale = 1.0;
+    bias->mag_y_scale = 1.0;
+
 //    bias->bias_count = 0;
 }
 

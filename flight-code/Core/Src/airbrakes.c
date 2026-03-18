@@ -21,7 +21,7 @@ float ground_temp = 300;
 // deployment levels: 0.0, 0.1, 0.2, ..., 1.0
 // mach levels: 0.05, 0.1, 0.15, ..., 0.7
 
-
+// Night Fury CdA
 float air_brakes_CdA[NUM_RECORDED_DEPLOYMENT_LEVELS][NUM_RECORDED_MACH_NUMS] = {
 
 	{0.0089884,0.0085976,0.0084022,0.0084022,0.0084022,0.0084022,0.0084022,

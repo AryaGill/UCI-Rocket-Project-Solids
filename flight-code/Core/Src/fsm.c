@@ -125,7 +125,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 				HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 				prev_led_toggle_time = cur_time;
 			}
-
+			break;
     	case LAUNCH_PAD:
     		// Detect if launched
 
@@ -176,7 +176,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case GLIDING_ASCENT:
-    		if (get_avg_alt_dif() < APOGEE_THRESHOLD) {
+    		if (get_avg_alt_dif() < APOGEE_THRESHOLD && telemetry->altitude - telemetry->startAlt > DROGUE_DEPLOY_MIN_ALT) {
     			set_flight_state(DROGUE_PRIMARY_DEPLOYING, flight_state, telemetry);
     			drogue_primary_on();
     			//drogue primary starts firing and the time this starts is stored

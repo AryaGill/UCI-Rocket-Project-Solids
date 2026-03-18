@@ -6,6 +6,7 @@
 // Change before flight - check airbrakes.h as well
 #define MAIN_DEPLOY_MAX_ALT 229 // m
 #define MAIN_DEPLOY_MIN_ALT 77 // m
+#define DROGUE_DEPLOY_MIN_ALT 50
 // Leilani rocket
 #define MOTOR_BURN_TIME 1500 // ms
 #define POWER_RESET_MIN_ALT_CHANGE 15
