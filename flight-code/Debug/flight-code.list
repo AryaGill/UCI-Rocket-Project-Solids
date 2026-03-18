@@ -7173,78 +7173,77 @@ int main(void)
  8003f02:	681b      	ldr	r3, [r3, #0]
  8003f04:	f8d7 2100 	ldr.w	r2, [r7, #256]	@ 0x100
  8003f08:	1ad3      	subs	r3, r2, r3
- 8003f0a:	2bf9      	cmp	r3, #249	@ 0xf9
- 8003f0c:	d91b      	bls.n	8003f46 <main+0x1a2>
- 8003f0e:	f000 ff89 	bl	8004e24 <RFM9X_IsTxBusy>
- 8003f12:	4603      	mov	r3, r0
- 8003f14:	2b00      	cmp	r3, #0
- 8003f16:	d116      	bne.n	8003f46 <main+0x1a2>
+ 8003f0a:	f5b3 7ffa 	cmp.w	r3, #500	@ 0x1f4
+ 8003f0e:	d31b      	bcc.n	8003f48 <main+0x1a4>
+ 8003f10:	f000 ff88 	bl	8004e24 <RFM9X_IsTxBusy>
+ 8003f14:	4603      	mov	r3, r0
+ 8003f16:	2b00      	cmp	r3, #0
+ 8003f18:	d116      	bne.n	8003f48 <main+0x1a4>
 			prev_rf_transmit_time = cur_time;
- 8003f18:	4a27      	ldr	r2, [pc, #156]	@ (8003fb8 <main+0x214>)
- 8003f1a:	f8d7 3100 	ldr.w	r3, [r7, #256]	@ 0x100
- 8003f1e:	6013      	str	r3, [r2, #0]
+ 8003f1a:	4a27      	ldr	r2, [pc, #156]	@ (8003fb8 <main+0x214>)
+ 8003f1c:	f8d7 3100 	ldr.w	r3, [r7, #256]	@ 0x100
+ 8003f20:	6013      	str	r3, [r2, #0]
 			char msg[256];
 			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
- 8003f20:	4b20      	ldr	r3, [pc, #128]	@ (8003fa4 <main+0x200>)
- 8003f22:	7818      	ldrb	r0, [r3, #0]
- 8003f24:	463a      	mov	r2, r7
- 8003f26:	f44f 7380 	mov.w	r3, #256	@ 0x100
- 8003f2a:	491d      	ldr	r1, [pc, #116]	@ (8003fa0 <main+0x1fc>)
- 8003f2c:	f002 fff8 	bl	8006f20 <get_rf_msg>
+ 8003f22:	4b20      	ldr	r3, [pc, #128]	@ (8003fa4 <main+0x200>)
+ 8003f24:	7818      	ldrb	r0, [r3, #0]
+ 8003f26:	463a      	mov	r2, r7
+ 8003f28:	f44f 7380 	mov.w	r3, #256	@ 0x100
+ 8003f2c:	491c      	ldr	r1, [pc, #112]	@ (8003fa0 <main+0x1fc>)
+ 8003f2e:	f002 fff7 	bl	8006f20 <get_rf_msg>
 			RFM9X_Send((uint8_t *)msg, strlen(msg));
- 8003f30:	463b      	mov	r3, r7
- 8003f32:	4618      	mov	r0, r3
- 8003f34:	f7fc fa34 	bl	80003a0 <strlen>
- 8003f38:	4603      	mov	r3, r0
- 8003f3a:	b2da      	uxtb	r2, r3
- 8003f3c:	463b      	mov	r3, r7
- 8003f3e:	4611      	mov	r1, r2
- 8003f40:	4618      	mov	r0, r3
- 8003f42:	f000 ff07 	bl	8004d54 <RFM9X_Send>
+ 8003f32:	463b      	mov	r3, r7
+ 8003f34:	4618      	mov	r0, r3
+ 8003f36:	f7fc fa33 	bl	80003a0 <strlen>
+ 8003f3a:	4603      	mov	r3, r0
+ 8003f3c:	b2da      	uxtb	r2, r3
+ 8003f3e:	463b      	mov	r3, r7
+ 8003f40:	4611      	mov	r1, r2
+ 8003f42:	4618      	mov	r0, r3
+ 8003f44:	f000 ff06 	bl	8004d54 <RFM9X_Send>
 		}
 
 		// Log telemetry
 		if (cur_time - prev_log_time >= telemetry_log_period(flight_state)){
- 8003f46:	4b1d      	ldr	r3, [pc, #116]	@ (8003fbc <main+0x218>)
- 8003f48:	681b      	ldr	r3, [r3, #0]
- 8003f4a:	f8d7 2100 	ldr.w	r2, [r7, #256]	@ 0x100
- 8003f4e:	1ad4      	subs	r4, r2, r3
- 8003f50:	4b14      	ldr	r3, [pc, #80]	@ (8003fa4 <main+0x200>)
- 8003f52:	781b      	ldrb	r3, [r3, #0]
- 8003f54:	4618      	mov	r0, r3
- 8003f56:	f003 fc99 	bl	800788c <telemetry_log_period>
- 8003f5a:	4603      	mov	r3, r0
- 8003f5c:	429c      	cmp	r4, r3
- 8003f5e:	d309      	bcc.n	8003f74 <main+0x1d0>
+ 8003f48:	4b1c      	ldr	r3, [pc, #112]	@ (8003fbc <main+0x218>)
+ 8003f4a:	681b      	ldr	r3, [r3, #0]
+ 8003f4c:	f8d7 2100 	ldr.w	r2, [r7, #256]	@ 0x100
+ 8003f50:	1ad4      	subs	r4, r2, r3
+ 8003f52:	4b14      	ldr	r3, [pc, #80]	@ (8003fa4 <main+0x200>)
+ 8003f54:	781b      	ldrb	r3, [r3, #0]
+ 8003f56:	4618      	mov	r0, r3
+ 8003f58:	f003 fc98 	bl	800788c <telemetry_log_period>
+ 8003f5c:	4603      	mov	r3, r0
+ 8003f5e:	429c      	cmp	r4, r3
+ 8003f60:	d309      	bcc.n	8003f76 <main+0x1d2>
 			prev_log_time = cur_time;
- 8003f60:	4a16      	ldr	r2, [pc, #88]	@ (8003fbc <main+0x218>)
- 8003f62:	f8d7 3100 	ldr.w	r3, [r7, #256]	@ 0x100
- 8003f66:	6013      	str	r3, [r2, #0]
+ 8003f62:	4a16      	ldr	r2, [pc, #88]	@ (8003fbc <main+0x218>)
+ 8003f64:	f8d7 3100 	ldr.w	r3, [r7, #256]	@ 0x100
+ 8003f68:	6013      	str	r3, [r2, #0]
 			log_data(flight_state, &telemetry); // Possible change: decrease how often we save the data file
- 8003f68:	4b0e      	ldr	r3, [pc, #56]	@ (8003fa4 <main+0x200>)
- 8003f6a:	781b      	ldrb	r3, [r3, #0]
- 8003f6c:	490c      	ldr	r1, [pc, #48]	@ (8003fa0 <main+0x1fc>)
- 8003f6e:	4618      	mov	r0, r3
- 8003f70:	f003 f90a 	bl	8007188 <log_data>
+ 8003f6a:	4b0e      	ldr	r3, [pc, #56]	@ (8003fa4 <main+0x200>)
+ 8003f6c:	781b      	ldrb	r3, [r3, #0]
+ 8003f6e:	490c      	ldr	r1, [pc, #48]	@ (8003fa0 <main+0x1fc>)
+ 8003f70:	4618      	mov	r0, r3
+ 8003f72:	f003 f909 	bl	8007188 <log_data>
 		}
 
 		// Flush data file
 		if (cur_time - prev_flush_time >= 500) {
- 8003f74:	4b12      	ldr	r3, [pc, #72]	@ (8003fc0 <main+0x21c>)
- 8003f76:	681b      	ldr	r3, [r3, #0]
- 8003f78:	f8d7 2100 	ldr.w	r2, [r7, #256]	@ 0x100
- 8003f7c:	1ad3      	subs	r3, r2, r3
- 8003f7e:	f5b3 7ffa 	cmp.w	r3, #500	@ 0x1f4
- 8003f82:	d38a      	bcc.n	8003e9a <main+0xf6>
+ 8003f76:	4b12      	ldr	r3, [pc, #72]	@ (8003fc0 <main+0x21c>)
+ 8003f78:	681b      	ldr	r3, [r3, #0]
+ 8003f7a:	f8d7 2100 	ldr.w	r2, [r7, #256]	@ 0x100
+ 8003f7e:	1ad3      	subs	r3, r2, r3
+ 8003f80:	f5b3 7ffa 	cmp.w	r3, #500	@ 0x1f4
+ 8003f84:	d389      	bcc.n	8003e9a <main+0xf6>
 			prev_flush_time = cur_time;
- 8003f84:	4a0e      	ldr	r2, [pc, #56]	@ (8003fc0 <main+0x21c>)
- 8003f86:	f8d7 3100 	ldr.w	r3, [r7, #256]	@ 0x100
- 8003f8a:	6013      	str	r3, [r2, #0]
+ 8003f86:	4a0e      	ldr	r2, [pc, #56]	@ (8003fc0 <main+0x21c>)
+ 8003f88:	f8d7 3100 	ldr.w	r3, [r7, #256]	@ 0x100
+ 8003f8c:	6013      	str	r3, [r2, #0]
 			save_data_file();
- 8003f8c:	f003 faa8 	bl	80074e0 <save_data_file>
+ 8003f8e:	f003 faa7 	bl	80074e0 <save_data_file>
 	{
- 8003f90:	e783      	b.n	8003e9a <main+0xf6>
- 8003f92:	bf00      	nop
+ 8003f92:	e782      	b.n	8003e9a <main+0xf6>
  8003f94:	2400053c 	.word	0x2400053c
  8003f98:	58021000 	.word	0x58021000
  8003f9c:	240005a0 	.word	0x240005a0
