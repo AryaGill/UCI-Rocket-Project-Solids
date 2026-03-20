@@ -8,10 +8,10 @@
 #include "parachutes.h"
 #include <stdio.h>
 
-float alt_dif_buffer[ALT_DIF_BUF_SIZE];
-int alt_dif_buffer_idx = 0;
-int prev_alt_time = 0;
-float prev_alt = 0;
+//float alt_dif_buffer[ALT_DIF_BUF_SIZE];
+//int alt_dif_buffer_idx = 0;
+//int prev_alt_time = 0;
+//float prev_alt = 0;
 
 // Some states need to know the time that the state started
 uint32_t state_start_time = 0;
@@ -25,28 +25,29 @@ uint32_t num_neg_accel = 0;
 
 uint32_t prev_led_toggle_time = 0;
 
-float get_avg_alt_dif() {
-	float sum = 0;
-	float largest = alt_dif_buffer[0];
-	float smallest = alt_dif_buffer[0];
-	for (int i = 0; i < ALT_DIF_BUF_SIZE; ++i){
-		sum += alt_dif_buffer[i];
-		largest = fmax(largest, alt_dif_buffer[i]);
-    	smallest = fmin (smallest, alt_dif_buffer[i]);
-	}
-  	return (sum - largest - smallest) / (ALT_DIF_BUF_SIZE - 2);
-}
-
-void update_alt_dif_buf(float new_alt_dif) {
-
-	float cur_time = HAL_GetTick();
-	if (cur_time <= prev_alt_time){
-		return;
-	}
-	alt_dif_buffer[alt_dif_buffer_idx] = new_alt_dif / (cur_time - prev_alt_time) * 1000;
-	alt_dif_buffer_idx = (alt_dif_buffer_idx + 1) % ALT_DIF_BUF_SIZE;
-	prev_alt_time = cur_time;
-}
+//float get_avg_alt_dif() {
+//	float sum = 0;
+//	float largest = alt_dif_buffer[0];
+//	float smallest = alt_dif_buffer[0];
+//	for (int i = 0; i < ALT_DIF_BUF_SIZE; ++i){
+//		sum += alt_dif_buffer[i];
+//		largest = fmax(largest, alt_dif_buffer[i]);
+//    	smallest = fmin (smallest, alt_dif_buffer[i]);
+//	}
+//  	return (sum - largest - smallest) / (ALT_DIF_BUF_SIZE - 2);
+//}
+//
+//void update_alt_dif_buf(float new_alt_dif) {
+//
+//	float cur_time = micros();
+//	if (cur_time <= prev_alt_time){
+//		return;
+//	}
+//	float dt = (float)(cur_time - prev_alt_time) * 1e-6f;
+//	alt_dif_buffer[alt_dif_buffer_idx] = new_alt_dif / dt;
+//	alt_dif_buffer_idx = (alt_dif_buffer_idx + 1) % ALT_DIF_BUF_SIZE;
+//	prev_alt_time = cur_time;
+//}
 
 void set_flight_state(FlightState_t new_state, FlightState_t *flight_state, Telemetry_t *telemetry) {
 	*flight_state = new_state;
@@ -82,8 +83,8 @@ void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 		LPS22HH_Read(telemetry);
 		if (telemetry->temperature != -999) {
 			telemetry->startAlt = telemetry->altitude;
-			update_alt_dif_buf(telemetry->startAlt - prev_alt);
-			prev_alt = telemetry->startAlt;
+//			update_alt_dif_buf(telemetry->startAlt - prev_alt);
+//			prev_alt = telemetry->startAlt;
 		}
 		HAL_Delay(10);
 	}
@@ -115,11 +116,13 @@ void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 }
 
 void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
-	update_alt_dif_buf(telemetry->altitude - prev_alt);
+//	update_alt_dif_buf(telemetry->altitude - prev_alt);
+//	prev_alt = telemetry->altitude;
 
 	// Determine Next State
 	switch(*flight_state) {
 		case DISARMED:
+			// Toggle LED
 			uint32_t cur_time = HAL_GetTick();
 			if (cur_time - prev_led_toggle_time > 100){
 				HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
@@ -176,7 +179,8 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case GLIDING_ASCENT:
-    		if (get_avg_alt_dif() < APOGEE_THRESHOLD && telemetry->altitude - telemetry->startAlt > DROGUE_DEPLOY_MIN_ALT) {
+//    		if (get_avg_alt_dif() < APOGEE_VELO_THRESHOLD && telemetry->altitude - telemetry->startAlt > DROGUE_DEPLOY_MIN_ALT) {
+    		if (telemetry->baro_vz < APOGEE_VELO_THRESHOLD && telemetry->altitude - telemetry->startAlt > DROGUE_DEPLOY_MIN_ALT) {
     			set_flight_state(DROGUE_PRIMARY_DEPLOYING, flight_state, telemetry);
     			drogue_primary_on();
     			//drogue primary starts firing and the time this starts is stored
@@ -254,7 +258,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case MAIN_SECONDARY_DEPLOYED:
-    		if (get_avg_alt_dif() > LANDED_THRESHOLD){ // Change condition // TODO Needs to be switched according to chat?
+    		if (telemetry->baro_vz > LANDED_VELO_THRESHOLD){ // Change condition // TODO Needs to be switched according to chat?
     			set_flight_state(LANDED, flight_state, telemetry);
     			sd_delete_file(STATE_FILE);
     		}
@@ -264,6 +268,4 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 
     		break;
 	}
-
-	prev_alt = telemetry->altitude;
 }

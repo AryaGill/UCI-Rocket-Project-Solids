@@ -3,8 +3,13 @@
 #include "main.h"
 
 // Change before flight - check fsm.h as well
-#define MASS 23.77 // kg
-#define TARGET_APOGEE_FT 8000
+// Leilani's Rocket
+#define MASS 1.73 // kg
+#define TARGET_APOGEE_FT 2800
+// Night Fury
+//#define MASS 23.77 // kg
+//#define TARGET_APOGEE_FT 8000
+
 #define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
 
 #define SERVO_ANGLE_NOT_EXTENDED 180.0f

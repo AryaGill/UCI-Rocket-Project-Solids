@@ -57,7 +57,7 @@ void complementary_filter(Telemetry_t *telemetry)
     float dt = (float)(cur_time_us - prev_time_cf_us) * 1e-6f;
     prev_time_cf_us = cur_time_us;
 
-    if (!isfinite(dt) || dt <= 0.0f || dt > 0.05f) {
+    if (!isfinite(dt) || dt <= 0.0f || dt > 0.1f) {
         return;
     }
 
@@ -66,9 +66,9 @@ void complementary_filter(Telemetry_t *telemetry)
     float velocity_baro_raw = (baro_alt - prev_baro_alt) / dt;
     prev_baro_alt = baro_alt;
 
-    const float baro_vel_alpha = 0.90f;
+    const float baro_vel_alpha = 0.999f;
     telemetry->baro_vz =
-        baro_vel_alpha * baro_velocity_filt +
+        baro_vel_alpha * telemetry->baro_vz +
         (1.0f - baro_vel_alpha) * velocity_baro_raw;
 
     float velocity_imu = telemetry->velocity_world_z +
