@@ -182,7 +182,7 @@ void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
 	float angle_of_attack = angle_from_vertical(telemetry);
 	float local_temp = fmaxf(ground_temp - (L * telemetry->altitude), 1);
 	if (flight_state != GLIDING_ASCENT
-			|| get_mach_number(get_mag3(telemetry->velocity_world_x, telemetry->velocity_world_y, telemetry->velocity_world_z), local_temp) > 0.7
+			|| get_mach_number(telemetry->velocity_world_z, local_temp) > 0.7
 			|| angle_of_attack > 30 * M_PI / 180){
 		set_airbrakes_deployment_level(telemetry, 0);
 		return;
