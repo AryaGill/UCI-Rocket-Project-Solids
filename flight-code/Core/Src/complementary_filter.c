@@ -66,7 +66,7 @@ void complementary_filter(Telemetry_t *telemetry)
     float velocity_baro_raw = (baro_alt - prev_baro_alt) / dt;
     prev_baro_alt = baro_alt;
 
-    const float baro_vel_alpha = 0.999f;
+    float baro_vel_alpha = TAU_BARO_VEL / (TAU_BARO_VEL + dt);
     telemetry->baro_vz =
         baro_vel_alpha * telemetry->baro_vz +
         (1.0f - baro_vel_alpha) * velocity_baro_raw;
@@ -74,16 +74,18 @@ void complementary_filter(Telemetry_t *telemetry)
     float velocity_imu = telemetry->velocity_world_z +
                          telemetry->accel_world_z * dt;
 
+    float alpha_velocity = TAU_VELOCITY / (TAU_VELOCITY + dt);
     telemetry->velocity_world_z =
-        ALPHA_VELOCITY * velocity_imu +
-        (1.0f - ALPHA_VELOCITY) * telemetry->baro_vz;
+    	alpha_velocity * velocity_imu +
+        (1.0f - alpha_velocity) * telemetry->baro_vz;
 
     float altitude_pred =
         telemetry->alt_fused + telemetry->velocity_world_z * dt;
 
+    float alpha_altitude = TAU_ALTITUDE / (TAU_ALTITUDE + dt);
     telemetry->alt_fused =
-        ALPHA_ALTITUDE * altitude_pred +
-        (1.0f - ALPHA_ALTITUDE) * baro_alt;
+    	alpha_altitude * altitude_pred +
+        (1.0f - alpha_altitude) * baro_alt;
 
     update_horizontal_velocity(telemetry, dt);
 
