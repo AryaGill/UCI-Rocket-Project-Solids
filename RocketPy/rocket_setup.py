@@ -74,8 +74,6 @@ def create_rocket(config, env):
         coordinate_system_orientation=config.motor_coordinate_system_orientation,
     )
 
-    # motor.info()
-
 
     # Setup Rocket
     rocket = Rocket(
@@ -145,7 +143,7 @@ def create_rocket(config, env):
         # return np.degrees(theta)  # convert to degrees if you want
         return theta
 
-    TARGET_APOGEE_FT = 10000
+    TARGET_APOGEE_FT = 8800
     TARGET_APOGEE_M = TARGET_APOGEE_FT * 0.3048
 
     def binary_search_deployment(alt, vz, air_brakes, T0, pressure0, angle_of_attack, speed0):
@@ -506,8 +504,8 @@ def create_rocket(config, env):
     NUM_RECORDED_DEPLOYMENT_LEVELS = 11
     NUM_RECORDED_MACH_NUMS = 14
 
-    MASS = 23.28
-    TARGET_APOGEE_FT = 8000
+    MASS = 24.2
+    TARGET_APOGEE_FT = 9000
     TARGET_APOGEE_M = TARGET_APOGEE_FT * 0.3048
 
     NUM_DEPLOYMENT_LEVELS = 64
@@ -718,7 +716,7 @@ def create_rocket(config, env):
             else:
                 high = mid - 1
 
-        telemetry.predicted_apogee = pred_apogee
+        telemetry.predicted_apogee = predict_apogee(telemetry, low)
         telemetry.airbrake_deployment = low
 
     def set_airbrakes_initial_temp(telemetry):
@@ -745,9 +743,12 @@ def create_rocket(config, env):
         set_airbrakes_initial_temp(telemetry)
         set_optimal_deployment("GLIDING_ASCENT", telemetry)
 
-        air_brakes.deployment_level = telemetry.airbrake_deployment / (NUM_DEPLOYMENT_LEVELS - 1)
-        # air_brakes.deployment_level = 0 /  (NUM_DEPLOYMENT_LEVELS - 1)
-        # telemetry.predicted_apogee = predict_apogee(telemetry, 0)
+        if time > 4.6:
+            air_brakes.deployment_level = min(telemetry.airbrake_deployment / (NUM_DEPLOYMENT_LEVELS - 1), 0.668)
+            # air_brakes.deployment_level = 42 /  (NUM_DEPLOYMENT_LEVELS - 1)
+            # telemetry.predicted_apogee = predict_apogee(telemetry, 42)
+        else:
+            air_brakes.deployment_level = 0
 
         # Return variables of interest to be saved in the observed_variables list
         local_temp = max(ground_temp - (L * telemetry.altitude), 1)
