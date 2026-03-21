@@ -110,12 +110,14 @@ class SerialStreamer(QThread):
         "main_s_ematch_voltage",
         "drogue_p_ematch_voltage",
         "drogue_s_ematch_voltage",
-        "flight_state"
+        "flight_state",
+        "command_echo"
     ]
     
     new_data = pyqtSignal(dict)
     finished = pyqtSignal()
     status = pyqtSignal(str)
+    fc_message = pyqtSignal(str)
 
     def __init__(self, port, baud=57600, timeout=0.5, parent=None):
         """
@@ -214,13 +216,16 @@ class SerialStreamer(QThread):
         parts = [p.strip() for p in text.split(",")]
 
         if len(parts) != len(self.COLUMNS):
-            self.status.emit(f"Warning: Expected {len(self.COLUMNS)} columns, got {len(parts)}")
-            print(parts)
+            # Treat it as a plain-text FC message (ack, confirmation, etc.)
+            self.fc_message.emit(text)
             return None
 
         data = {}
         for col_name, value_str in zip(self.COLUMNS, parts):
-            data[col_name] = self._to_number(value_str)
+            if col_name != "command_echo":
+                data[col_name] = self._to_number(value_str)
+            else:
+                data[col_name] = value_str
 
         return data
 
@@ -235,16 +240,26 @@ class SerialStreamer(QThread):
             return s
 
     def write_command(self, cmd: str, burst: int = 20):
-        """Send command back to the serial device."""
-        try:
-            if self._ser and self._ser.is_open:
-                encoded = (cmd.strip() + "\n").encode('utf-8')
+        """Send command back to the serial device (non-blocking burst)."""
+        if not (self._ser and self._ser.is_open):
+            self.status.emit("Write error: port not open")
+            return
+
+        encoded = (cmd.strip() + "\n").encode('utf-8')
+        
+        def _burst():
+            try:
                 for _ in range(burst):
+                    if not self._ser.is_open:
+                        break
                     self._ser.write(encoded)
                     time.sleep(0.25)
                 self.status.emit(f"Sent (x{burst}): {cmd.strip()}")
-        except Exception as e:
-            self.status.emit(f"Write error: {e}")
+            except Exception as e:
+                self.status.emit(f"Write error: {e}")
+
+        import threading
+        threading.Thread(target=_burst, daemon=True).start()
 
     def stop(self):
         """Stop the streaming thread."""

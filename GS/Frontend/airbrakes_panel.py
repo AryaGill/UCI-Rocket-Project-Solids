@@ -37,6 +37,14 @@ class AirbrakesPanel(QWidget):
         )
         root.addWidget(self.pred_apo_lbl)
 
+        # Command echo readout
+        self.cmd_echo_lbl = QLabel("echo: --")
+        self.cmd_echo_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.cmd_echo_lbl.setStyleSheet(
+            "color: #a855f7; font-size: 10px; font-family: monospace;"
+        )
+        root.addWidget(self.cmd_echo_lbl)
+
         self.status_lbl = QLabel("No Data")
         self.status_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.status_lbl.setStyleSheet(
@@ -45,19 +53,16 @@ class AirbrakesPanel(QWidget):
         root.addWidget(self.status_lbl)
 
         self.setStyleSheet("background-color: #232323; border-radius: 6px;")
-        self.setFixedHeight(110)   # slightly taller to fit extra line
+        self.setFixedHeight(130)   # taller to fit command echo line
         self.setMaximumWidth(260)
 
     def update_data(self, data: dict):
         """
-        Expects telemetry dict with keys 'AB_Deployment' and 'pred_apo'.
+        Expects telemetry dict with keys 'AB_Deployment', 'pred_apo', and 'command_echo'.
         """
-        # print("AirbrakesPanel.update_data got:",
-        #     data.get("AB_Deployment", "MISSING"),
-        #     data.get("pred_apo", "MISSING"))
-
-        ab_value = data.get("AB_Deployment", None)
-        pred_apo = data.get("pred_apo", None)
+        ab_value   = data.get("AB_Deployment", None)
+        pred_apo   = data.get("pred_apo", None)
+        cmd_echo   = data.get("command_echo", None)
     
         if ab_value is None and pred_apo is None:
             self.value_lbl.setText("AB_Deployment: --")
@@ -75,5 +80,7 @@ class AirbrakesPanel(QWidget):
         else:
             self.pred_apo_lbl.setText(f"pred_apo: {pred_apo}")
 
-        self.status_lbl.setText("OK")
+        if cmd_echo is not None:
+            self.cmd_echo_lbl.setText(f"echo: {cmd_echo}")
 
+        self.status_lbl.setText("OK")
