@@ -3441,8 +3441,8 @@ void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment){
  8001f10:	78fa      	ldrb	r2, [r7, #3]
  8001f12:	f883 2048 	strb.w	r2, [r3, #72]	@ 0x48
 
-	// if deployment > 0.668 (max deployment of current night fury), then set to max
-	float real_max_percent_of_theoretical_max = 0.668;
+	// if deployment > 851 (max deployment of current night fury), then set to max
+	float real_max_percent_of_theoretical_max = 0.851;
  8001f16:	4b17      	ldr	r3, [pc, #92]	@ (8001f74 <set_airbrakes_deployment_level+0x7c>)
  8001f18:	617b      	str	r3, [r7, #20]
 	float t = (float)deployment / ((float)(NUM_DEPLOYMENT_LEVELS - 1) * real_max_percent_of_theoretical_max);
@@ -3475,7 +3475,7 @@ void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment){
  8001f6e:	3718      	adds	r7, #24
  8001f70:	46bd      	mov	sp, r7
  8001f72:	bd80      	pop	{r7, pc}
- 8001f74:	3f2b020c 	.word	0x3f2b020c
+ 8001f74:	3f59db23 	.word	0x3f59db23
  8001f78:	427c0000 	.word	0x427c0000
  8001f7c:	00000000 	.word	0x00000000
  8001f80:	c2100000 	.word	0xc2100000
