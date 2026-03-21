@@ -18,7 +18,7 @@ class config:
 
         # Motor
         self.thrust_source = "RocketPy/night_fury/M2207.eng"
-        self.dry_mass = 5.5
+        self.dry_mass = 5.8
         self.dry_inertia = (6.300, 6.300, 0.042) # Guess
         self.center_of_dry_mass_position = 1.833197866 # Guess
         self.grains_center_of_mass_position = 0.527051054 # Guess
@@ -40,7 +40,7 @@ class config:
         self.radius = 0.078867
         # self.radius = 0.0824373459
         # self.mass = 17.78
-        self.mass = 18.27
+        self.mass = 18.4
         self.inertia = (10.020, 10.020, 0.067) # Guess
         self.power_off_drag = "RocketPy/night_fury/nf_power_on_drag.csv"
         self.power_on_drag = "RocketPy/night_fury/nf_power_on_drag.csv"
