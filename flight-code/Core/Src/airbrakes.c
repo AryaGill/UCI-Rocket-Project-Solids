@@ -246,29 +246,41 @@ void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment){
 	set_airbrakes_servo_angle(angle);
 }
 
+void set_airbrakes_deployment_level_on_rail(Telemetry_t *telemetry, uint8_t deployment){
+	// TODO: change this to be a map from deployment level to servo angle
+	// deployment is int from 0 to NUM_DEPLOYMENT_LEVELS - 1
+	if (deployment >= NUM_DEPLOYMENT_LEVELS) deployment = NUM_DEPLOYMENT_LEVELS - 1;
+
+	telemetry->airbrake_deployment = deployment;
+
+	float t = (float)deployment / (float)(NUM_DEPLOYMENT_LEVELS - 1);
+	float angle = SERVO_ANGLE_NOT_EXTENDED + t * (SERVO_ANGLE_BEFORE_RAIL - SERVO_ANGLE_NOT_EXTENDED);
+	set_airbrakes_servo_angle(angle);
+}
+
 void perform_airbrakes_servo_sequence(Telemetry_t *telemetry){
 	for (uint8_t i = 0; i < NUM_DEPLOYMENT_LEVELS; ++i){
-		set_airbrakes_deployment_level(telemetry, i);
+		set_airbrakes_deployment_level_on_rail(telemetry, i);
 		HAL_Delay(10);
 	}
 	for (uint8_t i = NUM_DEPLOYMENT_LEVELS; i > 0; --i){
-		set_airbrakes_deployment_level(telemetry, i);
+		set_airbrakes_deployment_level_on_rail(telemetry, i);
 		HAL_Delay(10);
 	}
 
-	set_airbrakes_deployment_level(telemetry, 0);
+	set_airbrakes_deployment_level_on_rail(telemetry, 0);
 	HAL_Delay(500);
-	set_airbrakes_deployment_level(telemetry, NUM_DEPLOYMENT_LEVELS/4);
+	set_airbrakes_deployment_level_on_rail(telemetry, NUM_DEPLOYMENT_LEVELS/4);
 	HAL_Delay(500);
-	set_airbrakes_deployment_level(telemetry, NUM_DEPLOYMENT_LEVELS/2);
+	set_airbrakes_deployment_level_on_rail(telemetry, NUM_DEPLOYMENT_LEVELS/2);
 	HAL_Delay(500);
-	set_airbrakes_deployment_level(telemetry, NUM_DEPLOYMENT_LEVELS*3/4);
+	set_airbrakes_deployment_level_on_rail(telemetry, NUM_DEPLOYMENT_LEVELS*3/4);
 	HAL_Delay(500);
-	set_airbrakes_deployment_level(telemetry, NUM_DEPLOYMENT_LEVELS - 1);
+	set_airbrakes_deployment_level_on_rail(telemetry, NUM_DEPLOYMENT_LEVELS - 1);
 	HAL_Delay(1000);
-	set_airbrakes_deployment_level(telemetry, 0);
+	set_airbrakes_deployment_level_on_rail(telemetry, 0);
 	HAL_Delay(500);
-	set_airbrakes_deployment_level(telemetry, NUM_DEPLOYMENT_LEVELS - 1);
+	set_airbrakes_deployment_level_on_rail(telemetry, NUM_DEPLOYMENT_LEVELS - 1);
 	HAL_Delay(500);
-	set_airbrakes_deployment_level(telemetry, 0);
+	set_airbrakes_deployment_level_on_rail(telemetry, 0);
 }

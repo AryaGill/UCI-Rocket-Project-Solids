@@ -64,7 +64,7 @@ void set_flight_state(FlightState_t new_state, FlightState_t *flight_state, Tele
 uint8_t sensors_indicate_flight(Telemetry_t *telemetry){
 	float alt_i = telemetry->altitude;
 
-	for (int i = 0; i < 500; ++i){
+	for (int i = 0; i < 250; ++i){
 		read_sensors(telemetry);
 		HAL_Delay(10);
 	}

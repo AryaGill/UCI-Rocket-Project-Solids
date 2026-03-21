@@ -9,13 +9,12 @@
 #define DROGUE_DEPLOY_MIN_ALT 50 // m
 // Leilani rocket
 #define MOTOR_BURN_TIME 1500 // ms
-#define POWER_RESET_MIN_ALT_CHANGE 15
 // Night Fury
 //#define MOTOR_BURN_TIME 4000 // ms
-//#define POWER_RESET_MIN_ALT_CHANGE 40
 // Light Fury
 //#define MOTOR_BURN_TIME 4000 // ms
-//#define POWER_RESET_MIN_ALT_CHANGE 40
+
+#define POWER_RESET_MIN_ALT_CHANGE 10
 
 #define APOGEE_VELO_THRESHOLD -1.0
 #define LANDED_VELO_THRESHOLD -0.2

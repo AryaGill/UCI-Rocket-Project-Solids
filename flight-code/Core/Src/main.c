@@ -260,6 +260,8 @@ int main(void)
 	// Init airbrakes servos
 	init_airbrakes_servo();
 
+	strcpy(telemetry.cmd_echo, "N/A");
+
 	// Get Inital state string
 	init_data_file(&hspi1);
 
