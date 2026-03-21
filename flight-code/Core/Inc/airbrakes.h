@@ -8,7 +8,7 @@
 #define TARGET_APOGEE_FT 2600 // apogee 3187 ft
 // Night Fury
 //#define MASS 24.2 // kg
-//#define TARGET_APOGEE_FT 8000
+//#define TARGET_APOGEE_FT 9000
 
 #define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
 
