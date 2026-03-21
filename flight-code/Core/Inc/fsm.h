@@ -8,7 +8,7 @@
 #define MAIN_DEPLOY_MIN_ALT 50 // m
 #define DROGUE_DEPLOY_MIN_ALT 50 // m
 // Leilani rocket
-#define MOTOR_BURN_TIME 1500 // ms
+#define MOTOR_BURN_TIME 1700 // ms
 // Night Fury
 //#define MOTOR_BURN_TIME 4000 // ms
 // Light Fury

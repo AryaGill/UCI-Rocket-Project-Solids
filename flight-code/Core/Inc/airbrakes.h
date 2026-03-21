@@ -4,8 +4,8 @@
 
 // Change before flight - check fsm.h as well
 // Leilani's Rocket
-#define MASS 1.73 // kg
-#define TARGET_APOGEE_FT 2800
+#define MASS 1.92 // kg
+#define TARGET_APOGEE_FT 2800 // apogee 3187 ft
 // Night Fury
 //#define MASS 23.77 // kg
 //#define TARGET_APOGEE_FT 8000
