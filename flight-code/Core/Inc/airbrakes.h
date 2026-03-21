@@ -5,16 +5,16 @@
 // Change before flight - check fsm.h as well
 // Leilani's Rocket
 #define MASS 1.92 // kg
-#define TARGET_APOGEE_FT 2800 // apogee 3187 ft
+#define TARGET_APOGEE_FT 2600 // apogee 3187 ft
 // Night Fury
 //#define MASS 23.77 // kg
 //#define TARGET_APOGEE_FT 8000
 
 #define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
 
-#define SERVO_ANGLE_NOT_EXTENDED 180.0f
+#define SERVO_ANGLE_NOT_EXTENDED 171.0f
 #define SERVO_ANGLE_EXTENDED 135.0f
-#define SERVO_ANGLE_BEFORE_RAIL 165.0f
+#define SERVO_ANGLE_BEFORE_RAIL 157.0f
 
 #define NUM_DEPLOYMENT_LEVELS 64
 #define NUM_RECORDED_DEPLOYMENT_LEVELS 11
