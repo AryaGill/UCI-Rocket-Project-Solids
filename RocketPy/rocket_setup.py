@@ -744,9 +744,9 @@ def create_rocket(config, env):
         set_optimal_deployment("GLIDING_ASCENT", telemetry)
 
         if time > 4.6:
-            air_brakes.deployment_level = min(telemetry.airbrake_deployment / (NUM_DEPLOYMENT_LEVELS - 1), 0.668)
-            # air_brakes.deployment_level = 42 /  (NUM_DEPLOYMENT_LEVELS - 1)
-            # telemetry.predicted_apogee = predict_apogee(telemetry, 42)
+            # air_brakes.deployment_level = min(telemetry.airbrake_deployment / (NUM_DEPLOYMENT_LEVELS - 1), 0.851)
+            air_brakes.deployment_level = 52 /  (NUM_DEPLOYMENT_LEVELS - 1)
+            telemetry.predicted_apogee = predict_apogee(telemetry, 52)
         else:
             air_brakes.deployment_level = 0
 
