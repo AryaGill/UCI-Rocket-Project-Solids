@@ -241,7 +241,7 @@ void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment){
 
 	telemetry->airbrake_deployment = deployment;
 
-	// if deployment > 851 (max deployment of current night fury), then set to max
+	// if deployment > 0.851 (max deployment of current night fury), then set to max
 	float real_max_percent_of_theoretical_max = 0.851;
 	float t = (float)deployment / ((float)(NUM_DEPLOYMENT_LEVELS - 1) * real_max_percent_of_theoretical_max);
 	t = clampf(t, 0, 1);

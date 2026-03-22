@@ -151,9 +151,13 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 				}
 				else if (telemetry->lsm_accel_r < 0){
 					// Negative acceleration detected. Reset system.
-					if (++negative_accel_counter >= 5){
+					if (++negative_accel_counter >= 20){
 						launch_accel_detected_time = -1;
+						write_datafile_message("LAUNCH DETECTION FAILED");
 					}
+				}
+				else {
+					negative_accel_counter = 0;
 				}
 			}
 

@@ -304,17 +304,6 @@ int main(void)
 		update_flight_state(&flight_state, &telemetry);
 
 		// Control Airbrakes
-//		set_airbrakes_deployment_level(&telemetry, 0);
-//		HAL_Delay(1000);
-//		set_airbrakes_deployment_level(&telemetry, 20);
-//		HAL_Delay(1000);
-//		set_airbrakes_deployment_level(&telemetry, 42);
-//		HAL_Delay(1000);
-//		set_airbrakes_deployment_level(&telemetry, 63);
-//		HAL_Delay(5000);
-//		set_airbrakes_servo_angle(SERVO_ANGLE_BEFORE_RAIL);
-//		perform_airbrakes_servo_sequence();
-//		HAL_Delay(5000);
 		set_optimal_deployment(flight_state, &telemetry);
 
 		// Handle Commands
