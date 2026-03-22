@@ -91,6 +91,8 @@ class GroundStationWindow(QMainWindow):
         
         if self.selected_port:
             self.start_serial_connection()
+
+        self._last_announced_kft = 0
     
     def setup_ui(self):
         menubar = self.menuBar()
