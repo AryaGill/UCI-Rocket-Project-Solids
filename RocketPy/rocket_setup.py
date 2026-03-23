@@ -611,15 +611,18 @@ def create_rocket(config, env):
                 1
             )
 
+            angle = math.atan2(vx_sim, vz_sim)
+            
             mach = get_mach_number(get_mag2(vz_sim, vx_sim), T_local)
-            CdA = get_CdA(deployment_level, mach)
+            if angle < 30 * 3.141592653 / 180:
+                CdA = get_CdA(deployment_level, mach)
+            else:
+                CdA = get_CdA(0, mach)
 
             p_local = pressure_Pa * (T_local / temperature_K) ** (g / (R * L))
             rho = p_local / (R * T_local)
 
             Fd = 0.5 * CdA * rho * (vx_sim**2 + vz_sim**2)
-
-            angle = math.atan2(vx_sim, vz_sim)
 
             Fx = -Fd * math.sin(angle)
             Fz = -Fd * math.cos(angle) - g * MASS
