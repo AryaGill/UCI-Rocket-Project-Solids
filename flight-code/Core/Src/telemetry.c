@@ -133,11 +133,11 @@ FRESULT write_headers(void)
     	  "baro_vz,lsm_accel_r,lsm_accel_p,lsm_accel_y,"
           "lsm_gyro_r,lsm_gyro_p,lsm_gyro_y,"
     	  "adxl_accel_r,adxl_accel_p,adxl_accel_y,"
-    	  "predicted_apogee,airbrake_deployment,mag_r,mag_p,mag_y"
-    	  "q0,q1,q2,q3,accel_world_x,accel_world_y,accel_world_z"
+    	  "predicted_apogee,airbrake_deployment,mag_r,mag_p,mag_y,"
+    	  "q0,q1,q2,q3,accel_world_x,accel_world_y,accel_world_z,"
     	  "alt_fused,cam1_on,cam2_on,main_p_ematch_voltage,main_s_ematch_voltage,"
-    	  "drogue_p_ematch_voltage,drogue_s_ematch_voltage"
-    	  "roll,pitch_yaw,t_burnout,t_apogee,t_drogue,t_main,t_land"
+    	  "drogue_p_ematch_voltage,drogue_s_ematch_voltage,"
+    	  "roll,pitch,yaw,t_burnout,t_apogee,t_drogue,t_main,t_land,"
     	  "drogue_validated_baro,main_validated_baro";
 
     return write_sd(&data_file, header);
