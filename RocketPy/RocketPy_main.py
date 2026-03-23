@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     # Run simulation
     test_flight = Flight(
-        rocket=rocket, environment=env, rail_length=5.2, inclination=90, heading=0, terminate_on_apogee=True
+        rocket=rocket, environment=env, rail_length=5.2, inclination=87, heading=0, terminate_on_apogee=True
         )
 
     # # Print data
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     plt.show()
 
     # Plot predicted apogee by time
-    plt.plot(time_list[55:], [x / 0.3048 for x in predicted_apogee_list[55:]])
+    plt.plot(time_list[80:], [x / 0.3048 for x in predicted_apogee_list[80:]])
     plt.xlabel("Time (s)")
     plt.ylabel("Predicted Apogee (ft)")
     plt.title("Predicted Apogee by Time")

@@ -136,29 +136,6 @@ def create_rocket(config, env):
     )
 
     
-    def angle_from_vertical(e0, e1, e2, e3):
-        w, x, y, z = e0, e1, e2, e3
-        # Compute tilt angle from vertical (radians)
-        theta = np.arccos(1 - 2 * (x**2 + y**2))
-        # return np.degrees(theta)  # convert to degrees if you want
-        return theta
-
-    TARGET_APOGEE_FT = 8800
-    TARGET_APOGEE_M = TARGET_APOGEE_FT * 0.3048
-
-    def binary_search_deployment(alt, vz, air_brakes, T0, pressure0, angle_of_attack, speed0):
-        num_sims = 10
-        
-        low = 0
-        high = 1
-
-        for i in range(num_sims):
-            mid = (high + low) / 2
-            if predict_apogee(alt, vz, air_brakes, T0, pressure0, mid, angle_of_attack, speed0) > TARGET_APOGEE_M:
-                low = mid
-            else:
-                high = mid
-        return (high + low) / 2
 
 
 
@@ -482,7 +459,7 @@ def create_rocket(config, env):
     L = 0.0065
 
     DESIRED_SEARCH_TIME = 20
-    TIME_PER_SIM_STEP = 0.015
+    TIME_PER_SIM_STEP = 0.0132
 
     NUM_RECORDED_DEPLOYMENT_LEVELS = 11
     NUM_RECORDED_MACH_NUMS = 14
@@ -577,6 +554,19 @@ def create_rocket(config, env):
 
     def get_mag2(x, y):
         return math.sqrt(x*x + y*y)
+    
+    def get_mag3(x, y, z):
+        return math.sqrt(x*x + y*y + z*z)
+    
+    def angle_from_vertical(telemetry):
+        w = telemetry.q0
+        x = telemetry.q1
+        y = telemetry.q2
+        z = telemetry.q3
+        # Compute tilt angle from vertical (radians)
+        theta = np.arccos(1 - 2 * (x**2 + y**2))
+        # return np.degrees(theta)  # convert to degrees if you want
+        return theta
 
     class Telemetry:
         def __init__(self):
@@ -598,7 +588,7 @@ def create_rocket(config, env):
             0.1
         )
 
-        # --- NEW: angle from quaternion ---
+        # Angle from quaternion
         theta = angle_from_vertical(telemetry)
         theta = min(theta, math.radians(80.0))
 
@@ -606,65 +596,10 @@ def create_rocket(config, env):
         alt_sim = telemetry.altitude
         vz_sim = telemetry.velocity_world_z
 
-        # --- NEW: derive horizontal velocity from tilt ---
+        # derive horizontal velocity from tilt
         vx_sim = vz_sim * math.tan(theta)
 
-        # --- NEW: pressure conversion (hPa → Pa) ---
-        pressure_Pa = telemetry.pressure * 100.0
-
-        temperature_K = max(ground_temp - (L * telemetry.altitude), 1)
-
-        for _ in range(100000):
-            vz_before = vz_sim
-
-            T_local = max(
-                temperature_K - (L * (alt_sim - telemetry.altitude)),
-                1
-            )
-
-            mach = get_mach_number(get_mag2(vz_sim, vx_sim), T_local)
-            CdA = get_CdA(deployment_level, mach)
-
-            p_local = pressure_Pa * (T_local / temperature_K) ** (g / (R * L))
-            rho = p_local / (R * T_local)
-
-            Fd = 0.5 * CdA * rho * (vx_sim**2 + vz_sim**2)
-
-            angle = math.atan2(vx_sim, vz_sim)
-
-            Fx = -Fd * math.sin(angle)
-            Fz = -Fd * math.cos(angle) - g * MASS
-
-            vx_sim += (Fx / MASS) * deltaT
-            vz_sim += (Fz / MASS) * deltaT
-
-            alt_sim += ((vz_sim + vz_before) / 2) * deltaT
-
-            if vz_sim < 0:
-                break
-
-        return alt_sim
-    
-    def predict_apogee(telemetry, deployment_level):
-        deltaT = clampf(
-            telemetry.velocity_world_z * deltaT_coefficient,
-            0.01,
-            0.1
-        )
-
-        # --- NEW: angle from quaternion ---
-        theta = angle_from_vertical(telemetry)
-        theta = min(theta, math.radians(80.0))
-
-        # Initial conditions
-        alt_sim = telemetry.altitude
-        vz_sim = telemetry.velocity_world_z
-
-        # --- NEW: derive horizontal velocity from tilt ---
-        vx_sim = vz_sim * math.tan(theta)
-
-        # --- NEW: pressure conversion (hPa → Pa) ---
-        pressure_Pa = telemetry.pressure * 100.0
+        pressure_Pa = telemetry.pressure
 
         temperature_K = max(ground_temp - (L * telemetry.altitude), 1)
 
@@ -700,8 +635,6 @@ def create_rocket(config, env):
         return alt_sim
 
     def set_optimal_deployment(flight_state, telemetry):
-
-        # --- NEW: use quaternion angle ---
         angle_of_attack = angle_from_vertical(telemetry)
 
         local_temp = max(ground_temp - (L * telemetry.altitude), 1)
@@ -714,6 +647,7 @@ def create_rocket(config, env):
         ):
             telemetry.predicted_apogee = 0
             telemetry.airbrake_deployment = 0
+            telemetry.predicted_apogee = predict_apogee(telemetry, 0)
             return
 
         low = 0
@@ -740,7 +674,63 @@ def create_rocket(config, env):
 
 
 
+    def controller_function(
+        time, sampling_rate, state, state_history, observed_variables, air_brakes
+    ):
+        global ground_temp
 
+        # state = [x, y, z, vx, vy, vz, e0, e1, e2, e3, wx, wy, wz]
+        telemetry = Telemetry()
+        telemetry.altitude = state[2] - env.elevation
+        telemetry.velocity_world_x = state[3]
+        telemetry.velocity_world_y = state[4]
+        telemetry.velocity_world_z = state[5]
+        telemetry.temperature = env.temperature(env.elevation)
+        telemetry.pressure = env.pressure(state[2])
+        telemetry.q0 = state[6]
+        telemetry.q1 = state[7]
+        telemetry.q2 = state[8]
+        telemetry.q3 = state[9]
+
+        set_airbrakes_initial_temp(telemetry)
+        set_optimal_deployment("GLIDING_ASCENT", telemetry)
+
+        if time > 4.6:
+            air_brakes.deployment_level = min(telemetry.airbrake_deployment / (NUM_DEPLOYMENT_LEVELS - 1), 0.851)
+            # air_brakes.deployment_level = 52 /  (NUM_DEPLOYMENT_LEVELS - 1)
+            # telemetry.predicted_apogee = predict_apogee(telemetry, 52)
+        else:
+            air_brakes.deployment_level = 0
+
+        # Return variables of interest to be saved in the observed_variables list
+        local_temp = max(ground_temp - (L * telemetry.altitude), 1)
+        mach_number = get_mach_number(
+                get_mag3(
+                    telemetry.velocity_world_x,
+                    telemetry.velocity_world_y,
+                    telemetry.velocity_world_z
+                ),
+                local_temp
+            )
+
+        return (
+            time,
+            air_brakes.deployment_level,
+            air_brakes.drag_coefficient(air_brakes.deployment_level, mach_number),
+            telemetry.predicted_apogee,
+            mach_number,
+        )
+    
+    air_brakes = rocket.add_air_brakes(
+        drag_coefficient_curve=config.drag_coefficient_curve,
+        controller_function=controller_function,
+        sampling_rate=config.air_brakes_sampling_rate,
+        reference_area=config.air_brakes_reference_area,
+        clamp=config.air_brakes_clamp,
+        initial_observed_variables=config.air_brakes_initial_observed_variables,
+        override_rocket_drag=config.air_brakes_override_rocket_drag,
+        name=config.air_brakes_name,
+    )
 
 
 
