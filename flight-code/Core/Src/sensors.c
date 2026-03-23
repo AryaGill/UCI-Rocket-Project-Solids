@@ -250,8 +250,8 @@ void LSM6DSL_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pi
     SPI_Write(hspi, cs_port, cs_pin, LSM6DSL_CTRL3_C, 0x44);
 
     // 3. Configure Accelerometer: 104Hz, +/- 4g
-    // CTRL1_XL: 0100 (104Hz), 10 (4g) -> 0x48
-    SPI_Write(hspi, cs_port, cs_pin, LSM6DSL_CTRL1_XL, 0x48);
+    // CTRL1_XL: 0100 (104Hz), 01 (16g) -> 0x48
+    SPI_Write(hspi, cs_port, cs_pin, LSM6DSL_CTRL1_XL, 0x44);
 
     // 4. Configure Gyroscope: 104Hz, 2000 dps
     // CTRL2_G: 0100 (104Hz), 11 (2000dps) -> 0x4C
@@ -271,16 +271,23 @@ void LSM6DSL_Read(Telemetry_t *telemetry) {
     int16_t ay = (int16_t)((buf[9] << 8) | buf[8]);
     int16_t az = (int16_t)((buf[11] << 8) | buf[10]);
 
-    // Conversion Factors (Based on +/- 4g and 2000dps)
-    // Accel: 4g range = 0.122 mg/LSB. 0.122 * 9.81 / 1000 = 0.001197 m/s^2
-    telemetry->lsm_accel_r = ay * 0.001197f;
-    telemetry->lsm_accel_p = ax * 0.001197f;
-    telemetry->lsm_accel_y = -az * 0.001197f;
+    // Accelerometer (±16 g)
+	// 0.488 mg/LSB → 0.000488 g/LSB
+	// Convert to m/s²: * 9.80665
+	const float ACCEL_SCALE = 0.000488f * 9.80665f;  // ≈ 0.00479
 
-    // Gyro: 2000dps range = 70 mdps/LSB. 70 * (PI/180) / 1000 = 0.0012217 rad/s
-    telemetry->lsm_gyro_r = gy * 0.0012217f;
-    telemetry->lsm_gyro_p = gx * 0.0012217f;
-    telemetry->lsm_gyro_y = -gz * 0.0012217f;
+	telemetry->lsm_accel_r = ay * ACCEL_SCALE;
+	telemetry->lsm_accel_p = ax * ACCEL_SCALE;
+	telemetry->lsm_accel_y = -az * ACCEL_SCALE;
+
+	// Gyroscope (2000 dps)
+	// 70 mdps/LSB = 0.07 dps/LSB
+	// Convert to rad/s: * (π / 180)
+	const float GYRO_SCALE = 0.07f * (3.14159265359f / 180.0f); // ≈ 0.00122173
+
+	telemetry->lsm_gyro_r = gy * GYRO_SCALE;
+	telemetry->lsm_gyro_p = gx * GYRO_SCALE;
+	telemetry->lsm_gyro_y = -gz * GYRO_SCALE;
 }
 
 uint8_t LSM6DSL_WhoAmI(void) {
