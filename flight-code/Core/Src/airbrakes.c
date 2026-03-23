@@ -154,14 +154,14 @@ float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 		float T_local = fmaxf(temperature_K - (L * (alt_sim - telemetry->altitude)), 1);
 		float mach_number = get_mach_number(get_mag2(vz_sim, vx_sim), T_local);
 
-		float airbrake_CdA = get_CdA(deployment_level, mach_number);
+		float angle_sim = atan2(vx_sim, vz_sim);
+		float airbrake_CdA = angle_sim < 30 * M_PI / 180 ? get_CdA(deployment_level, mach_number) : get_CdA(0, mach_number);
 
 		float p_local = pressure_Pa * pow(T_local / temperature_K, g / (R * L));
 		float rho_sim = p_local / (R * T_local);
 
 		float Fd = 0.5 * airbrake_CdA * rho_sim * (vx_sim * vx_sim + vz_sim * vz_sim);
 
-		float angle_sim = atan2(vx_sim, vz_sim);
 		float Fx = -Fd * sinf(angle_sim);
 		float Fz = -Fd * cosf(angle_sim) - g * MASS;
 		vx_sim += (Fx / MASS) * deltaT;

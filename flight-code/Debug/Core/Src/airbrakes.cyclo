@@ -4,7 +4,7 @@
 ../Core/Src/airbrakes.c:121:7:get_mach_number	1
 ../Core/Src/airbrakes.c:126:7:get_mag2	1
 ../Core/Src/airbrakes.c:130:7:get_mag3	1
-../Core/Src/airbrakes.c:134:7:predict_apogee	4
+../Core/Src/airbrakes.c:134:7:predict_apogee	5
 ../Core/Src/airbrakes.c:179:6:set_optimal_deployment	7
 ../Core/Src/airbrakes.c:215:6:init_airbrakes_servo	1
 ../Core/Src/airbrakes.c:220:6:set_airbrakes_initial_temp	1
