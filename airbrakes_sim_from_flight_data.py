@@ -160,6 +160,10 @@ def predict_apogee(telemetry, deployment_level):
     sim_angle_from_vert = []
     global sim_times
     sim_time = []
+    global sim_pressures
+    sim_pressure = []
+    global sim_temperatures
+    sim_temperature = []
 
     for i in range(100000):
         sim_time.append(telemetry.time + i * deltaT * 1000)
@@ -173,6 +177,7 @@ def predict_apogee(telemetry, deployment_level):
             temperature_K - (L * (alt_sim - telemetry.altitude)),
             1
         )
+        sim_temperature.append(T_local)
 
         mach = get_mach_number(get_mag2(vz_sim, vx_sim), T_local)
         if angle < 30 * 3.141592653 / 180:
@@ -181,6 +186,7 @@ def predict_apogee(telemetry, deployment_level):
             CdA = get_CdA(0, mach)
 
         p_local = pressure_Pa * (T_local / temperature_K) ** (g / (R * L))
+        sim_pressure.append(p_local)
         rho = p_local / (R * T_local)
 
         Fd = 0.5 * CdA * rho * (vx_sim**2 + vz_sim**2)
@@ -199,6 +205,8 @@ def predict_apogee(telemetry, deployment_level):
     if telemetry.time - launch_time > motor_burn_time:
         sim_angles_from_vert.append(sim_angle_from_vert)
         sim_times.append(sim_time)
+        sim_pressures.append(sim_pressure)
+        sim_temperatures.append(sim_temperature)
     return alt_sim
 
 def set_optimal_deployment(flight_state, telemetry):
@@ -236,7 +244,7 @@ def set_optimal_deployment(flight_state, telemetry):
 
 def set_airbrakes_initial_temp(telemetry):
     global ground_temp
-    ground_temp = telemetry.temperature + 273.71
+    ground_temp = telemetry.temperature
 
 if __name__ == "__main__":
     # read data file
@@ -246,13 +254,14 @@ if __name__ == "__main__":
     time = df["time"].to_numpy()
     baro_alt = df["altitude"].to_numpy()
     startAlt = df["startAlt"].to_numpy()
-    initial_temp = df["initial_temp"].to_numpy()
+    initial_temp = [x + 273.71 for x in df["initial_temp"].to_numpy()]
     velocity_world_z = df["velocity_world_z"].to_numpy()
     q0 = df["q0"].to_numpy()
     q1 = df["q1"].to_numpy()
     q2 = df["q2"].to_numpy()
     q3 = df["q3"].to_numpy()
     pressure = df["pressure"].to_numpy()
+    temperature = [x + 273.71 for x in df["temperature"].to_numpy()]
 
     altitude = []
     for i in range(len(baro_alt)):
@@ -271,6 +280,10 @@ if __name__ == "__main__":
     sim_angles_from_vert = []
     global sim_times
     sim_times = []
+    global sim_pressures
+    sim_pressures = []
+    global sim_temperatures
+    sim_temperatures = []
 
     for i in range(len(time)):
         telemetry = Telemetry()
@@ -302,7 +315,7 @@ if __name__ == "__main__":
 
     idx_airbrakes_off_bc_angle = next((i for i, x in enumerate(angle_from_vert) if x > 30), None)
         
-    # # Plot predicted apogee
+    # Plot predicted apogee
     plt.plot(time, [x*3.2808399 for x in predicted_apogee], label="Predicted Apogee")
     plt.plot(time, [x*3.2808399 for x in altitude], label="Altitude")
     plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
@@ -336,7 +349,7 @@ if __name__ == "__main__":
     plt.show()
 
     # Plot angle from vert
-    plt.plot(time, angle_from_vert, label="Angle from vertical")
+    plt.plot(time, angle_from_vert, label="Measured Angle from Vertical")
     for i in range(len(sim_times)):
         plt.plot(sim_times[i], sim_angles_from_vert[i])
     plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
@@ -344,6 +357,30 @@ if __name__ == "__main__":
     plt.xlabel("Time (s)")
     plt.ylabel("Angle (deg)")
     plt.title("Angle from vertical by Time")
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+    # Plot pressure
+    plt.plot(time, pressure, label="Measured Pressure")
+    for i in range(len(sim_times)):
+        plt.plot(sim_times[i], sim_pressures[i])
+    plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Pressure (hPa)")
+    plt.title("Pressure by Time")
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+    # Plot temperature
+    plt.plot(time, temperature, label="Measured Temperature")
+    for i in range(len(sim_times)):
+        plt.plot(sim_times[i], sim_temperatures[i])
+    plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Temperature (K)")
+    plt.title("Temperature by Time")
     plt.legend()
     plt.grid()
     plt.show()
