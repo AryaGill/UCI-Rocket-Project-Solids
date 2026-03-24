@@ -289,7 +289,6 @@ def create_rocket(config, env):
     #         0.01,
     #         0.1
     #     )
-    #     # deltaT = 0.01
 
     #     alt_sim = telemetry.altitude
     #     vz_sim = telemetry.velocity_world_z
@@ -346,6 +345,7 @@ def create_rocket(config, env):
     #         telemetry.velocity_world_z
     #     )
 
+    #     global ground_temp
     #     local_temp = max(ground_temp - (L * telemetry.altitude), 1)
 
     #     if (flight_state != "GLIDING_ASCENT"
@@ -406,8 +406,8 @@ def create_rocket(config, env):
 
     #     if time > 4.6:
     #         # air_brakes.deployment_level = min(telemetry.airbrake_deployment / (NUM_DEPLOYMENT_LEVELS - 1), 0.851)
-    #         air_brakes.deployment_level = 52 /  (NUM_DEPLOYMENT_LEVELS - 1)
-    #         telemetry.predicted_apogee = predict_apogee(telemetry, 52)
+    #         air_brakes.deployment_level = 0 /  (NUM_DEPLOYMENT_LEVELS - 1)
+    #         telemetry.predicted_apogee = predict_apogee(telemetry, 0)
     #     else:
     #         air_brakes.deployment_level = 0
 
@@ -601,6 +601,7 @@ def create_rocket(config, env):
 
         pressure_Pa = telemetry.pressure
 
+        global ground_temp
         temperature_K = max(ground_temp - (L * telemetry.altitude), 1)
 
         for _ in range(100000):
@@ -695,13 +696,15 @@ def create_rocket(config, env):
         telemetry.q2 = state[8]
         telemetry.q3 = state[9]
 
+        print(telemetry.temperature)
+
         set_airbrakes_initial_temp(telemetry)
         set_optimal_deployment("GLIDING_ASCENT", telemetry)
 
         if time > 4.6:
-            air_brakes.deployment_level = min(telemetry.airbrake_deployment / (NUM_DEPLOYMENT_LEVELS - 1), 0.851)
-            # air_brakes.deployment_level = 52 /  (NUM_DEPLOYMENT_LEVELS - 1)
-            # telemetry.predicted_apogee = predict_apogee(telemetry, 52)
+            # air_brakes.deployment_level = min(telemetry.airbrake_deployment / (NUM_DEPLOYMENT_LEVELS - 1), 0.851)
+            air_brakes.deployment_level = 0 /  (NUM_DEPLOYMENT_LEVELS - 1)
+            telemetry.predicted_apogee = predict_apogee(telemetry, 0)
         else:
             air_brakes.deployment_level = 0
 

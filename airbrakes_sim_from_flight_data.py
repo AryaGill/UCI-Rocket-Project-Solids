@@ -154,6 +154,7 @@ def predict_apogee(telemetry, deployment_level):
 
     pressure_Pa = telemetry.pressure
 
+    global ground_temp
     temperature_K = max(ground_temp - (L * telemetry.altitude), 1)
 
     global sim_angles_from_vert
@@ -212,6 +213,7 @@ def predict_apogee(telemetry, deployment_level):
 def set_optimal_deployment(flight_state, telemetry):
     angle_of_attack = angle_from_vertical(telemetry)
 
+    global ground_temp
     local_temp = max(ground_temp - (L * telemetry.altitude), 1)
 
     # NOTE: This matches your C code EXACTLY (but is probably wrong physically)
@@ -260,7 +262,7 @@ if __name__ == "__main__":
     q1 = df["q1"].to_numpy()
     q2 = df["q2"].to_numpy()
     q3 = df["q3"].to_numpy()
-    pressure = df["pressure"].to_numpy()
+    pressure = [x*100 for x in df["pressure"].to_numpy()]
     temperature = [x + 273.71 for x in df["temperature"].to_numpy()]
 
     altitude = []
@@ -305,15 +307,18 @@ if __name__ == "__main__":
 
         if time[i] - launch_time > motor_burn_time:
             deployment_level.append(min(telemetry.airbrake_deployment / (NUM_DEPLOYMENT_LEVELS - 1), 0.851))
-            # air_brakes.deployment_level = 52 /  (NUM_DEPLOYMENT_LEVELS - 1)
-            # telemetry.predicted_apogee = predict_apogee(telemetry, 52)
+            # air_brakes.deployment_level = 0 /  (NUM_DEPLOYMENT_LEVELS - 1)
+            # telemetry.predicted_apogee = predict_apogee(telemetry, 0)
         else:
             deployment_level.append(0)
         
+        telemetry.predicted_apogee = predict_apogee(telemetry, 0)
         predicted_apogee.append(telemetry.predicted_apogee)
         angle_from_vert.append(angle_from_vertical(telemetry) * 180 / 3.14159265358)
 
     idx_airbrakes_off_bc_angle = next((i for i, x in enumerate(angle_from_vert) if x > 30), None)
+    idx_motor_burn_end = next((i for i, x in enumerate(time) if x >= launch_time + motor_burn_time), None)
+    idx_apogee = next((i for i, x in enumerate(altitude) if x == max(altitude)), None)
         
     # Plot predicted apogee
     plt.plot(time, [x*3.2808399 for x in predicted_apogee], label="Predicted Apogee")
@@ -338,9 +343,11 @@ if __name__ == "__main__":
     plt.show()
 
     # Plot overestimate
-    overestimate = [predicted_apogee[i] - max(altitude) for i in range(len(time))]
-    plt.plot(time, overestimate, label="Predicted Apogee - Real Apogee")
+    overestimate = [(predicted_apogee[i] - max(altitude)) * 3.2808399 for i in range(len(time))]
+    print("Max Overestimate: " + str(max(overestimate)))
+    plt.plot(time[idx_motor_burn_end:], overestimate[idx_motor_burn_end:], label="Predicted Apogee - Real Apogee")
     plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
+    plt.axvline(x=time[idx_apogee], color='g', linestyle='--', linewidth=2, label="Apogee")
     plt.xlabel("Time (s)")
     plt.ylabel("Altitude (ft)")
     plt.title("Predicted Apogee Overestimate by Time")
