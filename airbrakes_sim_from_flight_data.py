@@ -314,7 +314,7 @@ if __name__ == "__main__":
 
     tau_velocity = 0.3
     tau_altitude = 0.5
-    alpha_alt = 0.5
+    alpha_alt = 0.3
     # alpha_vel = 1 - tau_altitude
     alpha_vel = 1
     # alpha_quat = 1 - tau_altitude - tau_velocity
@@ -329,6 +329,7 @@ if __name__ == "__main__":
             altitude_old.append(0)
     alt_fused_old = []
     for i in range(len(altitude)):
+        # alt_fused_old.append(alt_fused[i] - 0.7 * velocity_world_z[i])
         if i != 0:
             alt_fused_old.append(alt_fused[i] * alpha_alt + alt_fused[i-1] * (1-alpha_alt))
         else:
@@ -487,7 +488,7 @@ if __name__ == "__main__":
 
     # Plot velocity world z
     for i in range(len(sim_times)):
-        plt.plot(sim_times[i], sim_velocities[i])
+        plt.plot([x + 700 for x in sim_times[i]], sim_velocities[i])
     plt.plot(time, velocity_world_z, label="Measured Vecicty World Z")
     plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
     plt.xlabel("Time (ms)")
