@@ -140,7 +140,7 @@ float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 	if(theta > 80.0f * M_PI / 180) theta = 80.0f * M_PI / 180;
 
 	// Initial conditions
-	float alt_sim = telemetry->altitude;
+	float alt_sim = telemetry->alt_fused;
 	float vz_sim = telemetry->velocity_world_z;
 	float vx_sim = telemetry->velocity_world_z * tanf(theta);
 //	float vx_sim = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
