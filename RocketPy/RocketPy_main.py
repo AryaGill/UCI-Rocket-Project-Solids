@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     # Run simulation
     test_flight = Flight(
-        rocket=rocket, environment=env, rail_length=5.2, inclination=90, heading=0, terminate_on_apogee=True
+        rocket=rocket, environment=env, rail_length=5.2, inclination=87, heading=0, terminate_on_apogee=True
         )
 
     # # Print data

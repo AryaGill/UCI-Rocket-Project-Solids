@@ -696,8 +696,6 @@ def create_rocket(config, env):
         telemetry.q2 = state[8]
         telemetry.q3 = state[9]
 
-        print(telemetry.temperature)
-
         set_airbrakes_initial_temp(telemetry)
         set_optimal_deployment("GLIDING_ASCENT", telemetry)
 

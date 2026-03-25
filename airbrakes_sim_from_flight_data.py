@@ -165,6 +165,12 @@ def predict_apogee(telemetry, deployment_level):
     sim_pressure = []
     global sim_temperatures
     sim_temperature = []
+    global sim_velocities
+    sim_velocity = []
+    global sim_alts
+    sim_alt = []
+    global sim_velocities_x
+    sim_velocity_x = []
 
     for i in range(100000):
         sim_time.append(telemetry.time + i * deltaT * 1000)
@@ -197,8 +203,11 @@ def predict_apogee(telemetry, deployment_level):
 
         vx_sim += (Fx / MASS) * deltaT
         vz_sim += (Fz / MASS) * deltaT
+        sim_velocity.append(vz_sim)
+        sim_velocity_x.append(vx_sim)
 
         alt_sim += ((vz_sim + vz_before) / 2) * deltaT
+        sim_alt.append(alt_sim)
 
         if vz_sim < 0:
             break
@@ -208,6 +217,9 @@ def predict_apogee(telemetry, deployment_level):
         sim_times.append(sim_time)
         sim_pressures.append(sim_pressure)
         sim_temperatures.append(sim_temperature)
+        sim_velocities.append(sim_velocity)
+        sim_alts.append(sim_alt)
+        sim_velocities_x.append(sim_velocity_x)
     return alt_sim
 
 def set_optimal_deployment(flight_state, telemetry):
@@ -258,6 +270,12 @@ if __name__ == "__main__":
     startAlt = df["startAlt"].to_numpy()
     initial_temp = [x + 273.71 for x in df["initial_temp"].to_numpy()]
     velocity_world_z = df["velocity_world_z"].to_numpy()
+    # velocity_world_z = []
+    # for i in range(len(baro_alt)):
+    #     if i < len(baro_alt) - 1 and i != 0:
+    #         velocity_world_z.append((baro_alt[i+1] - baro_alt[i-1]) / 2)
+    #     else:
+    #         velocity_world_z.append(0)
     q0 = df["q0"].to_numpy()
     q1 = df["q1"].to_numpy()
     q2 = df["q2"].to_numpy()
@@ -286,18 +304,69 @@ if __name__ == "__main__":
     sim_pressures = []
     global sim_temperatures
     sim_temperatures = []
+    global sim_velocities
+    sim_velocities = []
+    global sim_alts
+    sim_alts = []
+    global sim_velocities_x
+    sim_velocities_x = []
+
+    alpha = 0.4
+    altitude_old = []
+    for i in range(len(altitude)):
+        if i != 0:
+            altitude_old.append(altitude[i] * alpha + altitude[i-1] * (1-alpha))
+        else:
+            altitude_old.append(0)
+    q0_old = []
+    for i in range(len(q0)):
+        if i != 0:
+            q0_old.append(q0[i] * alpha + q0[i-1] * (1-alpha))
+        else:
+            q0_old.append(1)
+    q1_old = []
+    for i in range(len(q0)):
+        if i != 0:
+            q1_old.append(q1[i] * alpha + q1[i-1] * (1-alpha))
+        else:
+            q1_old.append(0)
+    q2_old = []
+    for i in range(len(q2)):
+        if i != 0:
+            q2_old.append(q2[i] * alpha + q2[i-1] * (1-alpha))
+        else:
+            q2_old.append(0)
+    q3_old = []
+    for i in range(len(q3)):
+        if i != 0:
+            q3_old.append(q3[i] * alpha + q3[i-1] * (1-alpha))
+        else:
+            q3_old.append(0)
+    pressure_old = []
+    for i in range(len(altitude)):
+        if i != 0:
+            pressure_old.append(pressure[i] * alpha + pressure[i-1] * (1-alpha))
+        else:
+            pressure_old.append(0)
+    
 
     for i in range(len(time)):
         telemetry = Telemetry()
         telemetry.time = time[i]
-        telemetry.altitude = altitude[i]
+        # telemetry.altitude = altitude[i]
+        telemetry.altitude = altitude_old[i]
         telemetry.velocity_world_z = velocity_world_z[i]
         telemetry.temperature = initial_temp[i]
-        telemetry.pressure = pressure[i]
-        telemetry.q0 = q0[i]
-        telemetry.q1 = q1[i]
-        telemetry.q2 = q2[i]
-        telemetry.q3 = q3[i]
+        # telemetry.pressure = pressure[i]
+        telemetry.pressure = pressure_old[i]
+        # telemetry.q0 = q0[i]
+        # telemetry.q1 = q1[i]
+        # telemetry.q2 = q2[i]
+        # telemetry.q3 = q3[i]
+        telemetry.q0 = q0_old[i]
+        telemetry.q1 = q1_old[i]
+        telemetry.q2 = q2_old[i]
+        telemetry.q3 = q3_old[i]
 
         set_airbrakes_initial_temp(telemetry)
         if time[i] - launch_time > motor_burn_time:
@@ -332,15 +401,15 @@ if __name__ == "__main__":
     plt.grid()
     plt.show()
 
-    # Plot deployment level
-    plt.plot(time, deployment_level, label="Deployment Level")
-    plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Deployment Level")
-    plt.title("Deployment Level by Time")
-    plt.legend()
-    plt.grid()
-    plt.show()
+    # # Plot deployment level
+    # plt.plot(time, deployment_level, label="Deployment Level")
+    # plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
+    # plt.xlabel("Time (s)")
+    # plt.ylabel("Deployment Level")
+    # plt.title("Deployment Level by Time")
+    # plt.legend()
+    # plt.grid()
+    # plt.show()
 
     # Plot overestimate
     overestimate = [(predicted_apogee[i] - max(altitude)) * 3.2808399 for i in range(len(time))]
@@ -368,26 +437,62 @@ if __name__ == "__main__":
     plt.grid()
     plt.show()
 
-    # Plot pressure
-    plt.plot(time, pressure, label="Measured Pressure")
+    # # Plot pressure
+    # plt.plot(time, pressure, label="Measured Pressure")
+    # for i in range(len(sim_times)):
+    #     plt.plot(sim_times[i], sim_pressures[i])
+    # plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
+    # plt.xlabel("Time (s)")
+    # plt.ylabel("Pressure (hPa)")
+    # plt.title("Pressure by Time")
+    # plt.legend()
+    # plt.grid()
+    # plt.show()
+
+    # # Plot temperature
+    # plt.plot(time, temperature, label="Measured Temperature")
+    # for i in range(len(sim_times)):
+    #     plt.plot(sim_times[i], sim_temperatures[i])
+    # plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
+    # plt.xlabel("Time (s)")
+    # plt.ylabel("Temperature (K)")
+    # plt.title("Temperature by Time")
+    # plt.legend()
+    # plt.grid()
+    # plt.show()
+
+    # Plot velocity world z
     for i in range(len(sim_times)):
-        plt.plot(sim_times[i], sim_pressures[i])
+        plt.plot(sim_times[i], sim_velocities[i])
+    plt.plot(time, velocity_world_z, label="Measured Vecicty World Z")
     plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
     plt.xlabel("Time (s)")
-    plt.ylabel("Pressure (hPa)")
-    plt.title("Pressure by Time")
+    plt.ylabel("Veclocity (m/s)")
+    plt.title("Velocity by Time")
     plt.legend()
     plt.grid()
     plt.show()
 
-    # Plot temperature
-    plt.plot(time, temperature, label="Measured Temperature")
+    # Plot velocity world x
     for i in range(len(sim_times)):
-        plt.plot(sim_times[i], sim_temperatures[i])
+        plt.plot(sim_times[i], sim_velocities_x[i])
+    plt.plot(time, angle_from_vert, label="Measured Angle from Vertical")
     plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
     plt.xlabel("Time (s)")
-    plt.ylabel("Temperature (K)")
-    plt.title("Temperature by Time")
+    plt.ylabel("Veclocity (m/s)")
+    plt.title("Velocity by Time")
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+    # Plot altitude
+    for i in range(len(sim_times)):
+        plt.plot(sim_times[i], [x*3.2808399 for x in sim_alts[i]])
+    plt.plot(time[idx_motor_burn_end:], [x*3.2808399 for x in altitude[idx_motor_burn_end:]], label="Measured Altitude")
+    plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Altitude (ft)")
+    plt.title("Altitude by Time")
     plt.legend()
     plt.grid()
     plt.show()
