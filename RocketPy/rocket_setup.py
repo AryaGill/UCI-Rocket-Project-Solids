@@ -458,7 +458,7 @@ def create_rocket(config, env):
     g = 9.80665
     L = 0.0065
 
-    DESIRED_SEARCH_TIME = 20
+    DESIRED_SEARCH_TIME = 200
     TIME_PER_SIM_STEP = 0.0132
 
     NUM_RECORDED_DEPLOYMENT_LEVELS = 11
@@ -676,7 +676,67 @@ def create_rocket(config, env):
         ground_temp = telemetry.temperature
 
 
+    class CFState:
+        def __init__(self):
+            self.initialized = False
+            self.prev_time = None
+            self.prev_baro_alt = 0.0
 
+            self.baro_vz = 0.0
+            self.velocity_world_z = 0.0
+            self.alt_fused = 0.0
+
+    cf_state = CFState()
+
+    TAU_VELOCITY = 0.5
+    TAU_ALTITUDE = 0.5
+    TAU_BARO_VEL = 0.1
+
+    num_comp = 0
+    def complementary_filter_py(telemetry, cf, time):
+        if not cf.initialized:
+            cf.prev_time = time
+            cf.prev_baro_alt = telemetry.altitude
+            cf.alt_fused = telemetry.altitude
+            cf.velocity_world_z = telemetry.velocity_world_z
+            cf.initialized = True
+            return
+
+        dt = time - cf.prev_time
+        cf.prev_time = time
+
+        if dt <= 0.0 or dt > 0.2:
+            return
+
+        baro_alt = telemetry.altitude
+
+        # Baro velocity
+        velocity_baro_raw = (baro_alt - cf.prev_baro_alt) / dt
+        cf.prev_baro_alt = baro_alt
+
+        baro_vel_alpha = TAU_BARO_VEL / (TAU_BARO_VEL + dt)
+        cf.baro_vz = (
+            baro_vel_alpha * cf.baro_vz +
+            (1 - baro_vel_alpha) * velocity_baro_raw
+        )
+
+        # IMU velocity integration
+        velocity_imu = cf.velocity_world_z + telemetry.accel_world_z * dt
+
+        alpha_velocity = TAU_VELOCITY / (TAU_VELOCITY + dt)
+        cf.velocity_world_z = (
+            alpha_velocity * velocity_imu +
+            (1 - alpha_velocity) * cf.baro_vz
+        )
+
+        # Altitude
+        altitude_pred = cf.alt_fused + cf.velocity_world_z * dt
+
+        alpha_altitude = TAU_ALTITUDE / (TAU_ALTITUDE + dt)
+        cf.alt_fused = (
+            alpha_altitude * altitude_pred +
+            (1 - alpha_altitude) * baro_alt
+        )
 
     def controller_function(
         time, sampling_rate, state, state_history, observed_variables, air_brakes
@@ -695,6 +755,25 @@ def create_rocket(config, env):
         telemetry.q1 = state[7]
         telemetry.q2 = state[8]
         telemetry.q3 = state[9]
+
+        if len(state_history) >= 2:
+            prev_state = state_history[-2]
+            prev_vz = prev_state[6]
+            dt_hist = time - prev_state[0]
+            telemetry.accel_world_z = (state[5] - prev_vz) / dt_hist if dt_hist > 0 else 0.0
+        else:
+            telemetry.accel_world_z = 0.0
+
+        complementary_filter_py(telemetry, cf_state, time)
+
+        telemetry.velocity_world_z = cf_state.velocity_world_z + 0.15 * telemetry.accel_world_z
+        telemetry.altitude = cf_state.alt_fused #- 0.15 * telemetry.velocity_world_z
+        # print(state[2] - env.elevation - cf_state.alt_fused)
+
+        # print(state[5] - cf_state.velocity_world_z)
+        # print(state_history[-1][6])
+        # print(state[5])
+        # print(telemetry.accel_world_z)
 
         set_airbrakes_initial_temp(telemetry)
         set_optimal_deployment("GLIDING_ASCENT", telemetry)

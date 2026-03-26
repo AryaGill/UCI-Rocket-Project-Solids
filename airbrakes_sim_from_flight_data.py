@@ -283,6 +283,7 @@ if __name__ == "__main__":
     q3 = df["q3"].to_numpy()
     pressure = [x*100 for x in df["pressure"].to_numpy()]
     temperature = [x + 273.71 for x in df["temperature"].to_numpy()]
+    accel_world_z = df["accel_world_z"].to_numpy()
 
     altitude = []
     for i in range(len(baro_alt)):
@@ -314,7 +315,7 @@ if __name__ == "__main__":
 
     tau_velocity = 0.3
     tau_altitude = 0.5
-    alpha_alt = 0.3
+    alpha_alt = 1
     # alpha_vel = 1 - tau_altitude
     alpha_vel = 1
     # alpha_quat = 1 - tau_altitude - tau_velocity
@@ -329,17 +330,18 @@ if __name__ == "__main__":
             altitude_old.append(0)
     alt_fused_old = []
     for i in range(len(altitude)):
-        # alt_fused_old.append(alt_fused[i] - 0.7 * velocity_world_z[i])
+        # alt_fused_old.append(alt_fused[i] - 0.5 * velocity_world_z[i])
         if i != 0:
             alt_fused_old.append(alt_fused[i] * alpha_alt + alt_fused[i-1] * (1-alpha_alt))
         else:
             alt_fused_old.append(0)
     velocity_world_z_old = []
     for i in range(len(altitude)):
-        if i != 0:
-            velocity_world_z_old.append(velocity_world_z[i] * alpha_vel + velocity_world_z[i-1] * (1-alpha_vel))
-        else:
-            velocity_world_z_old.append(0)
+        velocity_world_z_old.append(velocity_world_z[i] + 0.7 * accel_world_z[i])
+        # if i != 0:
+        #     velocity_world_z_old.append(velocity_world_z[i] * alpha_vel + velocity_world_z[i-1] * (1-alpha_vel))
+        # else:
+        #     velocity_world_z_old.append(0)
     q0_old = []
     for i in range(len(q0)):
         if i != 0:
