@@ -30,9 +30,9 @@ extern "C" {
  *
  * Both should stay in the range [0.0, 1.0].
  */
-#define TAU_VELOCITY   0.3f // seconds
-#define TAU_ALTITUDE   0.5f // seconds
-#define TAU_BARO_VEL   1.0f // seconds
+#define TAU_VELOCITY   0.2f // seconds
+#define TAU_ALTITUDE   0.2f // seconds
+#define TAU_BARO_VEL   0.2f // seconds
 
 void complementary_filter_init(Telemetry_t *telemetry);
 void complementary_filter(Telemetry_t *telemetry);

@@ -141,8 +141,8 @@ float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 
 	// Initial conditions
 	float alt_sim = telemetry->alt_fused;
-	float vz_sim = telemetry->velocity_world_z;
-	float vx_sim = telemetry->velocity_world_z * tanf(theta);
+	float vz_sim = telemetry->velocity_world_z + VELOCITY_TIME_SHIFT * telemetry->accel_world_z;
+	float vx_sim = vz_sim * tanf(theta);
 //	float vx_sim = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
 
 	// Convert pressure from hPa to Pa
