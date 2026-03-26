@@ -688,9 +688,9 @@ def create_rocket(config, env):
 
     cf_state = CFState()
 
-    TAU_VELOCITY = 0.5
-    TAU_ALTITUDE = 0.5
-    TAU_BARO_VEL = 0.1
+    TAU_VELOCITY = 0.2
+    TAU_ALTITUDE = 0.2
+    TAU_BARO_VEL = 0.2
 
     num_comp = 0
     def complementary_filter_py(telemetry, cf, time):
@@ -766,7 +766,7 @@ def create_rocket(config, env):
 
         complementary_filter_py(telemetry, cf_state, time)
 
-        telemetry.velocity_world_z = cf_state.velocity_world_z + 0.15 * telemetry.accel_world_z
+        telemetry.velocity_world_z = cf_state.velocity_world_z + 0.24 * telemetry.accel_world_z
         telemetry.altitude = cf_state.alt_fused #- 0.15 * telemetry.velocity_world_z
         # print(state[2] - env.elevation - cf_state.alt_fused)
 
