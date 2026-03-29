@@ -5,10 +5,10 @@
 ../Core/Src/airbrakes.c:126:7:get_mag2	1
 ../Core/Src/airbrakes.c:130:7:get_mag3	1
 ../Core/Src/airbrakes.c:134:7:predict_apogee	5
-../Core/Src/airbrakes.c:179:6:set_optimal_deployment	7
-../Core/Src/airbrakes.c:215:6:init_airbrakes_servo	1
-../Core/Src/airbrakes.c:220:6:set_airbrakes_initial_temp	1
-../Core/Src/airbrakes.c:224:6:set_airbrakes_servo_angle	3
-../Core/Src/airbrakes.c:237:6:set_airbrakes_deployment_level	2
-../Core/Src/airbrakes.c:252:6:set_airbrakes_deployment_level_on_rail	2
-../Core/Src/airbrakes.c:264:6:perform_airbrakes_servo_sequence	3
+../Core/Src/airbrakes.c:179:6:set_optimal_deployment	8
+../Core/Src/airbrakes.c:223:6:init_airbrakes_servo	1
+../Core/Src/airbrakes.c:228:6:set_airbrakes_initial_temp	1
+../Core/Src/airbrakes.c:232:6:set_airbrakes_servo_angle	3
+../Core/Src/airbrakes.c:245:6:set_airbrakes_deployment_level	2
+../Core/Src/airbrakes.c:260:6:set_airbrakes_deployment_level_on_rail	2
+../Core/Src/airbrakes.c:272:6:perform_airbrakes_servo_sequence	3

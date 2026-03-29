@@ -194,8 +194,9 @@ void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
 	int num_sims = log2f(NUM_DEPLOYMENT_LEVELS);
 
 	float pred_apogee;
+	int mid;
 	for (int i = 0; i < num_sims; ++i){
-		int mid = ((high + low) / 2) + 1;
+		mid = ((high + low) / 2) + 1;
 		pred_apogee = predict_apogee(telemetry, mid);
 		if (pred_apogee >= TARGET_APOGEE_M){
 			low = mid;
@@ -205,8 +206,15 @@ void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
 		}
 	}
 
-	// set predicted apogee variable
-	telemetry->predicted_apogee = predict_apogee(telemetry, low);
+	// Set predicted apogee variable
+	if (low == mid) {
+		// No need to recompute predicted apogee
+		telemetry->predicted_apogee = pred_apogee;
+	}
+	else {
+		// Need to recompute predicted apogee
+		telemetry->predicted_apogee = predict_apogee(telemetry, low);
+	}
 
 	// Set deployment level
 	set_airbrakes_deployment_level(telemetry, low);
