@@ -33,15 +33,15 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  14 .debug_macro  000410f6  00000000  00000000  00057d1a  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_line   00032ca3  00000000  00000000  00098e10  2**0
+ 15 .debug_line   00032c9c  00000000  00000000  00098e10  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_str    00184a6b  00000000  00000000  000cbab3  2**0
+ 16 .debug_str    00184a6b  00000000  00000000  000cbaac  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .comment      00000043  00000000  00000000  0025051e  2**0
+ 17 .comment      00000043  00000000  00000000  00250517  2**0
                   CONTENTS, READONLY
- 18 .debug_frame  0000ae8c  00000000  00000000  00250564  2**2
+ 18 .debug_frame  0000ae8c  00000000  00000000  0025055c  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_line_str 00000069  00000000  00000000  0025b3f0  2**0
+ 19 .debug_line_str 00000069  00000000  00000000  0025b3e8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -3480,7 +3480,7 @@ void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment){
  8001f7a:	f883 2048 	strb.w	r2, [r3, #72]	@ 0x48
 
 	// if deployment > 0.851 (max deployment of current night fury), then set to max
-	float real_max_percent_of_theoretical_max = 0.851;
+	float real_max_percent_of_theoretical_max = 0.94;
  8001f7e:	4b17      	ldr	r3, [pc, #92]	@ (8001fdc <set_airbrakes_deployment_level+0x7c>)
  8001f80:	617b      	str	r3, [r7, #20]
 	float t = (float)deployment / ((float)(NUM_DEPLOYMENT_LEVELS - 1) * real_max_percent_of_theoretical_max);
@@ -3513,7 +3513,7 @@ void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment){
  8001fd6:	3718      	adds	r7, #24
  8001fd8:	46bd      	mov	sp, r7
  8001fda:	bd80      	pop	{r7, pc}
- 8001fdc:	3f59db23 	.word	0x3f59db23
+ 8001fdc:	3f70a3d7 	.word	0x3f70a3d7
  8001fe0:	427c0000 	.word	0x427c0000
  8001fe4:	00000000 	.word	0x00000000
  8001fe8:	c2100000 	.word	0xc2100000
@@ -3681,8 +3681,9 @@ void set_target_apogee(Telemetry_t *telemetry) {
  8002122:	b08c      	sub	sp, #48	@ 0x30
  8002124:	af02      	add	r7, sp, #8
  8002126:	6078      	str	r0, [r7, #4]
-	TARGET_APOGEE_M = predict_apogee(telemetry, NUM_DEPLOYMENT_LEVELS / 2);
- 8002128:	2120      	movs	r1, #32
+	// Set to predicted apogee at about half deployment
+	TARGET_APOGEE_M = predict_apogee(telemetry, 30);
+ 8002128:	211e      	movs	r1, #30
  800212a:	6878      	ldr	r0, [r7, #4]
  800212c:	f7ff fc20 	bl	8001970 <predict_apogee>
  8002130:	eef0 7a40 	vmov.f32	s15, s0
@@ -7115,6 +7116,7 @@ int main(void)
  8003e72:	484d      	ldr	r0, [pc, #308]	@ (8003fa8 <main+0x258>)
  8003e74:	f7fe fe40 	bl	8002af8 <update_flight_state>
 
+		// Set target apogee (Remove unless want dynamic target apogee)
 		if (gliding_ascent_start_time == 0 && flight_state == GLIDING_ASCENT){
  8003e78:	4b4e      	ldr	r3, [pc, #312]	@ (8003fb4 <main+0x264>)
  8003e7a:	681b      	ldr	r3, [r3, #0]
@@ -7130,7 +7132,7 @@ int main(void)
  8003e8e:	4a49      	ldr	r2, [pc, #292]	@ (8003fb4 <main+0x264>)
  8003e90:	6013      	str	r3, [r2, #0]
 		}
-		if (set_airbrakes_target_apogee == 0 && flight_state == GLIDING_ASCENT && gliding_ascent_start_time - HAL_GetTick() > 2000) {
+		if (set_airbrakes_target_apogee == 0 && flight_state == GLIDING_ASCENT && HAL_GetTick() - gliding_ascent_start_time > 2000) {
  8003e92:	4b49      	ldr	r3, [pc, #292]	@ (8003fb8 <main+0x268>)
  8003e94:	781b      	ldrb	r3, [r3, #0]
  8003e96:	2b00      	cmp	r3, #0
@@ -7139,11 +7141,11 @@ int main(void)
  8003e9c:	781b      	ldrb	r3, [r3, #0]
  8003e9e:	2b03      	cmp	r3, #3
  8003ea0:	d10e      	bne.n	8003ec0 <main+0x170>
- 8003ea2:	4b44      	ldr	r3, [pc, #272]	@ (8003fb4 <main+0x264>)
- 8003ea4:	681c      	ldr	r4, [r3, #0]
- 8003ea6:	f003 fe8d 	bl	8007bc4 <HAL_GetTick>
- 8003eaa:	4603      	mov	r3, r0
- 8003eac:	1ae3      	subs	r3, r4, r3
+ 8003ea2:	f003 fe8f 	bl	8007bc4 <HAL_GetTick>
+ 8003ea6:	4602      	mov	r2, r0
+ 8003ea8:	4b42      	ldr	r3, [pc, #264]	@ (8003fb4 <main+0x264>)
+ 8003eaa:	681b      	ldr	r3, [r3, #0]
+ 8003eac:	1ad3      	subs	r3, r2, r3
  8003eae:	f5b3 6ffa 	cmp.w	r3, #2000	@ 0x7d0
  8003eb2:	d905      	bls.n	8003ec0 <main+0x170>
 			set_target_apogee(&telemetry);

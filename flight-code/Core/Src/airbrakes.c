@@ -252,7 +252,7 @@ void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment){
 	telemetry->airbrake_deployment = deployment;
 
 	// if deployment > 0.851 (max deployment of current night fury), then set to max
-	float real_max_percent_of_theoretical_max = 0.851;
+	float real_max_percent_of_theoretical_max = 0.94;
 	float t = (float)deployment / ((float)(NUM_DEPLOYMENT_LEVELS - 1) * real_max_percent_of_theoretical_max);
 	t = clampf(t, 0, 1);
 	float angle = SERVO_ANGLE_NOT_EXTENDED + t * (SERVO_ANGLE_EXTENDED - SERVO_ANGLE_NOT_EXTENDED);
@@ -299,7 +299,8 @@ void perform_airbrakes_servo_sequence(Telemetry_t *telemetry){
 }
 
 void set_target_apogee(Telemetry_t *telemetry) {
-	TARGET_APOGEE_M = predict_apogee(telemetry, NUM_DEPLOYMENT_LEVELS / 2);
+	// Set to predicted apogee at about half deployment
+	TARGET_APOGEE_M = predict_apogee(telemetry, 30);
 	char msg[32];
 	snprintf(msg, sizeof(msg), "Set Target Apogee to %.2f", TARGET_APOGEE_M);
 	write_datafile_message(msg);
