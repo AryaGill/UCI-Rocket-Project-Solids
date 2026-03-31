@@ -181,6 +181,9 @@ void Error_Pattern(void)
     // System halts here - never returns
 }
 
+uint8_t set_airbrakes_target_apogee = 0;
+uint32_t gliding_ascent_start_time = 0;
+
 /* USER CODE END 0 */
 
 /**
@@ -302,6 +305,15 @@ int main(void)
 
 		// Update flight state
 		update_flight_state(&flight_state, &telemetry);
+
+		// Set target apogee (Remove unless want dynamic target apogee)
+		if (gliding_ascent_start_time == 0 && flight_state == GLIDING_ASCENT){
+			gliding_ascent_start_time = HAL_GetTick();
+		}
+		if (set_airbrakes_target_apogee == 0 && flight_state == GLIDING_ASCENT && HAL_GetTick() - gliding_ascent_start_time > 2000) {
+			set_target_apogee(&telemetry);
+			set_airbrakes_target_apogee = 1;
+		}
 
 		// Control Airbrakes
 		set_optimal_deployment(flight_state, &telemetry);

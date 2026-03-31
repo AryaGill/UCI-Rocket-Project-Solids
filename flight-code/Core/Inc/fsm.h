@@ -10,7 +10,7 @@
 // Leilani rocket
 //#define MOTOR_BURN_TIME 1700 // ms
 // Night Fury
-#define MOTOR_BURN_TIME 4700 // ms
+#define MOTOR_BURN_TIME 5000 // ms
 // Light Fury
 //#define MOTOR_BURN_TIME 4700 // ms
 

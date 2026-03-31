@@ -1,5 +1,7 @@
 #include "airbrakes.h"
+#include "telemetry.h"
 #include <math.h>
+#include <stdio.h>
 
 // Servo timer
 extern TIM_HandleTypeDef htim3;
@@ -14,7 +16,7 @@ extern TIM_HandleTypeDef htim3;
 float deltaT_coefficient = TIME_PER_SIM_STEP * log2f(NUM_DEPLOYMENT_LEVELS) / DESIRED_SEARCH_TIME / g;
 float ground_temp = 300;
 
-
+float TARGET_APOGEE_M = TARGET_APOGEE_FT * 0.3048;
 
 // Deployment levels should be evenly spread between least and most deployment (inclusive)
 // Mach numbers should be evenly spread between 0 and 0.7 (inclusive)
@@ -294,4 +296,11 @@ void perform_airbrakes_servo_sequence(Telemetry_t *telemetry){
 	set_airbrakes_deployment_level_on_rail(telemetry, NUM_DEPLOYMENT_LEVELS - 1);
 	HAL_Delay(500);
 	set_airbrakes_deployment_level_on_rail(telemetry, 0);
+}
+
+void set_target_apogee(Telemetry_t *telemetry) {
+	TARGET_APOGEE_M = predict_apogee(telemetry, NUM_DEPLOYMENT_LEVELS / 2);
+	char msg[32];
+	snprintf(msg, sizeof(msg), "Set Target Apogee to %.2f", TARGET_APOGEE_M);
+	write_datafile_message(msg);
 }

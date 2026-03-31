@@ -10,7 +10,7 @@
 #define MASS 24.2 // kg
 #define TARGET_APOGEE_FT 9000
 
-#define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
+//#define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
 
 #define SERVO_ANGLE_NOT_EXTENDED 171.0f
 #define SERVO_ANGLE_EXTENDED 135.0f
@@ -37,3 +37,4 @@ void set_airbrakes_servo_angle(float angle);
 void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment);
 void set_airbrakes_initial_temp(Telemetry_t *telemetry);
 void perform_airbrakes_servo_sequence();
+void set_target_apogee(Telemetry_t *telemetry);

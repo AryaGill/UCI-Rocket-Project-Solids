@@ -1,4 +1,4 @@
-../Core/Src/fsm.c:52:6:set_flight_state	112	static
-../Core/Src/fsm.c:64:9:sensors_indicate_flight	24	static
-../Core/Src/fsm.c:78:6:init_flight_state	32	static
-../Core/Src/fsm.c:118:6:update_flight_state	24	static
+../Core/Src/fsm.c:54:6:set_flight_state	112	static
+../Core/Src/fsm.c:66:9:sensors_indicate_flight	24	static
+../Core/Src/fsm.c:80:6:init_flight_state	32	static
+../Core/Src/fsm.c:120:6:update_flight_state	24	static

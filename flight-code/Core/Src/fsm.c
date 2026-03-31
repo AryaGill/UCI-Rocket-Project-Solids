@@ -6,6 +6,7 @@
 #include "sd_card.h"
 #include "telemetry.h"
 #include "parachutes.h"
+#include "airbrakes.h"
 #include <stdio.h>
 
 //float alt_dif_buffer[ALT_DIF_BUF_SIZE];
@@ -21,7 +22,8 @@ uint32_t launch_accel_detected_time = -1;
 unsigned int negative_accel_counter = 0;
 
 // Motor Burn to Gliding Ascent detection variables
-uint32_t num_neg_accel = 0;
+uint32_t num_increasing_accel = 0;
+float prev_accel = 0;
 
 uint32_t prev_led_toggle_time = 0;
 
@@ -164,19 +166,15 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case MOTOR_BURN:
-    		if (telemetry->accel_world_z < 0){
-    			++num_neg_accel;
+    		if (telemetry->accel_world_z > prev_accel){
+    			++num_increasing_accel;
     		}
     		else{
-    			num_neg_accel = 0;
+    			num_increasing_accel = 0;
     		}
+    		prev_accel = telemetry->accel_world_z;
 
-    		// Combine with if statement below once verified to work
-    		if (num_neg_accel > 20){
-    			write_datafile_message("Detected motor burn finished using accel");
-    		}
-
-    		if (HAL_GetTick() - state_start_time > MOTOR_BURN_TIME /* || num_neg_accel > 20 */){
+    		if (HAL_GetTick() - state_start_time > MOTOR_BURN_TIME || (num_increasing_accel > 10 && telemetry->accel_world_z < 0)){
     			set_flight_state(GLIDING_ASCENT, flight_state, telemetry);
     		}
 

@@ -46,7 +46,7 @@ Core/Src/fsm.o: ../Core/Src/fsm.c ../Core/Inc/fsm.h ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h \
  ../Middlewares/Third_Party/FatFs/src/diskio.h \
  ../Middlewares/Third_Party/FatFs/src/ff.h ../FATFS/Target/user_diskio.h \
- ../Core/Inc/parachutes.h
+ ../Core/Inc/parachutes.h ../Core/Inc/airbrakes.h
 ../Core/Inc/fsm.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal.h:
@@ -102,3 +102,4 @@ Core/Src/fsm.o: ../Core/Src/fsm.c ../Core/Inc/fsm.h ../Core/Inc/main.h \
 ../Middlewares/Third_Party/FatFs/src/ff.h:
 ../FATFS/Target/user_diskio.h:
 ../Core/Inc/parachutes.h:
+../Core/Inc/airbrakes.h:
