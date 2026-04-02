@@ -239,6 +239,7 @@ class SerialStreamer(QThread):
         except Exception:
             return s
 
+    #The whole write command was rewritten using non-blocking
     def write_command(self, cmd: str, burst: int = 20,
                   tx_sleep: float = 0.05, rx_window: float = 0.20):
         """
@@ -261,6 +262,7 @@ class SerialStreamer(QThread):
 
         encoded = (cmd.strip() + "\n").encode('utf-8')
 
+        #Non blocking is this burst code
         def _burst():
             was_paused = self.paused          # remember caller's pause state
 
