@@ -239,24 +239,57 @@ class SerialStreamer(QThread):
         except Exception:
             return s
 
-    def write_command(self, cmd: str, burst: int = 20):
-        """Send command back to the serial device (non-blocking burst)."""
+    def write_command(self, cmd: str, burst: int = 20,
+                  tx_sleep: float = 0.05, rx_window: float = 0.20):
+        """
+        Send command back to the serial device (non-blocking burst).
+
+        Alternates between TX and RX windows so the LoRA radio is never
+        transmitting and listening at the same time:
+
+            [pause RX] → write → [resume RX] → rx_window sleep → repeat
+
+        Args:
+            cmd:       Command string to send (newline appended automatically).
+            burst:     Number of times to repeat the command.
+            tx_sleep:  Seconds to wait after each write before opening the RX window.
+            rx_window: Seconds to leave the read loop running between transmissions.
+        """
         if not (self._ser and self._ser.is_open):
             self.status.emit("Write error: port not open")
             return
 
         encoded = (cmd.strip() + "\n").encode('utf-8')
-        
+
         def _burst():
+            was_paused = self.paused          # remember caller's pause state
+
             try:
-                for _ in range(burst):
-                    if not self._ser.is_open:
+                for i in range(burst):
+                    if not self.is_running or not self._ser.is_open:
                         break
-                    self._ser.write(encoded)
-                    time.sleep(0.25)
+
+                    # ── TX window ────────────────────────────────────────────
+                    self.paused = True        # stop the read loop
+                    time.sleep(0.01)          # let any in-progress readline() finish
+
+                    try:
+                        self._ser.write(encoded)
+                    except Exception as e:
+                        self.status.emit(f"Write error on burst {i}: {e}")
+                        break
+
+                    time.sleep(tx_sleep)      # hold TX line briefly
+
+                    # ── RX window ────────────────────────────────────────────
+                    self.paused = False       # let the read loop receive an ACK / reply
+                    time.sleep(rx_window)     # give the remote node time to respond
+
                 self.status.emit(f"Sent (x{burst}): {cmd.strip()}")
-            except Exception as e:
-                self.status.emit(f"Write error: {e}")
+
+            finally:
+                # Always restore whatever pause state was in effect before
+                self.paused = was_paused
 
         import threading
         threading.Thread(target=_burst, daemon=True).start()

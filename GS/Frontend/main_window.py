@@ -398,7 +398,8 @@ class GroundStationWindow(QMainWindow):
             from Frontend.rpy_graph import RPYGraph
             from Frontend.velocity_graph import VelocityGraph
             from Frontend.quaternion_graph import QuaternionGraph
-            from Frontend.ap_deployment_graph import APDeploymentGraph
+            from Frontend.ab_deployment_graph import ABGraph
+            from Frontend.apogee_graph import APGraph
 
             self.altitude_graph = AltitudeGraph()
             self.temp_graph = TempGraph()
@@ -409,13 +410,15 @@ class GroundStationWindow(QMainWindow):
             self.rpy_graph = RPYGraph()
             self.velocity_graph = VelocityGraph()
             self.quaternion_graph = QuaternionGraph()
-            self.ap_deployment_graph = APDeploymentGraph()
+            self.ab_graph = ABGraph()
+            self.ap_graph = APGraph()
 
             for graph in (self.altitude_graph, self.temp_graph,
                     self.accel_lis_graph, self.accel_world_graph,
                     self.ang_graph, self.mag_graph,
                     self.rpy_graph, self.velocity_graph,
-                    self.quaternion_graph, self.ap_deployment_graph):
+                    self.quaternion_graph, self.ab_graph,
+                    self.ap_graph):
                 graph.setMinimumSize(320, 340)
 
             layout.addWidget(self.altitude_graph,      0, 0)
@@ -427,7 +430,8 @@ class GroundStationWindow(QMainWindow):
             layout.addWidget(self.rpy_graph,            2, 1)
             layout.addWidget(self.velocity_graph,       2, 2)
             layout.addWidget(self.quaternion_graph,     3, 0)
-            layout.addWidget(self.ap_deployment_graph,  3, 1)
+            layout.addWidget(self.ab_graph,             3, 1)
+            layout.addWidget(self.ap_graph,             3, 2)
 
             for col in range(3):
                 layout.setColumnStretch(col, 1)
@@ -682,6 +686,17 @@ class GroundStationWindow(QMainWindow):
                     data['Time'], data['Quaternion_W'], data['Quaternion_X'],
                     data['Quaternion_Y'], data['Quaternion_Z'],
                     max_points=self.max_points)
+        
+        if hasattr(self, 'ab_graph'):
+            if all(data.get(k) is not None for k in ['Time', 'AB_Deployment']):
+                self.ab_graph.update_data(
+                        data['Time'], (data['AB_Deployment'] / 63) * 100, max_points = self.max_points)
+                
+        if hasattr(self, 'ap_graph'):
+            if all(data.get(k) is not None for k in ['Time', 'pred_apo']):
+                self.ap_graph.update_data(
+                        data['Time'], data['pred_apo'], max_points = self.max_points)
+
     
     def update_status(self, message):
         print(f"[STATUS] {message}")
