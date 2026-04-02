@@ -347,6 +347,9 @@ int main(void)
 			save_data_file();
 		}
 
+//		perform_airbrakes_servo_sequence();
+//		HAL_Delay(5000);
+
 //		HAL_Delay(1);
 
     /* USER CODE END WHILE */
