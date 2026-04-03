@@ -23,25 +23,25 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
   9 .ARM.attributes 0000002e  00000000  00000000  00020488  2**0
                   CONTENTS, READONLY
- 10 .debug_info   0002de8f  00000000  00000000  000204b6  2**0
+ 10 .debug_info   0002de9f  00000000  00000000  000204b6  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 11 .debug_abbrev 00005cf1  00000000  00000000  0004e345  2**0
+ 11 .debug_abbrev 00005cf1  00000000  00000000  0004e355  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 12 .debug_aranges 00002258  00000000  00000000  00054038  2**3
+ 12 .debug_aranges 00002258  00000000  00000000  00054048  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_rnglists 00001a8a  00000000  00000000  00056290  2**0
+ 13 .debug_rnglists 00001a8a  00000000  00000000  000562a0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_macro  000410f6  00000000  00000000  00057d1a  2**0
+ 14 .debug_macro  000410f6  00000000  00000000  00057d2a  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_line   00032c9c  00000000  00000000  00098e10  2**0
+ 15 .debug_line   00032c9c  00000000  00000000  00098e20  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_str    00184a6c  00000000  00000000  000cbaac  2**0
+ 16 .debug_str    00184a6c  00000000  00000000  000cbabc  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .comment      00000043  00000000  00000000  00250518  2**0
+ 17 .comment      00000043  00000000  00000000  00250528  2**0
                   CONTENTS, READONLY
- 18 .debug_frame  0000ae8c  00000000  00000000  0025055c  2**2
+ 18 .debug_frame  0000ae8c  00000000  00000000  0025056c  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_line_str 00000069  00000000  00000000  0025b3e8  2**0
+ 19 .debug_line_str 00000069  00000000  00000000  0025b3f8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -3678,7 +3678,7 @@ void perform_airbrakes_servo_sequence(Telemetry_t *telemetry){
 
 void set_target_apogee(Telemetry_t *telemetry) {
  8002120:	b580      	push	{r7, lr}
- 8002122:	b08c      	sub	sp, #48	@ 0x30
+ 8002122:	b08e      	sub	sp, #56	@ 0x38
  8002124:	af02      	add	r7, sp, #8
  8002126:	6078      	str	r0, [r7, #4]
 	// Set to predicted apogee at about half deployment
@@ -3689,7 +3689,7 @@ void set_target_apogee(Telemetry_t *telemetry) {
  8002130:	eef0 7a40 	vmov.f32	s15, s0
  8002134:	4b0c      	ldr	r3, [pc, #48]	@ (8002168 <set_target_apogee+0x48>)
  8002136:	edc3 7a00 	vstr	s15, [r3]
-	char msg[32];
+	char msg[40];
 	snprintf(msg, sizeof(msg), "Set Target Apogee to %.2f", TARGET_APOGEE_M);
  800213a:	4b0b      	ldr	r3, [pc, #44]	@ (8002168 <set_target_apogee+0x48>)
  800213c:	edd3 7a00 	vldr	s15, [r3]
@@ -3697,7 +3697,7 @@ void set_target_apogee(Telemetry_t *telemetry) {
  8002144:	f107 0308 	add.w	r3, r7, #8
  8002148:	ed8d 7b00 	vstr	d7, [sp]
  800214c:	4a07      	ldr	r2, [pc, #28]	@ (800216c <set_target_apogee+0x4c>)
- 800214e:	2120      	movs	r1, #32
+ 800214e:	2128      	movs	r1, #40	@ 0x28
  8002150:	4618      	mov	r0, r3
  8002152:	f014 fec5 	bl	8016ee0 <sniprintf>
 	write_datafile_message(msg);
@@ -3706,7 +3706,7 @@ void set_target_apogee(Telemetry_t *telemetry) {
  800215c:	f005 fa9e 	bl	800769c <write_datafile_message>
 }
  8002160:	bf00      	nop
- 8002162:	3728      	adds	r7, #40	@ 0x28
+ 8002162:	3730      	adds	r7, #48	@ 0x30
  8002164:	46bd      	mov	sp, r7
  8002166:	bd80      	pop	{r7, pc}
  8002168:	2400000c 	.word	0x2400000c

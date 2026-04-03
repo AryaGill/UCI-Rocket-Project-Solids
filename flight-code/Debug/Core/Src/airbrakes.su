@@ -12,4 +12,4 @@
 ../Core/Src/airbrakes.c:247:6:set_airbrakes_deployment_level	32	static
 ../Core/Src/airbrakes.c:262:6:set_airbrakes_deployment_level_on_rail	24	static
 ../Core/Src/airbrakes.c:274:6:perform_airbrakes_servo_sequence	24	static
-../Core/Src/airbrakes.c:301:6:set_target_apogee	56	static
+../Core/Src/airbrakes.c:301:6:set_target_apogee	64	static

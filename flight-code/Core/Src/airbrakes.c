@@ -301,7 +301,7 @@ void perform_airbrakes_servo_sequence(Telemetry_t *telemetry){
 void set_target_apogee(Telemetry_t *telemetry) {
 	// Set to predicted apogee at about half deployment
 	TARGET_APOGEE_M = predict_apogee(telemetry, 30);
-	char msg[32];
+	char msg[40];
 	snprintf(msg, sizeof(msg), "Set Target Apogee to %.2f", TARGET_APOGEE_M);
 	write_datafile_message(msg);
 }
