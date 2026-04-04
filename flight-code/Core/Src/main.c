@@ -293,64 +293,66 @@ int main(void)
 
 	while (1)
 	{
-		// Read Sensors
-		read_sensors(&telemetry);
-		read_ematch_connections(&telemetry);
-		read_camera_adcs(&telemetry);
-
-		// Filter
-		Madgwick_Update(&telemetry);
-		Madgwick_GetEuler(&telemetry);
-		complementary_filter(&telemetry);
-
-		// Update flight state
-		update_flight_state(&flight_state, &telemetry);
-
-		// Set target apogee (Remove unless want dynamic target apogee)
-		if (gliding_ascent_start_time == 0 && flight_state == GLIDING_ASCENT){
-			gliding_ascent_start_time = HAL_GetTick();
-		}
-		if (set_airbrakes_target_apogee == 0 && flight_state == GLIDING_ASCENT && HAL_GetTick() - gliding_ascent_start_time > 2000) {
-			set_target_apogee(&telemetry);
-			set_airbrakes_target_apogee = 1;
-		}
-
-		// Control Airbrakes
-		set_optimal_deployment(flight_state, &telemetry);
-
-		// Handle Commands
-		RFM9X_Poll();
-		len = RFM9X_Receive(rxbuf, sizeof(rxbuf));
-		if(len > 0)
-		{
-			handle_rf_command((char *)rxbuf, &flight_state, &telemetry);
-		}
-
-		// Send RF data
-		uint32_t cur_time = HAL_GetTick();
-		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD && !RFM9X_IsTxBusy()){
-			prev_rf_transmit_time = cur_time;
-			char msg[300];
-			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
-			RFM9X_Send((uint8_t *)msg, strlen(msg));
-		}
-
-		// Log telemetry
-		if (cur_time - prev_log_time >= telemetry_log_period(flight_state)){
-			prev_log_time = cur_time;
-			log_data(flight_state, &telemetry); // Possible change: decrease how often we save the data file
-		}
-
-		// Flush data file
-		if (cur_time - prev_flush_time >= 500) {
-			prev_flush_time = cur_time;
-			save_data_file();
-		}
+////		 Read Sensors
+//		read_sensors(&telemetry);
+//		read_ematch_connections(&telemetry);
+//		read_camera_adcs(&telemetry);
+//
+//		// Filter
+//		Madgwick_Update(&telemetry);
+//		Madgwick_GetEuler(&telemetry);
+//		complementary_filter(&telemetry);
+//
+//		// Update flight state
+//		update_flight_state(&flight_state, &telemetry);
+//
+//		// Set target apogee (Remove unless want dynamic target apogee)
+//		if (gliding_ascent_start_time == 0 && flight_state == GLIDING_ASCENT){
+//			gliding_ascent_start_time = HAL_GetTick();
+//		}
+//		if (set_airbrakes_target_apogee == 0 && flight_state == GLIDING_ASCENT && HAL_GetTick() - gliding_ascent_start_time > 2000) {
+//			set_target_apogee(&telemetry);
+//			set_airbrakes_target_apogee = 1;
+//		}
+//
+//		// Control Airbrakes
+//		set_optimal_deployment(flight_state, &telemetry);
+//
+//		// Handle Commands
+//		RFM9X_Poll();
+//		len = RFM9X_Receive(rxbuf, sizeof(rxbuf));
+//		if(len > 0)
+//		{
+//			handle_rf_command((char *)rxbuf, &flight_state, &telemetry);
+//		}
+//
+//		// Send RF data
+//		uint32_t cur_time = HAL_GetTick();
+//		if (cur_time - prev_rf_transmit_time >= RF_TRANSMIT_PERIOD && !RFM9X_IsTxBusy()){
+//			prev_rf_transmit_time = cur_time;
+//			char msg[300];
+//			get_rf_msg(flight_state, &telemetry, msg, sizeof(msg));
+//			RFM9X_Send((uint8_t *)msg, strlen(msg));
+//		}
+//
+//		// Log telemetry
+//		if (cur_time - prev_log_time >= telemetry_log_period(flight_state)){
+//			prev_log_time = cur_time;
+//			log_data(flight_state, &telemetry); // Possible change: decrease how often we save the data file
+//		}
+//
+//		// Flush data file
+//		if (cur_time - prev_flush_time >= 500) {
+//			prev_flush_time = cur_time;
+//			save_data_file();
+//		}
 
 //		perform_airbrakes_servo_sequence();
 //		HAL_Delay(5000);
 
 //		HAL_Delay(1);
+
+		set_airbrakes_deployment_level(&telemetry, 0);
 
     /* USER CODE END WHILE */
 
