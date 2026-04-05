@@ -68,12 +68,12 @@ uint8_t sensors_indicate_flight(Telemetry_t *telemetry){
 
 	for (int i = 0; i < 250; ++i){
 		read_sensors(telemetry);
+		if (abs(telemetry->altitude - alt_i) > POWER_RESET_MIN_ALT_CHANGE){
+			return 1;
+		}
 		HAL_Delay(10);
 	}
 
-	if (abs(telemetry->altitude - alt_i) > POWER_RESET_MIN_ALT_CHANGE){
-		return 1;
-	}
 	return 0;
 }
 
