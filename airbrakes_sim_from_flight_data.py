@@ -148,7 +148,7 @@ def predict_apogee(telemetry, deployment_level):
 
     # Initial conditions
     alt_sim = float(telemetry.altitude)
-    vz_sim = float(telemetry.velocity_world_z) + 0.8 * float(telemetry.accel_world_z)
+    vz_sim = float(telemetry.velocity_world_z) + 0.24 * float(telemetry.accel_world_z)
 
     # derive horizontal velocity from tilt
     vx_sim = float(vz_sim * math.tan(theta))
@@ -216,7 +216,7 @@ def predict_apogee(telemetry, deployment_level):
         if vz_sim < 0.0:
             break
 
-    if float(telemetry.time) - float(launch_time) > float(motor_burn_time):
+    if float(telemetry.time) > motor_burn_end_time:
         sim_angles_from_vert.append(sim_angle_from_vert)
         sim_times.append(sim_time)
         sim_pressures.append(sim_pressure)
@@ -267,11 +267,11 @@ def set_airbrakes_initial_temp(telemetry):
 
 if __name__ == "__main__":
     # read data file
-    df = pd.read_excel("night_fury_3-22-26_airbrakes_input.xlsx")
+    # df = pd.read_excel("night_fury_3-22-26_airbrakes_input.xlsx")
+    df = pd.read_excel("night_fury_4-5-26.xlsx")
 
     time = df["time"].to_numpy()
-    # baro_alt = df["altitude"].to_numpy()
-    # startAlt = df["startAlt"].to_numpy()
+    baro_alt = df["altitude"].to_numpy() - df["startAlt"].to_numpy()
     alt_fused = df["alt_fused"].to_numpy()
     initial_temp = [x + 273.15 for x in df["initial_temp"].to_numpy()]
     velocity_world_z = df["velocity_world_z"].to_numpy()
@@ -282,13 +282,19 @@ if __name__ == "__main__":
     pressure = df["pressure"].to_numpy()
     temperature = [x + 273.15 for x in df["temperature"].to_numpy()]
     accel_world_z = df["accel_world_z"].to_numpy()
+    real_deployment_level = df["airbrake_deployment"].to_numpy()
+    baro_vz = df["baro_vz"].to_numpy()
 
     # altitude = []
     # for i in range(len(baro_alt)):
     #     altitude.append(baro_alt[i] - startAlt[i])
 
-    launch_time = 652889
-    motor_burn_time = 4700
+    # launch_time = 652889
+    # motor_burn_time = 4700
+    motor_burn_end_time = 610945
+    apogee_time = 630547
+    apogee = float(next((x for i, x in enumerate(alt_fused) if time[i] == apogee_time), None))
+    first_airbrakes_on_time = 612979
     
     # idea: try using measured temp and see if changes much
 
@@ -311,10 +317,16 @@ if __name__ == "__main__":
     global sim_velocities_x
     sim_velocities_x = []
 
+    accepted_time = []
+    prev_time = -100
     for i in range(len(time)):
+        if time[i] - prev_time < 0.1:
+            continue
+        accepted_time.append(time[i])
+
         telemetry = Telemetry()
         telemetry.time = time[i]
-        # telemetry.altitude = altitude[i]
+        # telemetry.altitude = baro_alt[i]
         telemetry.altitude = alt_fused[i]
         telemetry.velocity_world_z = velocity_world_z[i]
         telemetry.temperature = initial_temp[i]
@@ -326,12 +338,12 @@ if __name__ == "__main__":
         telemetry.accel_world_z = accel_world_z[i]
 
         set_airbrakes_initial_temp(telemetry)
-        if time[i] - launch_time > motor_burn_time:
+        if time[i] > motor_burn_end_time:
             set_optimal_deployment("GLIDING_ASCENT", telemetry)
         else:
             set_optimal_deployment("MOTOR_BURN", telemetry)
 
-        if time[i] - launch_time > motor_burn_time:
+        if time[i] > motor_burn_end_time:
             deployment_level.append(min(telemetry.airbrake_deployment / (NUM_DEPLOYMENT_LEVELS - 1), 0.851))
             # air_brakes.deployment_level = 0 /  (NUM_DEPLOYMENT_LEVELS - 1)
             # telemetry.predicted_apogee = predict_apogee(telemetry, 0)
@@ -342,38 +354,42 @@ if __name__ == "__main__":
         predicted_apogee.append(telemetry.predicted_apogee)
         angle_from_vert.append(angle_from_vertical(telemetry) * 180 / math.pi)
 
-    idx_airbrakes_off_bc_angle = next((i for i, x in enumerate(angle_from_vert) if x > 30), None)
-    idx_motor_burn_end = next((i for i, x in enumerate(time) if x >= launch_time + motor_burn_time), None)
-    idx_apogee = next((i for i, x in enumerate(alt_fused) if x == max(alt_fused)), None)
+    # time_airbrakes_off_bc_angle = accepted_time[next((i for i, x in enumerate(angle_from_vert) if x > 30), None)]
+    time_airbrakes_off_bc_angle = 614326
+    # idx_motor_burn_end = next((i for i, x in enumerate(time) if x >= launch_time + motor_burn_time), None)
+    idx_motor_burn_end = next((i for i, x in enumerate(accepted_time) if x >= motor_burn_end_time), None)
         
-    # # Plot predicted apogee
-    # plt.plot(time, [x*3.2808399 for x in predicted_apogee], label="Predicted Apogee")
-    # plt.plot(time, [x*3.2808399 for x in alt_fused], label="Altitude Fused")
-    # plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
-    # plt.axvline(x=time[idx_airbrakes_off_bc_angle], color='g', linestyle='--', linewidth=2, label="Approx. Airbrakes off bc angle > 30")
-    # plt.xlabel("Time (ms)")
-    # plt.ylabel("Altitude (ft)")
-    # plt.title("Predicted Apogee by Time")
-    # plt.legend()
-    # plt.grid()
-    # plt.show()
+    # Plot predicted apogee
+    plt.plot(accepted_time, [x*3.2808399 for x in predicted_apogee], label="Predicted Apogee")
+    plt.plot(time, [x*3.2808399 for x in alt_fused], label="Altitude Fused")
+    plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
+    plt.axvline(x=time_airbrakes_off_bc_angle, color='g', linestyle='--', linewidth=2, label="Airbrakes off bc angle > 30")
+    plt.xlabel("Time (ms)")
+    plt.ylabel("Altitude (ft)")
+    plt.title("Predicted Apogee by Time")
+    plt.legend()
+    plt.grid()
+    plt.show()
 
-    # # Plot deployment level
-    # plt.plot(time, deployment_level, label="Deployment Level")
-    # plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
-    # plt.xlabel("Time (ms)")
-    # plt.ylabel("Deployment Level")
-    # plt.title("Deployment Level by Time")
-    # plt.legend()
-    # plt.grid()
-    # plt.show()
+    # Plot deployment level
+    # plt.plot(accepted_time, deployment_level, label="Deployment Level")
+    plt.plot(time, real_deployment_level, label="Deployment Level")
+    plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
+    plt.axvline(x=time_airbrakes_off_bc_angle, color='g', linestyle='--', linewidth=2, label="Airbrakes off bc angle > 30")
+    plt.xlabel("Time (ms)")
+    plt.ylabel("Deployment Level")
+    plt.title("Deployment Level by Time")
+    plt.legend()
+    plt.grid()
+    plt.show()
 
     # Plot overestimate
-    overestimate = [(predicted_apogee[i] - max(alt_fused)) * 3.2808399 for i in range(len(time))]
-    print("Max Overestimate: " + str(max(overestimate)))
-    plt.plot(time[idx_motor_burn_end:], overestimate[idx_motor_burn_end:], label="Predicted Apogee - Real Apogee")
-    plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
-    plt.axvline(x=time[idx_apogee], color='g', linestyle='--', linewidth=2, label="Apogee")
+    overestimate = [(predicted_apogee[i] - apogee) * 3.2808399 for i in range(len(time))]
+    # print("Max Overestimate: " + str(max(overestimate)))
+    plt.plot(accepted_time[idx_motor_burn_end:], overestimate[idx_motor_burn_end:], label="Predicted Apogee - Real Apogee")
+    plt.axvline(x=time_airbrakes_off_bc_angle, color='g', linestyle='--', linewidth=2, label="Airbrakes off bc angle > 30")
+    plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
+    plt.axvline(x=apogee_time, color='c', linestyle='--', linewidth=2, label="Apogee")
     plt.xlabel("Time (ms)")
     plt.ylabel("Altitude (ft)")
     plt.title("Predicted Apogee Overestimate by Time")
@@ -383,10 +399,11 @@ if __name__ == "__main__":
 
     # # Plot angle from vert
     # plt.plot(time, angle_from_vert, label="Measured Angle from Vertical")
-    # for i in range(len(sim_times)):
-    #     plt.plot(sim_times[i], sim_angles_from_vert[i])
-    # plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
+    # # for i in range(len(sim_times)):
+    # #     plt.plot(sim_times[i], sim_angles_from_vert[i])
+    # plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
     # plt.axhline(y=30, color='g', linestyle='--', linewidth=2, label="30 degrees (airbrakes off when above)")
+    # plt.axvline(x=time_airbrakes_off_bc_angle, color='g', linestyle='--', linewidth=2, label="Airbrakes off bc angle > 30")
     # plt.xlabel("Time (ms)")
     # plt.ylabel("Angle (deg)")
     # plt.title("Angle from vertical by Time")
@@ -398,7 +415,7 @@ if __name__ == "__main__":
     # plt.plot(time, pressure, label="Measured Pressure")
     # for i in range(len(sim_times)):
     #     plt.plot(sim_times[i], sim_pressures[i])
-    # plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
+    # plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
     # plt.xlabel("Time (ms)")
     # plt.ylabel("Pressure (hPa)")
     # plt.title("Pressure by Time")
@@ -410,7 +427,7 @@ if __name__ == "__main__":
     # plt.plot(time, temperature, label="Measured Temperature")
     # for i in range(len(sim_times)):
     #     plt.plot(sim_times[i], sim_temperatures[i])
-    # plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
+    # plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
     # plt.xlabel("Time (ms)")
     # plt.ylabel("Temperature (K)")
     # plt.title("Temperature by Time")
@@ -418,23 +435,29 @@ if __name__ == "__main__":
     # plt.grid()
     # plt.show()
 
-    # # Plot velocity world z
+    # Plot velocity world z
     # for i in range(len(sim_times)):
     #     plt.plot([x + 700 for x in sim_times[i]], sim_velocities[i])
-    # plt.plot(time, velocity_world_z, label="Measured Vecicty World Z")
-    # plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
-    # plt.xlabel("Time (ms)")
-    # plt.ylabel("Veclocity (m/s)")
-    # plt.title("Velocity by Time")
-    # plt.legend()
-    # plt.grid()
-    # plt.show()
+    plt.plot(time, velocity_world_z, label="Measured Vecicty World Z")
+    plt.plot(time, accel_world_z, label="Measured Accel World Z")
+    plt.plot(time, pressure / 3, label="Measured pressure")
+    plt.plot(time, baro_alt / 9, label="Baro Altitude")
+    plt.plot(time, baro_vz, label="Baro_vz")
+    plt.plot(time, [x*5 for x in real_deployment_level], label="Deployment")
+    # plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
+    # plt.axvline(x=time_airbrakes_off_bc_angle, color='g', linestyle='--', linewidth=2, label="Airbrakes off bc angle > 30")
+    plt.xlabel("Time (ms)")
+    plt.ylabel("Veclocity (m/s)")
+    plt.title("Velocity by Time")
+    plt.legend()
+    plt.grid()
+    plt.show()
 
     # # Plot velocity world x
     # for i in range(len(sim_times)):
     #     plt.plot(sim_times[i], sim_velocities_x[i])
     # plt.plot(time, angle_from_vert, label="Measured Angle from Vertical")
-    # plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
+    # plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
     # plt.xlabel("Time (ms)")
     # plt.ylabel("Veclocity (m/s)")
     # plt.title("Velocity by Time")
@@ -446,7 +469,7 @@ if __name__ == "__main__":
     # for i in range(len(sim_times)):
     #     plt.plot(sim_times[i], [x*3.2808399 for x in sim_alts[i]])
     # plt.plot(time[idx_motor_burn_end:], [x*3.2808399 for x in alt_fused[idx_motor_burn_end:]], label="Measured Altitude Fused")
-    # plt.axvline(x=launch_time + motor_burn_time, color='r', linestyle='--', linewidth=2, label="Approx. Motor Burn End")
+    # plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
     # plt.xlabel("Time (ms)")
     # plt.ylabel("Altitude (ft)")
     # plt.title("Altitude by Time")
