@@ -149,11 +149,11 @@ float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 
 	// Convert pressure from hPa to Pa
 	float pressure_Pa = telemetry->pressure * 100.0f;
-	float temperature_K = fmaxf(ground_temp - (L * telemetry->altitude), 1);
+	float temperature_K = fmaxf(ground_temp - (L * telemetry->alt_fused), 1);
 
 	for (int i = 0; i < 100000; ++i){
 		float vz_sim_before = vz_sim;
-		float T_local = fmaxf(temperature_K - (L * (alt_sim - telemetry->altitude)), 1);
+		float T_local = fmaxf(temperature_K - (L * (alt_sim - telemetry->alt_fused)), 1);
 		float mach_number = get_mach_number(get_mag2(vz_sim, vx_sim), T_local);
 
 		float angle_sim = atan2(vx_sim, vz_sim);
