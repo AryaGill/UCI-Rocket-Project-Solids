@@ -398,7 +398,7 @@ class FlightReviewer(QtWidgets.QMainWindow):
         self.data = {}
         for h in headers:
             try:
-                self.data[h] = np.array([float(r[h]) for r in rows])
+                self.data[h] = np.array([float(r[h]) if r[h] is not None and r[h] != '' else float('nan') for r in rows])
             except (ValueError, KeyError):
                 pass
         self.headers = list(self.data.keys())
