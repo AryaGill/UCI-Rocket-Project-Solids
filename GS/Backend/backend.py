@@ -243,54 +243,66 @@ class SerialStreamer(QThread):
     def write_command(self, cmd: str, burst: int = 20,
                   tx_sleep: float = 0.05, rx_window: float = 0.20):
         """
-        Send command back to the serial device (non-blocking burst).
+        Send a command over a half-duplex LoRa radio using a strict
+        alternating TX / RX pattern:
 
-        Alternates between TX and RX windows so the LoRA radio is never
-        transmitting and listening at the same time:
-
-            [pause RX] → write → [resume RX] → rx_window sleep → repeat
+            For each of `burst` repetitions:
+                1. Pause the RX read-loop
+                2. Transmit one packet
+                3. Resume the RX read-loop for `rx_window` seconds
+                so any incoming telemetry is not missed
+                4. Repeat
 
         Args:
-            cmd:       Command string to send (newline appended automatically).
-            burst:     Number of times to repeat the command.
-            tx_sleep:  Seconds to wait after each write before opening the RX window.
-            rx_window: Seconds to leave the read loop running between transmissions.
+            cmd:       Command string (newline appended automatically).
+            burst:     Number of times to repeat the command (default 20).
+            tx_sleep:  Seconds to wait after writing before opening the RX
+                    window — gives the radio time to finish transmitting.
+            rx_window: Seconds to leave the read-loop running between
+                    transmissions so telemetry packets are not dropped.
         """
         if not (self._ser and self._ser.is_open):
             self.status.emit("Write error: port not open")
             return
 
-        encoded = (cmd.strip() + "\n").encode('utf-8')
+        encoded = (cmd.strip() + "\n").encode("utf-8")
 
-        #Non blocking is this burst code
         def _burst():
-            was_paused = self.paused          # remember caller's pause state
+            was_paused = self.paused          # preserve caller's pause state
 
             try:
                 for i in range(burst):
                     if not self.is_running or not self._ser.is_open:
                         break
 
-                    # ── TX window ────────────────────────────────────────────
-                    self.paused = True        # stop the read loop
-                    time.sleep(0.01)          # let any in-progress readline() finish
+                    # ── 1. PAUSE RX ──────────────────────────────────────────
+                    # Signal the read loop to stop, then wait long enough for
+                    # any blocking readline() that is already in progress to
+                    # return (timeout is 0.5 s by default).
+                    self.paused = True
+                    time.sleep(self.timeout + 0.02)   # outlast the current readline()
 
+                    # ── 2. TRANSMIT ──────────────────────────────────────────
                     try:
                         self._ser.write(encoded)
+                        self.status.emit(f"TX [{i+1}/{burst}]: {cmd.strip()}")
                     except Exception as e:
-                        self.status.emit(f"Write error on burst {i}: {e}")
+                        self.status.emit(f"Write error on burst {i+1}: {e}")
                         break
 
-                    time.sleep(tx_sleep)      # hold TX line briefly
+                    time.sleep(tx_sleep)   # let the radio finish transmitting
 
-                    # ── RX window ────────────────────────────────────────────
-                    self.paused = False       # let the read loop receive an ACK / reply
-                    time.sleep(rx_window)     # give the remote node time to respond
+                    # ── 3. OPEN RX WINDOW ────────────────────────────────────
+                    # Resume the read-loop so the main run() can process any
+                    # telemetry the rocket sends back between our transmissions.
+                    self.paused = False
+                    time.sleep(rx_window)  # receive window before next TX
 
-                self.status.emit(f"Sent (x{burst}): {cmd.strip()}")
+                self.status.emit(f"Burst complete – sent {burst}× '{cmd.strip()}'")
 
             finally:
-                # Always restore whatever pause state was in effect before
+                # Always restore the pause state that was active before the
+                # command was issued (e.g. if the user had manually paused).
                 self.paused = was_paused
 
         import threading
