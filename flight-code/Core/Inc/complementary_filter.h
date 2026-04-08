@@ -32,7 +32,7 @@ extern "C" {
  */
 #define TAU_VELOCITY   0.2f // seconds
 #define TAU_ALTITUDE   0.2f // seconds
-#define TAU_BARO_VEL   0.2f // seconds
+#define TAU_BARO_VEL   0.4f // seconds
 
 void complementary_filter_init(Telemetry_t *telemetry);
 void complementary_filter(Telemetry_t *telemetry);
