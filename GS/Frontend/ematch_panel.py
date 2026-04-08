@@ -7,8 +7,8 @@ ADC_MAX_COUNTS = 65536       # 16-bit ADC full scale
 ADC_REF_VOLTAGE = 3.3        # volts at full scale
 
 # Raw ADC count above this is considered "connected" (ematch present)
-# Corresponds to ~2.0 V: (2.0 / 3.3) * 65536 ≈ 39,759
-CONNECTED_THRESHOLD_COUNTS = int((2.0 / ADC_REF_VOLTAGE) * ADC_MAX_COUNTS)
+# Corresponds to ~0.7 V: (2.0 / 3.3) * 65536 ≈ 39,759
+CONNECTED_THRESHOLD_COUNTS = int((0.7 / ADC_REF_VOLTAGE) * ADC_MAX_COUNTS)
 
 
 def adc_to_volts(raw: float) -> float:
