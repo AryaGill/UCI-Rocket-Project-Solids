@@ -1,2 +1,2 @@
 ../Core/Src/complementary_filter.c:14:6:complementary_filter_init	24	static
-../Core/Src/complementary_filter.c:46:6:complementary_filter	80	static
+../Core/Src/complementary_filter.c:47:6:complementary_filter	80	static

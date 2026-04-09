@@ -23,6 +23,7 @@ void complementary_filter_init(Telemetry_t *telemetry)
     telemetry->velocity_world_y = 0.0f;
     telemetry->velocity_world_z = 0.0f;
 
+    telemetry->baro_vz = 0.0f;
     telemetry->alt_fused = baro_alt;
 
     telemetry->time_until_trust_baro = 0.0f;
