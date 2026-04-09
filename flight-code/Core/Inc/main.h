@@ -102,6 +102,8 @@ typedef struct {
 	int drogue_validated_baro;
 	int main_validated_baro;
 	char cmd_echo[32];
+	float time_until_trust_baro;
+	uint8_t prev_deployment;
 } Telemetry_t;
 
 typedef struct{

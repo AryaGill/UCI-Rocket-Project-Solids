@@ -347,6 +347,11 @@ int main(void)
 			save_data_file();
 		}
 
+		// Delay if not in gliding ascent
+		if (flight_state != GLIDING_ASCENT){
+			HAL_Delay(5);
+		}
+
 //		perform_airbrakes_servo_sequence();
 //		HAL_Delay(5000);
 

@@ -1,3 +1,2 @@
-../Core/Src/complementary_filter.c:13:14:decay_per_update	3
-../Core/Src/complementary_filter.c:20:6:complementary_filter_init	1
-../Core/Src/complementary_filter.c:49:6:complementary_filter	8
+../Core/Src/complementary_filter.c:13:6:complementary_filter_init	1
+../Core/Src/complementary_filter.c:45:6:complementary_filter	8
