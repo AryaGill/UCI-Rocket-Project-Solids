@@ -34,19 +34,19 @@ void complementary_filter_init(Telemetry_t *telemetry)
     cf_initialized = true;
 }
 
-static void update_horizontal_velocity(Telemetry_t *telemetry, float dt)
-{
-    const float retain_per_second = 0.95f;
-    float decay = decay_per_update(retain_per_second, dt);
+//static void update_horizontal_velocity(Telemetry_t *telemetry, float dt)
+//{
+//    const float retain_per_second = 0.95f;
+//    float decay = decay_per_update(retain_per_second, dt);
+//
+//    telemetry->velocity_world_x =
+//        decay * (telemetry->velocity_world_x + telemetry->accel_world_x * dt);
+//
+//    telemetry->velocity_world_y =
+//        decay * (telemetry->velocity_world_y + telemetry->accel_world_y * dt);
+//}
 
-    telemetry->velocity_world_x =
-        decay * (telemetry->velocity_world_x + telemetry->accel_world_x * dt);
-
-    telemetry->velocity_world_y =
-        decay * (telemetry->velocity_world_y + telemetry->accel_world_y * dt);
-}
-
-void complementary_filter(Telemetry_t *telemetry)
+void complementary_filter(Telemetry_t *telemetry, FlightState_t *flight_state)
 {
     if (!cf_initialized) {
         complementary_filter_init(telemetry);
@@ -61,6 +61,7 @@ void complementary_filter(Telemetry_t *telemetry)
         return;
     }
 
+    // Calculate barometric velocity
     float baro_alt = telemetry->altitude - telemetry->startAlt;
 
     float velocity_baro_raw = (baro_alt - prev_baro_alt) / dt;
@@ -71,14 +72,21 @@ void complementary_filter(Telemetry_t *telemetry)
         baro_vel_alpha * telemetry->baro_vz +
         (1.0f - baro_vel_alpha) * velocity_baro_raw;
 
-    float velocity_imu = telemetry->velocity_world_z +
-                         telemetry->accel_world_z * dt;
+    // Calculate velocity_world_z
+    if (*flight_state == GLIDING_ASCENT){
+    	// If in gliding ascent, use only imu
+    	telemetry->velocity_world_z += telemetry->accel_world_z * dt;
+    } else {
+    	// Else use imu and baro
+    	float alpha_velocity = TAU_VELOCITY / (TAU_VELOCITY + dt);
+    	float velocity_imu = telemetry->velocity_world_z + telemetry->accel_world_z * dt;
 
-    float alpha_velocity = TAU_VELOCITY / (TAU_VELOCITY + dt);
-    telemetry->velocity_world_z =
-    	alpha_velocity * velocity_imu +
-        (1.0f - alpha_velocity) * telemetry->baro_vz;
+    	telemetry->velocity_world_z =
+    	    	alpha_velocity * velocity_imu +
+    	        (1.0f - alpha_velocity) * telemetry->baro_vz;
+    }
 
+    // Calculate alt_fused
     float altitude_pred =
         telemetry->alt_fused + telemetry->velocity_world_z * dt;
 
@@ -87,10 +95,10 @@ void complementary_filter(Telemetry_t *telemetry)
     	alpha_altitude * altitude_pred +
         (1.0f - alpha_altitude) * baro_alt;
 
-    update_horizontal_velocity(telemetry, dt);
+//    update_horizontal_velocity(telemetry, dt);
 
-    if (!isfinite(telemetry->velocity_world_x)) telemetry->velocity_world_x = 0.0f;
-    if (!isfinite(telemetry->velocity_world_y)) telemetry->velocity_world_y = 0.0f;
+//    if (!isfinite(telemetry->velocity_world_x)) telemetry->velocity_world_x = 0.0f;
+//    if (!isfinite(telemetry->velocity_world_y)) telemetry->velocity_world_y = 0.0f;
     if (!isfinite(telemetry->velocity_world_z)) telemetry->velocity_world_z = 0.0f;
     if (!isfinite(telemetry->alt_fused))        telemetry->alt_fused = baro_alt;
 }

@@ -35,7 +35,7 @@ extern "C" {
 #define TAU_BARO_VEL   0.4f // seconds
 
 void complementary_filter_init(Telemetry_t *telemetry);
-void complementary_filter(Telemetry_t *telemetry);
+void complementary_filter(Telemetry_t *telemetry, FlightState_t *flight_state);
 
 #ifdef __cplusplus
 }

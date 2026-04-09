@@ -1,4 +1,3 @@
 ../Core/Src/complementary_filter.c:13:14:decay_per_update	16	static
 ../Core/Src/complementary_filter.c:20:6:complementary_filter_init	24	static
-../Core/Src/complementary_filter.c:37:13:update_horizontal_velocity	24	static
 ../Core/Src/complementary_filter.c:49:6:complementary_filter	64	static

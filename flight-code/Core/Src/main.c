@@ -301,7 +301,7 @@ int main(void)
 		// Filter
 		Madgwick_Update(&telemetry);
 		Madgwick_GetEuler(&telemetry);
-		complementary_filter(&telemetry);
+		complementary_filter(&telemetry, &flight_state);
 
 		// Update flight state
 		update_flight_state(&flight_state, &telemetry);
