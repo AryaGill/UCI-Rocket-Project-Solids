@@ -1,4 +1,5 @@
 #include "complementary_filter.h"
+#include "airbrakes.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -61,7 +62,8 @@ void complementary_filter(Telemetry_t *telemetry, FlightState_t *flight_state)
     if (telemetry->airbrake_deployment == telemetry->prev_deployment){
     	telemetry->time_until_trust_baro = fmaxf(0.0f, telemetry->time_until_trust_baro - dt);
     }else {
-    	telemetry->time_until_trust_baro = BARO_TRUST_TIME;
+    	telemetry->time_until_trust_baro += BARO_TRUST_TIME * fabs(telemetry->prev_deployment - telemetry->airbrake_deployment) / (NUM_DEPLOYMENT_LEVELS - 1);
+        telemetry->time_until_trust_baro = fminf(BARO_TRUST_TIME, telemetry->time_until_trust_baro);
     }
     telemetry->prev_deployment = telemetry->airbrake_deployment;
 
