@@ -147,8 +147,8 @@ def predict_apogee(telemetry, deployment_level):
     theta = min(theta, float(math.radians(80.0)))
 
     # Initial conditions
-    alt_sim = float(telemetry.altitude)
-    vz_sim = float(telemetry.velocity_world_z) + 0.24 * float(telemetry.accel_world_z)
+    alt_sim = float(telemetry.alt_fused)
+    vz_sim = float(telemetry.velocity_world_z) + 0.2 * float(telemetry.accel_world_z)
 
     # derive horizontal velocity from tilt
     vx_sim = float(vz_sim * math.tan(theta))
@@ -156,7 +156,7 @@ def predict_apogee(telemetry, deployment_level):
     pressure_Pa = float(telemetry.pressure) * 100.0
 
     global ground_temp
-    temperature_K = float(max(ground_temp - (L * float(telemetry.altitude)), 1.0))
+    temperature_K = float(max(ground_temp - (L * float(telemetry.alt_fused)), 1.0))
 
     global sim_angles_from_vert
     sim_angle_from_vert = []
@@ -182,7 +182,7 @@ def predict_apogee(telemetry, deployment_level):
         sim_angle_from_vert.append(angle * 180.0 / math.pi)
 
         T_local = float(max(
-            temperature_K - (L * (alt_sim - float(telemetry.altitude))),
+            temperature_K - (L * (alt_sim - float(telemetry.alt_fused))),
             1.0
         ))
         sim_temperature.append(T_local)
@@ -231,7 +231,7 @@ def set_optimal_deployment(flight_state, telemetry):
     angle_of_attack = angle_from_vertical(telemetry)
 
     global ground_temp
-    local_temp = max(ground_temp - (L * telemetry.altitude), 1)
+    local_temp = max(ground_temp - (L * telemetry.alt_fused), 1)
 
     # NOTE: This matches your C code EXACTLY (but is probably wrong physically)
     if (
@@ -265,6 +265,148 @@ def set_airbrakes_initial_temp(telemetry):
     global ground_temp
     ground_temp = telemetry.temperature
 
+
+
+
+TAU_BARO_VEL = 0.5
+TAU_VELOCITY = 0.2
+TAU_ALTITUDE = 0.2
+
+GLIDING_ASCENT = 3
+
+cf_initialized = False
+prev_time_cf_ms = 0
+prev_baro_alt = 0
+baro_velocity_filt = 0
+
+def complementary_filter_init(telemetry):
+    global cf_initialized, prev_time_cf_ms, prev_baro_alt, baro_velocity_filt
+
+    baro_alt = telemetry.altitude
+
+    prev_time_cf_ms = telemetry.time
+    prev_baro_alt = baro_alt
+    baro_velocity_filt = 0.0
+
+    telemetry.velocity_world_x = 0.0
+    telemetry.velocity_world_y = 0.0
+    telemetry.velocity_world_z = 0.0
+    telemetry.baro_vz = 0.0
+    telemetry.time_until_trust_baro = 0
+
+    telemetry.alt_fused = baro_alt
+
+    telemetry.prev_deployment = telemetry.deployment
+
+    cf_initialized = True
+
+def complementary_filter(telemetry, flight_state):
+    global cf_initialized, prev_time_cf_ms, prev_baro_alt
+    global cf_baro_vz, cf_alt_fused, cf_velocity_world_z
+    global cf_w_baro
+
+    if not cf_initialized:
+        complementary_filter_init(telemetry)
+        cf_baro_vz.append(telemetry.baro_vz)
+        cf_alt_fused.append(telemetry.alt_fused)
+        cf_velocity_world_z.append(telemetry.velocity_world_z)
+        cf_w_baro.append(1)
+        return
+
+    dt = (telemetry.time - prev_time_cf_ms) * 1e-3
+    prev_time_cf_ms = telemetry.time
+
+    T = 4
+    if telemetry.deployment == telemetry.prev_deployment:
+        telemetry.time_until_trust_baro = max(0, telemetry.time_until_trust_baro - dt)
+    else:
+        telemetry.time_until_trust_baro = T
+    telemetry.prev_deployment = telemetry.deployment
+
+    x = 1.0 - telemetry.time_until_trust_baro / T
+    x = max(0.0, min(1.0, x))
+
+    w_baro = x * x * (3 - 2 * x)
+    cf_w_baro.append(w_baro)
+
+    # if (not math.isfinite(dt)) or dt <= 0.0 or dt > 0.1:
+    #     return
+
+    # --- Barometric velocity ---
+    baro_alt = telemetry.altitude
+
+    velocity_baro_raw = (baro_alt - prev_baro_alt) / dt
+    prev_baro_alt = baro_alt
+
+    baro_vel_alpha = TAU_BARO_VEL / (TAU_BARO_VEL + dt)
+    telemetry.baro_vz = (
+        baro_vel_alpha * telemetry.baro_vz +
+        (1.0 - baro_vel_alpha) * velocity_baro_raw
+    )
+
+    # --- Velocity fusion ---
+    velocity_imu = telemetry.velocity_world_z + telemetry.accel_world_z * dt
+    alpha_velocity = TAU_VELOCITY / (TAU_VELOCITY + dt)
+    # if telemetry.time_until_trust_baro > 0:
+    #     # IMU only
+    #     telemetry.velocity_world_z = velocity_imu
+    # else:
+    #     alpha_velocity = TAU_VELOCITY / (TAU_VELOCITY + dt)
+
+    #     telemetry.velocity_world_z = (
+    #         alpha_velocity * velocity_imu +
+    #         (1.0 - alpha_velocity) * telemetry.baro_vz
+    #     )
+
+    velocity_fused = (
+        alpha_velocity * velocity_imu +
+        (1.0 - alpha_velocity) * telemetry.baro_vz
+    )
+    
+    telemetry.velocity_world_z = (
+        (1 - w_baro) * velocity_imu +
+        w_baro * velocity_fused
+    )
+
+    # --- Altitude fusion ---
+    altitude_pred = telemetry.alt_fused + telemetry.velocity_world_z * dt
+    alpha_altitude = TAU_ALTITUDE / (TAU_ALTITUDE + dt)
+
+    # if telemetry.time_until_trust_baro > 0:
+    #     telemetry.alt_fused = altitude_pred
+    # else:
+    #     telemetry.alt_fused = (
+    #         alpha_altitude * altitude_pred +
+    #         (1.0 - alpha_altitude) * baro_alt
+    #     )
+
+    altitude_fused = (
+        alpha_altitude * altitude_pred +
+        (1.0 - alpha_altitude) * baro_alt
+    )
+
+    telemetry.alt_fused = (
+        (1 - w_baro) * altitude_pred +
+        w_baro * altitude_fused
+    )
+
+    # --- Sanity checks ---
+    if not math.isfinite(telemetry.velocity_world_z):
+        telemetry.velocity_world_z = 0.0
+
+    if not math.isfinite(telemetry.alt_fused):
+        telemetry.alt_fused = baro_alt
+
+    cf_baro_vz.append(telemetry.baro_vz)
+    cf_alt_fused.append(telemetry.alt_fused)
+    cf_velocity_world_z.append(telemetry.velocity_world_z)
+
+
+
+
+
+
+
 if __name__ == "__main__":
     # read data file
     # df = pd.read_excel("night_fury_3-22-26_airbrakes_input.xlsx")
@@ -284,6 +426,7 @@ if __name__ == "__main__":
     accel_world_z = df["accel_world_z"].to_numpy()
     real_deployment_level = df["airbrake_deployment"].to_numpy()
     baro_vz = df["baro_vz"].to_numpy()
+    flight_state = df["state"].to_numpy()
 
     # altitude = []
     # for i in range(len(baro_alt)):
@@ -317,18 +460,28 @@ if __name__ == "__main__":
     global sim_velocities_x
     sim_velocities_x = []
 
+    global cf_baro_vz
+    cf_baro_vz = []
+    global cf_alt_fused
+    cf_alt_fused = []
+    global cf_velocity_world_z
+    cf_velocity_world_z = []
+    global cf_w_baro
+    cf_w_baro = []
+
     accepted_time = []
     prev_time = -100
+    telemetry = Telemetry()
     for i in range(len(time)):
-        if time[i] - prev_time < 0.1:
+        if time[i] - prev_time < 10:
             continue
+        prev_time = time[i]
         accepted_time.append(time[i])
 
-        telemetry = Telemetry()
         telemetry.time = time[i]
-        # telemetry.altitude = baro_alt[i]
-        telemetry.altitude = alt_fused[i]
-        telemetry.velocity_world_z = velocity_world_z[i]
+        telemetry.altitude = baro_alt[i]
+        # telemetry.alt_fused = alt_fused[i]
+        # telemetry.velocity_world_z = velocity_world_z[i]
         telemetry.temperature = initial_temp[i]
         telemetry.pressure = pressure[i]
         telemetry.q0 = q0[i]
@@ -336,6 +489,9 @@ if __name__ == "__main__":
         telemetry.q2 = q2[i]
         telemetry.q3 = q3[i]
         telemetry.accel_world_z = accel_world_z[i]
+        telemetry.deployment = real_deployment_level[i]
+
+        complementary_filter(telemetry, flight_state[i])
 
         set_airbrakes_initial_temp(telemetry)
         if time[i] > motor_burn_end_time:
@@ -358,9 +514,24 @@ if __name__ == "__main__":
     time_airbrakes_off_bc_angle = 614326
     # idx_motor_burn_end = next((i for i, x in enumerate(time) if x >= launch_time + motor_burn_time), None)
     idx_motor_burn_end = next((i for i, x in enumerate(accepted_time) if x >= motor_burn_end_time), None)
+
+    # Plot complementary filter variables
+    # plt.plot(accepted_time, cf_alt_fused, label="CF Alt Fused")
+    plt.plot(accepted_time, cf_baro_vz, label="CF Baro VZ")
+    plt.plot(accepted_time, cf_velocity_world_z, label="CF Velocity World Z")
+    plt.plot(accepted_time, [x*100 for x in cf_w_baro], label='Percentage of "trust" in baro')
+    plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
+    plt.axvline(x=time_airbrakes_off_bc_angle, color='g', linestyle='--', linewidth=2, label="Airbrakes off bc angle > 30")
+    plt.xlabel("Time (ms)")
+    plt.ylabel("Velocity (m/s)")
+    plt.title("Velocity by Time")
+    plt.legend()
+    plt.grid()
+    plt.show()
         
     # Plot predicted apogee
     plt.plot(accepted_time, [x*3.2808399 for x in predicted_apogee], label="Predicted Apogee")
+    plt.plot(accepted_time, [x*3.2808399 for x in cf_alt_fused], label="CF Alt Fused")
     plt.plot(time, [x*3.2808399 for x in alt_fused], label="Altitude Fused")
     plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
     plt.axvline(x=time_airbrakes_off_bc_angle, color='g', linestyle='--', linewidth=2, label="Airbrakes off bc angle > 30")
@@ -384,7 +555,7 @@ if __name__ == "__main__":
     plt.show()
 
     # Plot overestimate
-    overestimate = [(predicted_apogee[i] - apogee) * 3.2808399 for i in range(len(time))]
+    overestimate = [(predicted_apogee[i] - apogee) * 3.2808399 for i in range(len(accepted_time))]
     # print("Max Overestimate: " + str(max(overestimate)))
     plt.plot(accepted_time[idx_motor_burn_end:], overestimate[idx_motor_burn_end:], label="Predicted Apogee - Real Apogee")
     plt.axvline(x=time_airbrakes_off_bc_angle, color='g', linestyle='--', linewidth=2, label="Airbrakes off bc angle > 30")
@@ -397,19 +568,20 @@ if __name__ == "__main__":
     plt.grid()
     plt.show()
 
-    # # Plot angle from vert
-    # plt.plot(time, angle_from_vert, label="Measured Angle from Vertical")
-    # # for i in range(len(sim_times)):
-    # #     plt.plot(sim_times[i], sim_angles_from_vert[i])
-    # plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
-    # plt.axhline(y=30, color='g', linestyle='--', linewidth=2, label="30 degrees (airbrakes off when above)")
-    # plt.axvline(x=time_airbrakes_off_bc_angle, color='g', linestyle='--', linewidth=2, label="Airbrakes off bc angle > 30")
-    # plt.xlabel("Time (ms)")
-    # plt.ylabel("Angle (deg)")
-    # plt.title("Angle from vertical by Time")
-    # plt.legend()
-    # plt.grid()
-    # plt.show()
+    # Plot angle from vert
+    plt.plot(accepted_time, angle_from_vert, label="Measured Angle from Vertical")
+    plt.plot(time, real_deployment_level, label="Deployment Level")
+    # for i in range(len(sim_times)):
+    #     plt.plot(sim_times[i], sim_angles_from_vert[i])
+    plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
+    plt.axhline(y=30, color='g', linestyle='--', linewidth=2, label="30 degrees (airbrakes off when above)")
+    plt.axvline(x=time_airbrakes_off_bc_angle, color='g', linestyle='--', linewidth=2, label="Airbrakes off bc angle > 30")
+    plt.xlabel("Time (ms)")
+    plt.ylabel("Angle (deg)")
+    plt.title("Angle from vertical by Time")
+    plt.legend()
+    plt.grid()
+    plt.show()
 
     # # Plot pressure
     # plt.plot(time, pressure, label="Measured Pressure")
