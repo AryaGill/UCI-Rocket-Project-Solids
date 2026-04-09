@@ -320,7 +320,7 @@ def complementary_filter(telemetry, flight_state):
     if telemetry.deployment == telemetry.prev_deployment:
         telemetry.time_until_trust_baro = max(0, telemetry.time_until_trust_baro - dt)
     else:
-        telemetry.time_until_trust_baro += T * (abs(telemetry.deployment - telemetry.prev_deployment)) / NUM_DEPLOYMENT_LEVELS
+        telemetry.time_until_trust_baro += T * (abs(telemetry.deployment - telemetry.prev_deployment)) / (NUM_DEPLOYMENT_LEVELS - 1)
         telemetry.time_until_trust_baro = min(telemetry.time_until_trust_baro, T)
     telemetry.prev_deployment = telemetry.deployment
 
@@ -569,20 +569,20 @@ if __name__ == "__main__":
     plt.grid()
     plt.show()
 
-    # Plot angle from vert
-    plt.plot(accepted_time, angle_from_vert, label="Measured Angle from Vertical")
-    plt.plot(time, real_deployment_level, label="Deployment Level")
-    # for i in range(len(sim_times)):
-    #     plt.plot(sim_times[i], sim_angles_from_vert[i])
-    plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
-    plt.axhline(y=30, color='g', linestyle='--', linewidth=2, label="30 degrees (airbrakes off when above)")
-    plt.axvline(x=time_airbrakes_off_bc_angle, color='g', linestyle='--', linewidth=2, label="Airbrakes off bc angle > 30")
-    plt.xlabel("Time (ms)")
-    plt.ylabel("Angle (deg)")
-    plt.title("Angle from vertical by Time")
-    plt.legend()
-    plt.grid()
-    plt.show()
+    # # Plot angle from vert
+    # plt.plot(accepted_time, angle_from_vert, label="Measured Angle from Vertical")
+    # plt.plot(time, real_deployment_level, label="Deployment Level")
+    # # for i in range(len(sim_times)):
+    # #     plt.plot(sim_times[i], sim_angles_from_vert[i])
+    # plt.axvline(x=motor_burn_end_time, color='r', linestyle='--', linewidth=2, label="Motor Burn End")
+    # plt.axhline(y=30, color='g', linestyle='--', linewidth=2, label="30 degrees (airbrakes off when above)")
+    # plt.axvline(x=time_airbrakes_off_bc_angle, color='g', linestyle='--', linewidth=2, label="Airbrakes off bc angle > 30")
+    # plt.xlabel("Time (ms)")
+    # plt.ylabel("Angle (deg)")
+    # plt.title("Angle from vertical by Time")
+    # plt.legend()
+    # plt.grid()
+    # plt.show()
 
     # # Plot pressure
     # plt.plot(time, pressure, label="Measured Pressure")
