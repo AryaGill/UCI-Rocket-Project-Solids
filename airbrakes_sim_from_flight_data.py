@@ -320,7 +320,8 @@ def complementary_filter(telemetry, flight_state):
     if telemetry.deployment == telemetry.prev_deployment:
         telemetry.time_until_trust_baro = max(0, telemetry.time_until_trust_baro - dt)
     else:
-        telemetry.time_until_trust_baro = T
+        telemetry.time_until_trust_baro += T * (abs(telemetry.deployment - telemetry.prev_deployment)) / NUM_DEPLOYMENT_LEVELS
+        telemetry.time_until_trust_baro = min(telemetry.time_until_trust_baro, T)
     telemetry.prev_deployment = telemetry.deployment
 
     x = 1.0 - telemetry.time_until_trust_baro / T
