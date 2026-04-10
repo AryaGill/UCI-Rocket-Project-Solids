@@ -184,6 +184,8 @@ void Error_Pattern(void)
 uint8_t set_airbrakes_target_apogee = 0;
 uint32_t gliding_ascent_start_time = 0;
 
+uint32_t main_start_time = 0;
+
 /* USER CODE END 0 */
 
 /**
@@ -293,6 +295,9 @@ int main(void)
 
 	while (1)
 	{
+		// Get the start time
+		main_start_time = HAL_GetTick();
+
 ////		 Read Sensors
 		read_sensors(&telemetry);
 		read_ematch_connections(&telemetry);
@@ -347,10 +352,8 @@ int main(void)
 			save_data_file();
 		}
 
-		// Delay if not in gliding ascent
-		if (flight_state != GLIDING_ASCENT){
-			HAL_Delay(5);
-		}
+		// Wait until amt of time
+		while (HAL_GetTick() - main_start_time < 5);
 
 //		perform_airbrakes_servo_sequence();
 //		HAL_Delay(5000);
