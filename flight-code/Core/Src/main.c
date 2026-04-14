@@ -34,6 +34,7 @@
 #include "rfm9x.h"
 #include "commands.h"
 #include "parachutes.h"
+#include "launch_buffer.h"
 #include <string.h>
 #include <math.h>
 
@@ -77,6 +78,9 @@ Bias_t bias = {0};
 Telemetry_t telemetry = {0};
 // Flight State
 FlightState_t flight_state = LAUNCH_PAD;
+
+//Launch buffer
+launch_buffer_t launch_buffer;
 
 // RF
 uint32_t prev_rf_transmit_time = 0;
@@ -269,6 +273,7 @@ int main(void)
 
 	// Get Inital state string
 	init_data_file(&hspi1);
+	launch_buffer_init(&launch_buffer);
 
 	// Read sensors a bunch to ensure correct initial values
 	for(int i = 0; i < 20; ++i){
@@ -310,6 +315,9 @@ int main(void)
 
 		// Update flight state
 		update_flight_state(&flight_state, &telemetry);
+
+		//add to launch_buffer
+		launch_buffer_add(&launch_buffer, flight_state, &telemetry);
 
 		// Set target apogee (Remove unless want dynamic target apogee)
 		if (gliding_ascent_start_time == 0 && flight_state == GLIDING_ASCENT){

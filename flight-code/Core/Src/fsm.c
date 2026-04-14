@@ -7,6 +7,7 @@
 #include "telemetry.h"
 #include "parachutes.h"
 #include "airbrakes.h"
+#include "launch_buffer.h"
 #include <stdio.h>
 
 //float alt_dif_buffer[ALT_DIF_BUF_SIZE];
@@ -27,6 +28,8 @@ float prev_accel = 0;
 
 uint32_t prev_led_toggle_time = 0;
 
+extern launch_buffer_t launch_buffer;
+extern File_t data_file;
 //float get_avg_alt_dif() {
 //	float sum = 0;
 //	float largest = alt_dif_buffer[0];
@@ -149,6 +152,8 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 				if (HAL_GetTick() - launch_accel_detected_time > RAIL_DELAY_TIME + LAUNCH_EVAL_PERIOD_TIME){
 					// Enough time passed without negative acceleration. Launch detected
 					set_flight_state(MOTOR_BURN, flight_state, telemetry);
+					write_sd(&data_file, "launch buffer dump");
+					launch_buffer_flush(&launch_buffer);
 					state_start_time = HAL_GetTick();
 				}
 				else if (telemetry->lsm_accel_r < 0){
