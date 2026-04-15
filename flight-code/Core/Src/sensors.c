@@ -143,6 +143,9 @@ void read_sensors(Telemetry_t *telemetry)
     transform_accel_to_world(telemetry);
 
     telemetry->time = HAL_GetTick();
+
+    // Comment out for flight
+    calibrate_accel_bias_stationary();
 }
 
 // Calculate altitude from pressure (standard atmosphere model)
@@ -622,4 +625,57 @@ void Apply_Bias(Bias_t *bias, Telemetry_t *t)
     t->mag_r *= bias->mag_r_scale;
     t->mag_p *= bias->mag_p_scale;
     t->mag_y *= bias->mag_y_scale;
+}
+
+// How to calibrate accel: run in debugger. Hold still.
+// If biasses stay constant, that is the bias.
+// Perform at different angles to check.
+// Hard code this bias in bias init
+float lsm_accel_r_bias_instance;
+float lsm_accel_p_bias_instance;
+float lsm_accel_y_bias_instance;
+void calibrate_accel_bias_stationary(Telemetry_t *telemetry)
+{
+	// Average IMUs (body frame)
+	float ax = telemetry->lsm_accel_p;
+	float ay = telemetry->lsm_accel_y;
+	float az = telemetry->lsm_accel_r;
+
+	// Quaternion (w, x, y, z)
+	float qw = telemetry->q0;
+	float qx = telemetry->q1;
+	float qy = telemetry->q2;
+	float qz = telemetry->q3;
+
+    // Rotation matrix (body -> world)
+    float R11 = 1.0f - 2.0f*(qy*qy + qz*qz);
+    float R12 = 2.0f*(qx*qy - qz*qw);
+    float R13 = 2.0f*(qx*qz + qy*qw);
+
+    float R21 = 2.0f*(qx*qy + qz*qw);
+    float R22 = 1.0f - 2.0f*(qx*qx + qz*qz);
+    float R23 = 2.0f*(qy*qz - qx*qw);
+
+    float R31 = 2.0f*(qx*qz - qy*qw);
+    float R32 = 2.0f*(qy*qz + qx*qw);
+    float R33 = 1.0f - 2.0f*(qx*qx + qy*qy);
+
+    // Step 3: measured accel in world frame
+    float ax_w = R11*ax + R12*ay + R13*az;
+    float ay_w = R21*ax + R22*ay + R23*az;
+    float az_w = R31*ax + R32*ay + R33*az;
+
+    // Step 4: subtract gravity (expected world accel = [0,0,9.81])
+    float err_wx = ax_w;
+    float err_wy = ay_w;
+    float err_wz = az_w - 9.81f;
+
+    // Step 5: rotate error back into body frame (R^T)
+    float bias_x = R11*err_wx + R21*err_wy + R31*err_wz;
+    float bias_y = R12*err_wx + R22*err_wy + R32*err_wz;
+    float bias_z = R13*err_wx + R23*err_wy + R33*err_wz;
+
+    lsm_accel_p_bias_instance = bias_x;
+    lsm_accel_y_bias_instance = bias_y;
+    lsm_accel_r_bias_instance = bias_z;
 }
