@@ -28,21 +28,19 @@ class TTSWorker(QThread):
         self._queue.put(None)
 
     def run(self):
-        try:
-            import pyttsx3
-            engine = pyttsx3.init()
-            engine.setProperty('rate', 160)
-        except Exception as e:
-            print(f"[TTS] Init error: {e}")
-            return
-
         while not self._stop:
             try:
                 msg = self._queue.get(timeout=1.0)
                 if msg is None:
                     break
-                engine.say(msg)
-                engine.runAndWait()
+                if sys.platform == "darwin":
+                    subprocess.run(["say", msg])
+                elif sys.platform == "win32":
+                    subprocess.run(["powershell", "-Command",
+                        f'Add-Type -AssemblyName System.Speech; '
+                        f'(New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak("{msg}")'])
+                else:  # Linux
+                    subprocess.run(["espeak", msg])
             except queue.Empty:
                 continue
             except Exception as e:
@@ -92,7 +90,7 @@ class GroundStationWindow(QMainWindow):
         if self.selected_port:
             self.start_serial_connection()
 
-        self._last_announced_kft = 0
+        self._last_announced_m = 0
     
     def setup_ui(self):
         menubar = self.menuBar()
@@ -621,7 +619,7 @@ class GroundStationWindow(QMainWindow):
 
             if new_state != self._last_flight_state:
                 state_name = FlightStateDisplay.FLIGHT_STATES.get(new_state, "Unknown state")
-                print(state_name)
+                print(state_name + "This should speak")
                 self._tts_worker.say(state_name)
 
             if new_state == 2 and getattr(self, '_last_flight_state', None) != 2:
@@ -632,12 +630,19 @@ class GroundStationWindow(QMainWindow):
         if hasattr(self, 'altitude_graph') and data.get('Time') is not None and data.get('Alt') is not None:
             alt_m = data.get('Alt')
             self.altitude_graph.update_data(data.get('Time'), alt_m, data.get('Filtered_Alt'), max_points=self.max_points)
+            
+            current_m = int(alt_m // 500)
+            if alt_m > 0 and current_m != self._last_announced_m:
+                self._tts_worker.say(f"{current_m * 500} meters")
+                self._last_announced_m = current_m
 
+            '''
             alt_ft = alt_m / 0.3048
             current_kft = int(alt_ft // 1000)
             if current_kft > 0 and current_kft != self._last_announced_kft:
                 self._tts_worker.say(f"{current_kft * 1000} feet")
                 self._last_announced_kft = current_kft
+            '''
 
         if hasattr(self, 'temp_graph') and data.get('Time') is not None and data.get('Temp') is not None:
             self.temp_graph.update_data(data.get('Time'), data.get('Temp'), max_points=self.max_points)

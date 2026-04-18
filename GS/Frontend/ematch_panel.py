@@ -158,7 +158,7 @@ class EMatchPanel(QWidget):
 
         self.setStyleSheet("background-color: #232323; border-radius: 6px;")
         self.setFixedHeight(90)
-        self.setMaximumWidth(400)
+        self.setMinimumWidth(800)
 
     # ── public API ───────────────────────────────────────────────────────────
 

@@ -11,7 +11,7 @@ class AirbrakesPanel(QWidget):
         super().__init__(parent)
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(6, 4, 6, 4)
+        root.setContentsMargins(6, 4, 0, 4)
         root.setSpacing(4)
 
         title = QLabel("Airbrakes")
