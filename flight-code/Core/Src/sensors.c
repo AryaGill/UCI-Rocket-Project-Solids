@@ -19,12 +19,20 @@ GPIO_TypeDef *LIS_port;
 uint16_t LIS_pin;
 SPI_HandleTypeDef *LIS_hspi;
 
+GPIO_TypeDef *BMP388_port;
+uint16_t BMP388_pin;
+SPI_HandleTypeDef *BMP388_hspi;
+
+
 extern Bias_t bias;
 
 volatile uint8_t lps_whoami = 0; // Should be 0xB3 for LPS22HH
 volatile uint8_t lsm_whoami = 0; // Should be 0x6A
 volatile uint8_t adxl_whoami = 0; // Should be 0xE5
 volatile uint8_t lis_whoami = 0; // Should be 0x3D
+volatile uint8_t bmp388_whoami = 0; //Should be 0x50
+
+static BMP388_CalibData bmp388_calib; //calibration struct for bmp388
 
 float max_r;
 float max_p;
@@ -56,6 +64,11 @@ uint8_t Verify_Sensors(void){
 	if (lis_whoami != 0x3D){
 		return 1;
 	}
+
+	bmp388_whoami = BMP388_WhoAmI();
+		if (bmp388_whoami != 0x50){
+			return 1;
+		}
 
 	return 0;
 
@@ -106,13 +119,19 @@ void init_sensors(SPI_HandleTypeDef *hspi)
 {
     // Force all CS HIGH immediately
     HAL_GPIO_WritePin(Baro_CS_GPIO_Port, Baro_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(Baro2_CS_GPIO_Port, Baro2_CS_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(IMU_2_CS_GPIO_Port, IMU_2_CS_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(Mag_CS_GPIO_Port, Mag_CS_Pin, GPIO_PIN_SET);
+
     HAL_Delay(100);
 
     // Initialize Baro
     LPS22HH_Init(hspi, Baro_CS_GPIO_Port, Baro_CS_Pin);
+    HAL_Delay(20);
+
+    //Initialize BMP baro
+    BMP388_Init(hspi, Baro2_CS_GPIO_Port, Baro2_CS_Pin);
     HAL_Delay(20);
 
     // Initialize LSM
@@ -127,6 +146,7 @@ void init_sensors(SPI_HandleTypeDef *hspi)
     LIS3MDLTR_Init(hspi, Mag_CS_GPIO_Port, Mag_CS_Pin);
     HAL_Delay(20);
 
+
     Bias_Init(&bias);
 }
 
@@ -137,6 +157,7 @@ void read_sensors(Telemetry_t *telemetry)
     LSM6DSL_Read(telemetry);
     ADXL375_Read(telemetry);
     LIS3MDLTR_Read(telemetry);
+    BMP388_Read(telemetry);
 
     Apply_Bias(&bias, telemetry);
 
@@ -445,7 +466,132 @@ uint8_t LIS3MDLTR_WhoAmI(void) {
     return id;
 }
 
+static float BMP388_compensate_temperature(uint32_t uncomp_temp, BMP388_CalibData *calib_data)
+{
+    float partial_data1;
+    float partial_data2;
 
+    partial_data1 = (float)(uncomp_temp - calib_data->par_t1);
+    partial_data2 = (float)(partial_data1 * calib_data->par_t2);
+
+    calib_data->t_lin = partial_data2 +
+                        (partial_data1 * partial_data1) * calib_data->par_t3;
+
+    return calib_data->t_lin;
+}
+
+static float BMP388_compensate_pressure(uint32_t uncomp_press, BMP388_CalibData *calib_data)
+{
+    float comp_press;
+    float partial_data1;
+    float partial_data2;
+    float partial_data3;
+    float partial_data4;
+    float partial_out1;
+    float partial_out2;
+
+    partial_data1 = calib_data->par_p6 * calib_data->t_lin;
+    partial_data2 = calib_data->par_p7 * (calib_data->t_lin * calib_data->t_lin);
+    partial_data3 = calib_data->par_p8 * (calib_data->t_lin * calib_data->t_lin * calib_data->t_lin);
+    partial_out1 = calib_data->par_p5 + partial_data1 + partial_data2 + partial_data3;
+
+    partial_data1 = calib_data->par_p2 * calib_data->t_lin;
+    partial_data2 = calib_data->par_p3 * (calib_data->t_lin * calib_data->t_lin);
+    partial_data3 = calib_data->par_p4 * (calib_data->t_lin * calib_data->t_lin * calib_data->t_lin);
+    partial_out2 = (float)uncomp_press *
+                   (calib_data->par_p1 + partial_data1 + partial_data2 + partial_data3);
+
+    partial_data1 = (float)uncomp_press * (float)uncomp_press;
+    partial_data2 = calib_data->par_p9 + calib_data->par_p10 * calib_data->t_lin;
+    partial_data3 = partial_data1 * partial_data2;
+
+    partial_data4 = partial_data3 +
+                    ((float)uncomp_press * (float)uncomp_press * (float)uncomp_press) *
+                    calib_data->par_p11;
+
+    comp_press = partial_out1 + partial_out2 + partial_data4;
+
+    return comp_press;
+}
+
+void BMP388_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin)
+{
+    BMP388_port = cs_port;
+    BMP388_pin = cs_pin;
+    BMP388_hspi = hspi;
+    HAL_Delay(20);
+
+    SPI_Write(hspi, cs_port, cs_pin, BMP388_CMD, 0xB6);
+    HAL_Delay(10);
+
+    SPI_Write(hspi, cs_port, cs_pin, BMP388_PWR_CTRL, 0x33);
+
+    SPI_Write(hspi, cs_port, cs_pin, BMP388_OSR, 0x03);
+
+    SPI_Write(hspi, cs_port, cs_pin, BMP388_CONFIG, 0x02);
+
+    HAL_Delay(10);
+
+    //calibration value read
+    uint8_t calib[21];
+    SPI_Read_Multi(BMP388_hspi, BMP388_port, BMP388_pin, BMP388_CALIB_DATA, calib, 21);
+
+    // Raw calibration values
+    uint16_t T1 = (calib[1] << 8) | calib[0];
+    uint16_t T2 = (calib[3] << 8) | calib[2];
+    int8_t   T3 = calib[4];
+
+    int16_t P1  = (calib[6] << 8) | calib[5];
+    int16_t P2  = (calib[8] << 8) | calib[7];
+    int8_t  P3  = calib[9];
+    int8_t  P4  = calib[10];
+    uint16_t P5 = (calib[12] << 8) | calib[11];
+    uint16_t P6 = (calib[14] << 8) | calib[13];
+    int8_t  P7  = calib[15];
+    int8_t  P8  = calib[16];
+    int16_t P9  = (calib[18] << 8) | calib[17];
+    int8_t  P10 = calib[19];
+    int8_t  P11 = calib[20];
+
+    //convert based on datasheet
+    bmp388_calib.par_t1 = T1 * 256.0f;
+    bmp388_calib.par_t2 = T2 / 1073741824.0f;
+    bmp388_calib.par_t3 = T3 / 281474976710656.0f;
+
+    bmp388_calib.par_p1 = (P1 - 16384.0f) / 1048576.0f;
+    bmp388_calib.par_p2 = (P2 - 16384.0f) / 536870912.0f;
+    bmp388_calib.par_p3 = P3 / 4294967296.0f;
+    bmp388_calib.par_p4 = P4 / 137438953472.0f;
+    bmp388_calib.par_p5 = P5 * 8.0f;
+    bmp388_calib.par_p6 = P6 / 64.0f;
+    bmp388_calib.par_p7 = P7 / 256.0f;
+    bmp388_calib.par_p8 = P8 / 32768.0f;
+    bmp388_calib.par_p9 = P9 / 281474976710656.0f;
+    bmp388_calib.par_p10 = P10 / 281474976710656.0f;
+    bmp388_calib.par_p11 = P11 / 36893488147419103232.0f;
+}
+
+void BMP388_Read(Telemetry_t *telemetry)
+{
+    uint8_t buf[6];
+    SPI_Read_Multi(BMP388_hspi, BMP388_port, BMP388_pin, BMP388_PRESS_DATA, buf, 6);
+
+    int32_t raw_p = ((int32_t)buf[2] << 16) | ((int32_t)buf[1] << 8) | buf[0];
+    int32_t raw_t = ((int32_t)buf[5] << 16) | ((int32_t)buf[4] << 8) | buf[3];
+
+    //need to calibrate a lot
+    telemetry->temperature2 = BMP388_compensate_temperature(raw_t, &bmp388_calib);
+    telemetry->pressure2 = BMP388_compensate_pressure(raw_p, &bmp388_calib)/100.0f; // Pa → hPa
+
+    telemetry->altitude2 = Calculate_Altitude(telemetry->pressure2);
+}
+
+uint8_t BMP388_WhoAmI(void)
+{
+    uint8_t id = 0;
+    SPI_Read(BMP388_hspi, BMP388_port, BMP388_pin, BMP388_CHIP_ID, &id, 1);
+    return id;
+}
 void calibrate_mag(Telemetry_t *telemetry){
 	LIS3MDLTR_Read(telemetry);
 

@@ -58,6 +58,9 @@ typedef struct {
 	float pressure;
 	float altitude;
 	float startAlt;
+	float temperature2;
+	float pressure2;
+	float altitude2;
 	float temperature;
 	float velocity_world_x;
 	float velocity_world_y;
@@ -189,6 +192,8 @@ uint64_t micros(void);
 #define SD_CD_GPIO_Port GPIOE
 #define Baro_CS_Pin GPIO_PIN_11
 #define Baro_CS_GPIO_Port GPIOE
+#define Baro2_CS_Pin GPIO_PIN_11 //check actual values
+#define Baro2_CS_GPIO_Port GPIOE
 #define IMU_CS_Pin GPIO_PIN_10
 #define IMU_CS_GPIO_Port GPIOB
 #define Buzzer_Pin GPIO_PIN_12

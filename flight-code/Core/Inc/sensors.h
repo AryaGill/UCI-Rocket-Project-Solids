@@ -34,6 +34,38 @@
 #define LIS3MDLTR_CTRL_REG5	  0x24
 #define LIS3MDLTR_OUT_X_L     0x28
 
+
+//BMX055 Registers
+
+//BMP388 Registers
+#define BMP388_CHIP_ID     0x00
+#define BMP388_STATUS      0x03
+#define BMP388_PRESS_DATA  0x04   // 3 bytes
+#define BMP388_TEMP_DATA   0x07   // 3 bytes
+#define BMP388_PWR_CTRL    0x1B
+#define BMP388_OSR         0x1C
+#define BMP388_ODR         0x1D
+#define BMP388_CONFIG      0x1F
+#define BMP388_CALIB_DATA  0x31
+#define BMP388_CMD         0x7E
+
+typedef struct {
+    float par_t1;
+    float par_t2;
+    float par_t3;
+    float par_p1;
+    float par_p2;
+    float par_p3;
+    float par_p4;
+    float par_p5;
+    float par_p6;
+    float par_p7;
+    float par_p8;
+    float par_p9;
+    float par_p10;
+    float par_p11;
+    float t_lin;
+} BMP388_CalibData;
 // Function Declarations
 uint8_t Verify_Sensors(void);
 
@@ -60,6 +92,13 @@ uint8_t ADXL375_WhoAmI(void);
 void LIS3MDLTR_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
 void LIS3MDLTR_Read(Telemetry_t *telemetry);
 uint8_t LIS3MDLTR_WhoAmI(void);
+
+//BMX055 Functions
+
+//BMP388 Functions
+void BMP388_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
+void BMP388_Read(Telemetry_t *telemetry);
+uint8_t BMP388_WhoAmI(void);
 
 // Test/Debug Functions
 uint8_t LPS22HH_WhoAmI(void);
