@@ -1,0 +1,3 @@
+../Core/Src/launch_buffer.c:9:6:launch_buffer_init	16	static
+../Core/Src/launch_buffer.c:16:6:launch_buffer_add	600	static
+../Core/Src/launch_buffer.c:84:6:launch_buffer_flush	24	static

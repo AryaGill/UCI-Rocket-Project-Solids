@@ -112,5 +112,6 @@ void deselect_all_spi();
 void Bias_Init(Bias_t *bias);
 void Apply_Bias(Bias_t *bias, Telemetry_t *telemetry);
 void Gyro_CalibrateBias(Bias_t* bias, Telemetry_t* telemetry, int num_samples);
+void calibrate_accel_bias_stationary(Telemetry_t *telemetry);
 
 void log_mag();
