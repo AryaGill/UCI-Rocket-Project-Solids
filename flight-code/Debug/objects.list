@@ -6,6 +6,7 @@
 "./Core/Src/complementary_filter.o"
 "./Core/Src/fsm.o"
 "./Core/Src/kalman_filter.o"
+"./Core/Src/launch_buffer.o"
 "./Core/Src/madgwick.o"
 "./Core/Src/main.o"
 "./Core/Src/parachute.o"

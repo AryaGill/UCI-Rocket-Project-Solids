@@ -203,7 +203,7 @@ void read_sensors(Telemetry_t *telemetry)
     telemetry->time = HAL_GetTick();
 
     // Comment out for flight
-    calibrate_accel_bias_stationary();
+    calibrate_accel_bias_stationary(telemetry);
 }
 
 // Calculate altitude from pressure (standard atmosphere model)
@@ -953,12 +953,15 @@ void Apply_Bias(Bias_t *bias, Telemetry_t *t)
 }
 
 // How to calibrate accel: run in debugger. Hold still.
-// If biasses stay constant, that is the bias.
-// Perform at different angles to check.
-// Hard code this bias in bias init
+// Place the board in 6 different orientations, letting gravity (1g) act on each axis positively and negatively.
+// +X, -X, +Y, -Y, +Z, -Z facing down.
+// For each position, record the average output of all three axes.
+// For each axis, the offset is: Offset = (Value_+1g + Value_-1g) / 2
+// The scale factor is: Scale = (Value_+1g - Value_-1g) / 2 (Theoretically, this should be 1g, but you can use it to correct minor gain errors).
 float lsm_accel_r_bias_instance;
 float lsm_accel_p_bias_instance;
 float lsm_accel_y_bias_instance;
+uint32_t prev_time_accel_bias;
 void calibrate_accel_bias_stationary(Telemetry_t *telemetry)
 {
 	// Average IMUs (body frame)
@@ -1000,7 +1003,12 @@ void calibrate_accel_bias_stationary(Telemetry_t *telemetry)
     float bias_y = R12*err_wx + R22*err_wy + R32*err_wz;
     float bias_z = R13*err_wx + R23*err_wy + R33*err_wz;
 
-    lsm_accel_p_bias_instance = bias_x;
-    lsm_accel_y_bias_instance = bias_y;
-    lsm_accel_r_bias_instance = bias_z;
+    float TAU = 1;
+    uint32_t now = micros();
+    float dt = (now - prev_time_accel_bias) * 1e-6;
+    prev_time_accel_bias = now;
+    float alpha = TAU / (TAU + dt);
+    lsm_accel_p_bias_instance = lsm_accel_p_bias_instance * alpha + bias_x * (alpha - 1);
+    lsm_accel_y_bias_instance = lsm_accel_y_bias_instance * alpha + bias_y * (alpha - 1);
+    lsm_accel_r_bias_instance = lsm_accel_r_bias_instance * alpha + bias_z * (alpha - 1);
 }
