@@ -23,6 +23,21 @@ GPIO_TypeDef *BMP388_port;
 uint16_t BMP388_pin;
 SPI_HandleTypeDef *BMP388_hspi;
 
+//BMX
+// Accelerometer
+GPIO_TypeDef *BMX_ACC_port;
+uint16_t BMX_ACC_pin;
+SPI_HandleTypeDef *BMX_ACC_hspi;
+
+// Gyroscope
+GPIO_TypeDef *BMX_GYRO_port;
+uint16_t BMX_GYRO_pin;
+SPI_HandleTypeDef *BMX_GYRO_hspi;
+
+// Magnetometer
+GPIO_TypeDef *BMX_MAG_port;
+uint16_t BMX_MAG_pin;
+SPI_HandleTypeDef *BMX_MAG_hspi;
 
 extern Bias_t bias;
 
@@ -31,6 +46,10 @@ volatile uint8_t lsm_whoami = 0; // Should be 0x6A
 volatile uint8_t adxl_whoami = 0; // Should be 0xE5
 volatile uint8_t lis_whoami = 0; // Should be 0x3D
 volatile uint8_t bmp388_whoami = 0; //Should be 0x50
+
+volatile uint8_t bmx_acc_whoami = 0; // Should be 11111010 or 0xFA
+volatile uint8_t bmx_gyro_whoami = 0; // Should be 0x0f
+volatile uint8_t bmx_mag_whoami = 0; //Should be 0x32
 
 static BMP388_CalibData bmp388_calib; //calibration struct for bmp388
 
@@ -66,10 +85,23 @@ uint8_t Verify_Sensors(void){
 	}
 
 	bmp388_whoami = BMP388_WhoAmI();
-		if (bmp388_whoami != 0x50){
-			return 1;
-		}
+	if (bmp388_whoami != 0x50){
+		return 1;
+	}
+	//BMX
+	bmx_acc_whoami = BMX055_ACC_WhoAmI();
+	if (bmx_acc_whoami != 0xFA){
+		return 1;
+	}
+	bmx_gyro_whoami = BMX055_GYRO_WhoAmI();
+	if (bmx_gyro_whoami != 0x0f){
+		return 1;
+	}
 
+	bmx_mag_whoami = BMX055_MAG_WhoAmI();
+	if (bmx_mag_whoami != 0x32){
+		return 1;
+	}
 	return 0;
 
 }
@@ -124,6 +156,10 @@ void init_sensors(SPI_HandleTypeDef *hspi)
     HAL_GPIO_WritePin(IMU_2_CS_GPIO_Port, IMU_2_CS_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(Mag_CS_GPIO_Port, Mag_CS_Pin, GPIO_PIN_SET);
 
+    HAL_GPIO_WritePin(BMX_ACCEL_CS_GPIO_Port, BMX_ACCEL_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(BMX_GYRO_CS_GPIO_Port, BMX_GYRO_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(BMX_MAG_CS_GPIO_Port, BMX_MAG_CS_Pin, GPIO_PIN_SET);
+
     HAL_Delay(100);
 
     // Initialize Baro
@@ -146,7 +182,8 @@ void init_sensors(SPI_HandleTypeDef *hspi)
     LIS3MDLTR_Init(hspi, Mag_CS_GPIO_Port, Mag_CS_Pin);
     HAL_Delay(20);
 
-
+    // Initialize BMX
+    BMX055_Init(hspi, BMX_ACCEL_CS_GPIO_Port, BMX_ACCEL_CS_Pin, BMX_GYRO_CS_GPIO_Port, BMX_GYRO_CS_Pin, BMX_MAG_CS_GPIO_Port, BMX_MAG_CS_Pin);
     Bias_Init(&bias);
 }
 
@@ -158,7 +195,7 @@ void read_sensors(Telemetry_t *telemetry)
     ADXL375_Read(telemetry);
     LIS3MDLTR_Read(telemetry);
     BMP388_Read(telemetry);
-
+    BMX055_Read(telemetry);
     Apply_Bias(&bias, telemetry);
 
     transform_accel_to_world(telemetry);
@@ -592,6 +629,148 @@ uint8_t BMP388_WhoAmI(void)
     SPI_Read(BMP388_hspi, BMP388_port, BMP388_pin, BMP388_CHIP_ID, &id, 1);
     return id;
 }
+
+void BMX055_Init(SPI_HandleTypeDef *hspi,
+                 GPIO_TypeDef *acc_port, uint16_t acc_pin,
+                 GPIO_TypeDef *gyro_port, uint16_t gyro_pin,
+                 GPIO_TypeDef *mag_port, uint16_t mag_pin)
+{
+    BMX_ACC_hspi = hspi;
+    BMX_ACC_port = acc_port;
+    BMX_ACC_pin = acc_pin;
+
+    BMX_GYRO_hspi = hspi;
+    BMX_GYRO_port = gyro_port;
+    BMX_GYRO_pin = gyro_pin;
+
+    BMX_MAG_hspi = hspi;
+    BMX_MAG_port = mag_port;
+    BMX_MAG_pin = mag_pin;
+
+    HAL_Delay(10);
+
+    // ---------- ACCEL ----------
+    SPI_Write(BMX_ACC_hspi, BMX_ACC_port, BMX_ACC_pin,
+              BMX055_ACC_SOFTRESET, BMX055_ACC_SOFTRESET_CMD);
+    HAL_Delay(10);
+
+    SPI_Write(BMX_ACC_hspi, BMX_ACC_port, BMX_ACC_pin,
+              BMX055_ACC_PMU_RANGE, BMX055_ACC_RANGE_16G);
+
+    SPI_Write(BMX_ACC_hspi, BMX_ACC_port, BMX_ACC_pin,
+              BMX055_ACC_PMU_BW, BMX055_ACC_BW_125HZ);
+
+    // ---------- GYRO ----------
+    SPI_Write(BMX_GYRO_hspi, BMX_GYRO_port, BMX_GYRO_pin,
+              BMX055_GYRO_SOFTRESET, BMX055_GYRO_SOFTRESET_CMD);
+    HAL_Delay(10);
+
+    SPI_Write(BMX_GYRO_hspi, BMX_GYRO_port, BMX_GYRO_pin,
+              BMX055_GYRO_RANGE, BMX055_GYRO_RANGE_500DPS);
+
+    SPI_Write(BMX_GYRO_hspi, BMX_GYRO_port, BMX_GYRO_pin,
+              BMX055_GYRO_BW, BMX055_GYRO_BW_200HZ);
+
+    // ---------- MAG ----------
+    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+              BMX055_MAG_POWER_CTRL, BMX055_MAG_POWER_ON);
+    HAL_Delay(10);
+
+    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+              BMX055_MAG_OP_MODE, BMX055_MAG_NORMAL_MODE);
+
+    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+              BMX055_MAG_REP_XY, BMX055_MAG_REPXY_DEFAULT);
+
+    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+              BMX055_MAG_REP_Z, BMX055_MAG_REPZ_DEFAULT);
+
+    HAL_Delay(10);
+}
+
+uint8_t BMX055_ACC_WhoAmI(void)
+{
+    uint8_t id;
+    SPI_Read(BMX_ACC_hspi, BMX_ACC_port, BMX_ACC_pin,
+             BMX055_ACC_CHIP_ID, &id, 1);
+    return id;
+}
+
+uint8_t BMX055_GYRO_WhoAmI(void)
+{
+    uint8_t id;
+    SPI_Read(BMX_GYRO_hspi, BMX_GYRO_port, BMX_GYRO_pin,
+             BMX055_GYRO_CHIP_ID, &id, 1);
+    return id;
+}
+
+uint8_t BMX055_MAG_WhoAmI(void)
+{
+    uint8_t id;
+    SPI_Read(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+             BMX055_MAG_CHIP_ID, &id, 1);
+    return id;
+}
+
+void BMX055_Read_Accel(Telemetry_t *t)
+{
+    uint8_t buf[6];
+
+    SPI_Read_Multi(BMX_ACC_hspi, BMX_ACC_port, BMX_ACC_pin,
+                   BMX055_ACC_X_LSB, buf, 6);
+
+    int16_t ax = ((int16_t)(buf[1] << 8) | buf[0]) >> 4;
+    int16_t ay = ((int16_t)(buf[3] << 8) | buf[2]) >> 4;
+    int16_t az = ((int16_t)(buf[5] << 8) | buf[4]) >> 4;
+
+    const float scale = 9.81f / 1024.0f;
+
+    t->bmx_accel_r = ay * scale;
+    t->bmx_accel_p = ax * scale;
+    t->bmx_accel_y = -az * scale;
+}
+
+void BMX055_Read_Gyro(Telemetry_t *t)
+{
+    uint8_t buf[6];
+
+    SPI_Read_Multi(BMX_GYRO_hspi, BMX_GYRO_port, BMX_GYRO_pin,
+                   BMX055_GYRO_RATE_X_LSB, buf, 6);
+
+    int16_t gx = (int16_t)((buf[1] << 8) | buf[0]);
+    int16_t gy = (int16_t)((buf[3] << 8) | buf[2]);
+    int16_t gz = (int16_t)((buf[5] << 8) | buf[4]);
+
+    const float scale = 1.0f / 65.5f;
+
+    t->bmx_gyro_r = gy * scale;
+    t->bmx_gyro_p = gx * scale;
+    t->bmx_gyro_y = gz * scale;
+}
+
+void BMX055_Read_Mag(Telemetry_t *t)
+{
+    uint8_t buf[8];
+
+    SPI_Read_Multi(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+                   BMX055_MAG_DATA_X_LSB, buf, 8);
+
+    int16_t mx = ((int16_t)(buf[1] << 8) | buf[0]) >> 3;
+    int16_t my = ((int16_t)(buf[3] << 8) | buf[2]) >> 3;
+    int16_t mz = ((int16_t)(buf[5] << 8) | buf[4]) >> 1;
+
+    t->bmx_mag_r = mx;
+    t->bmx_mag_p = my;
+    t->bmx_mag_y = mz;
+}
+
+void BMX055_Read(Telemetry_t *t)
+{
+    BMX055_Read_Accel(t);
+    BMX055_Read_Gyro(t);
+    BMX055_Read_Mag(t);
+}
+
 void calibrate_mag(Telemetry_t *telemetry){
 	LIS3MDLTR_Read(telemetry);
 

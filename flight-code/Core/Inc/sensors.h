@@ -34,9 +34,6 @@
 #define LIS3MDLTR_CTRL_REG5	  0x24
 #define LIS3MDLTR_OUT_X_L     0x28
 
-
-//BMX055 Registers
-
 //BMP388 Registers
 #define BMP388_CHIP_ID     0x00
 #define BMP388_STATUS      0x03
@@ -48,6 +45,40 @@
 #define BMP388_CONFIG      0x1F
 #define BMP388_CALIB_DATA  0x31
 #define BMP388_CMD         0x7E
+
+//BMX055 Registers
+//accel
+#define BMX055_ACC_CHIP_ID        0x00
+#define BMX055_ACC_X_LSB          0x02
+#define BMX055_ACC_PMU_RANGE      0x0F
+#define BMX055_ACC_PMU_BW         0x10
+#define BMX055_ACC_SOFTRESET      0x14
+
+#define BMX055_ACC_RANGE_16G      0x0c
+#define BMX055_ACC_BW_125HZ       0x0C
+#define BMX055_ACC_SOFTRESET_CMD  0xB6
+//gyro
+#define BMX055_GYRO_CHIP_ID       0x00
+#define BMX055_GYRO_RATE_X_LSB    0x02
+#define BMX055_GYRO_RANGE         0x0F
+#define BMX055_GYRO_BW            0x10
+#define BMX055_GYRO_SOFTRESET     0x14
+#define BMX055_GYRO_RANGE_500DPS  0x02
+#define BMX055_GYRO_BW_200HZ      0x06
+#define BMX055_GYRO_SOFTRESET_CMD 0xB6
+
+//mag
+#define BMX055_MAG_CHIP_ID        0x40
+#define BMX055_MAG_DATA_X_LSB     0x42
+#define BMX055_MAG_DATA_READY     0x48
+#define BMX055_MAG_POWER_CTRL     0x4B
+#define BMX055_MAG_OP_MODE        0x4C
+#define BMX055_MAG_REP_XY         0x51
+#define BMX055_MAG_REP_Z          0x52
+#define BMX055_MAG_POWER_ON       0x01
+#define BMX055_MAG_NORMAL_MODE    0x00
+#define BMX055_MAG_REPXY_DEFAULT  0x04
+#define BMX055_MAG_REPZ_DEFAULT   0x0F
 
 typedef struct {
     float par_t1;
@@ -94,6 +125,20 @@ void LIS3MDLTR_Read(Telemetry_t *telemetry);
 uint8_t LIS3MDLTR_WhoAmI(void);
 
 //BMX055 Functions
+void BMX055_Init(SPI_HandleTypeDef *hspi,
+                 GPIO_TypeDef *acc_port, uint16_t acc_pin,
+                 GPIO_TypeDef *gyro_port, uint16_t gyro_pin,
+                 GPIO_TypeDef *mag_port, uint16_t mag_pin);
+
+void BMX055_Read(Telemetry_t *telemetry);
+
+void BMX055_Read_Accel(Telemetry_t *telemetry);
+void BMX055_Read_Gyro(Telemetry_t *telemetry);
+void BMX055_Read_Mag(Telemetry_t *telemetry);
+
+uint8_t BMX055_ACC_WhoAmI(void);
+uint8_t BMX055_GYRO_WhoAmI(void);
+uint8_t BMX055_MAG_WhoAmI(void);
 
 //BMP388 Functions
 void BMP388_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin);

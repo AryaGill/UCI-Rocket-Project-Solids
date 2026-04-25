@@ -71,6 +71,12 @@ typedef struct {
 	float lsm_gyro_r;
 	float lsm_gyro_p;
 	float lsm_gyro_y;
+	float bmx_accel_r;
+	float bmx_accel_p;
+	float bmx_accel_y;
+	float bmx_gyro_r;
+	float bmx_gyro_p;
+	float bmx_gyro_y;
 	float adxl_accel_r;
 	float adxl_accel_p;
 	float adxl_accel_y;
@@ -79,6 +85,9 @@ typedef struct {
 	float mag_r;
 	float mag_p;
 	float mag_y;
+	float bmx_mag_r;
+	float bmx_mag_p;
+	float bmx_mag_y;
 	float q0;
 	float q1;
 	float q2;
@@ -192,8 +201,14 @@ uint64_t micros(void);
 #define SD_CD_GPIO_Port GPIOE
 #define Baro_CS_Pin GPIO_PIN_11
 #define Baro_CS_GPIO_Port GPIOE
-#define Baro2_CS_Pin GPIO_PIN_11 //check actual values
-#define Baro2_CS_GPIO_Port GPIOE
+#define Baro2_CS_Pin GPIO_PIN_8 //check actual values
+#define Baro2_CS_GPIO_Port GPIOB
+#define BMX_ACCEL_CS_Pin GPIO_PIN_10 //BMX starts here
+#define BMX_ACCEL_CS_GPIO_Port GPIOB
+#define BMX_GYRO_CS_Pin GPIO_PIN_1
+#define BMX_GYRO_CS_GPIO_Port GPIOD
+#define BMX_MAG_CS_Pin GPIO_PIN_2
+#define BMX_MAG_CS_GPIO_Port GPIOD
 #define IMU_CS_Pin GPIO_PIN_10
 #define IMU_CS_GPIO_Port GPIOB
 #define Buzzer_Pin GPIO_PIN_12
