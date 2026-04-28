@@ -60,5 +60,8 @@ void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *tele
 		perform_airbrakes_servo_sequence();
 	} else if (strcmp(cmd, "GYROCAL") == 0){
 		Gyro_CalibrateBias(&bias, telemetry, 500);
+	} else if (strcmp(cmd, "RESET_SD") == 0){
+		sd_clear_all();
+		init_data_file();
 	}
 }

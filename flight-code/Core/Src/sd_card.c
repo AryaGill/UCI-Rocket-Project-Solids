@@ -287,3 +287,41 @@ FRESULT write_mag(const char *filename,
     SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
     return FR_OK;
 }
+
+FRESULT sd_clear_all(void)
+{
+    DIR dir;
+    FILINFO fno;
+    FRESULT res;
+
+    SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
+
+    res = f_opendir(&dir, "/");
+    if (res != FR_OK) {
+        SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+        return res;
+    }
+
+    while (1) {
+        res = f_readdir(&dir, &fno);
+        if (res != FR_OK || fno.fname[0] == 0)
+            break;  // error or end of directory
+
+        // Skip "." and ".."
+        if (strcmp(fno.fname, ".") == 0 || strcmp(fno.fname, "..") == 0)
+            continue;
+
+        // Delete file
+        res = f_unlink(fno.fname);
+        if (res != FR_OK) {
+            f_closedir(&dir);
+            SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+            return res;
+        }
+    }
+
+    f_closedir(&dir);
+    SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+
+    return FR_OK;
+}
