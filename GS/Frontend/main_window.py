@@ -279,6 +279,10 @@ class GroundStationWindow(QMainWindow):
         self.stop_btn = QPushButton("Stop")
         self.stop_btn.clicked.connect(self.stop_connection)
         control_layout.addWidget(self.stop_btn)
+
+        self.clearSD_btn = QPushButton("Clear SD")
+        self.clearSD_btn.clicked.connect(self.send_clearSD)
+        control_layout.addWidget(self.clearSD_btn)
         
         main_layout.addLayout(control_layout)
 
@@ -546,6 +550,15 @@ class GroundStationWindow(QMainWindow):
         if self.streamer and self.streamer.isRunning():
             self.streamer.write_command("GYROCAL")
             self.update_status("🔄 GYROCAL command sent")
+        else:
+            self.update_status("Error: No serial connection active")
+            QMessageBox.warning(self, "Connection Error",
+                                "Cannot send command: Serial connection is not active")
+    
+    def send_clearSD(self):
+        if self.streamer and self.streamer.isRunning():
+            self.streamer.write_command("CLEAR_SD")
+            self.update_status("🔄 SD Wiped")
         else:
             self.update_status("Error: No serial connection active")
             QMessageBox.warning(self, "Connection Error",
