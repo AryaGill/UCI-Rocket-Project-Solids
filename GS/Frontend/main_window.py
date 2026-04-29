@@ -557,7 +557,7 @@ class GroundStationWindow(QMainWindow):
     
     def send_clearSD(self):
         if self.streamer and self.streamer.isRunning():
-            self.streamer.write_command("CLEAR_SD")
+            self.streamer.write_command("RESET_SD")
             self.update_status("🔄 SD Wiped")
         else:
             self.update_status("Error: No serial connection active")
