@@ -167,12 +167,12 @@ uint64_t micros(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define RF_EN_Pin GPIO_PIN_2
-#define RF_EN_GPIO_Port GPIOE
 #define RF_CS_Pin GPIO_PIN_3
 #define RF_CS_GPIO_Port GPIOE
 #define RF_RST_Pin GPIO_PIN_4
 #define RF_RST_GPIO_Port GPIOE
+#define Flash_CS_Pin GPIO_PIN_14
+#define Flash_CS_GPIO_Port GPIOC
 #define LED_Pin GPIO_PIN_0
 #define LED_GPIO_Port GPIOC
 #define RX_RF_Pin GPIO_PIN_0
@@ -181,8 +181,6 @@ uint64_t micros(void);
 #define RF_TX_GPIO_Port GPIOA
 #define Drogue_ADC1_Pin GPIO_PIN_2
 #define Drogue_ADC1_GPIO_Port GPIOA
-#define Flash_CS_Pin GPIO_PIN_3
-#define Flash_CS_GPIO_Port GPIOA
 #define Drogue_ADC2_Pin GPIO_PIN_4
 #define Drogue_ADC2_GPIO_Port GPIOA
 #define Main_ADC1_Pin GPIO_PIN_4
@@ -201,24 +199,14 @@ uint64_t micros(void);
 #define SD_CD_GPIO_Port GPIOE
 #define Baro_CS_Pin GPIO_PIN_11
 #define Baro_CS_GPIO_Port GPIOE
-#define Baro2_CS_Pin GPIO_PIN_8 //check actual values
-#define Baro2_CS_GPIO_Port GPIOB
-#define BMX_ACCEL_CS_Pin GPIO_PIN_10 //BMX starts here
+#define BMX_ACCEL_CS_Pin GPIO_PIN_10
 #define BMX_ACCEL_CS_GPIO_Port GPIOB
-#define BMX_GYRO_CS_Pin GPIO_PIN_1
-#define BMX_GYRO_CS_GPIO_Port GPIOD
-#define BMX_MAG_CS_Pin GPIO_PIN_2
-#define BMX_MAG_CS_GPIO_Port GPIOD
-#define IMU_CS_Pin GPIO_PIN_10
-#define IMU_CS_GPIO_Port GPIOB
 #define Buzzer_Pin GPIO_PIN_12
 #define Buzzer_GPIO_Port GPIOD
 #define Camera_1_Pin GPIO_PIN_14
 #define Camera_1_GPIO_Port GPIOD
 #define Camera_2_Pin GPIO_PIN_15
 #define Camera_2_GPIO_Port GPIOD
-#define Mag_CS_Pin GPIO_PIN_7
-#define Mag_CS_GPIO_Port GPIOC
 #define Drogue_Parachute_2_Pin GPIO_PIN_9
 #define Drogue_Parachute_2_GPIO_Port GPIOC
 #define Drogue_Parachute_1_Pin GPIO_PIN_8
@@ -227,10 +215,22 @@ uint64_t micros(void);
 #define Main_Parachute_2_GPIO_Port GPIOA
 #define Main_Parachute_1_Pin GPIO_PIN_10
 #define Main_Parachute_1_GPIO_Port GPIOA
+#define BMX_GYRO_CS_Pin GPIO_PIN_1
+#define BMX_GYRO_CS_GPIO_Port GPIOD
+#define BMX_MAG_CS_Pin GPIO_PIN_2
+#define BMX_MAG_CS_GPIO_Port GPIOD
+#define IMU_2_CSD5_Pin GPIO_PIN_5
+#define IMU_2_CSD5_GPIO_Port GPIOD
 #define Airbrakes_PWM_1_Pin GPIO_PIN_4
 #define Airbrakes_PWM_1_GPIO_Port GPIOB
 #define Airbrakes_PWM_2_Pin GPIO_PIN_5
 #define Airbrakes_PWM_2_GPIO_Port GPIOB
+#define Baro2_CS_Pin GPIO_PIN_8
+#define Baro2_CS_GPIO_Port GPIOB
+#define Mag_CS_Pin GPIO_PIN_0
+#define Mag_CS_GPIO_Port GPIOE
+#define RF_EN_Pin GPIO_PIN_1
+#define RF_EN_GPIO_Port GPIOE
 
 /* USER CODE BEGIN Private defines */
 
