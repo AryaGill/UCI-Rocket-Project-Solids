@@ -62,46 +62,46 @@ float min_y;
 
 
 uint8_t Verify_Sensors(void){
-	// Check Barometer
-//	lps_whoami = LPS22HH_WhoAmI();
-//	if (lps_whoami != 0xB3){
-//		return 1;
-//	}
+	//Check Barometer
+	lps_whoami = LPS22HH_WhoAmI();
+	if (lps_whoami != 0xB3){
+		return 1;
+	}
 
-	// Check LSM6DSL IMU
-//	lsm_whoami = LSM6DSL_WhoAmI();
-//	if (lsm_whoami != 0x6a){
-//		return 1;
-//	}
+	//Check LSM6DSL IMU
+	lsm_whoami = LSM6DSL_WhoAmI();
+	if (lsm_whoami != 0x6a){
+		return 1;
+	}
 
-//	adxl_whoami = ADXL375_WhoAmI();
-//	if (adxl_whoami != 0xE5){
-//		return 1;
-//	}
+	adxl_whoami = ADXL375_WhoAmI();
+	if (adxl_whoami != 0xE5){
+		return 1;
+	}
 
-//	lis_whoami = LIS3MDLTR_WhoAmI();
-//	if (lis_whoami != 0x3D){
-//		return 1;
-//	}
+	lis_whoami = LIS3MDLTR_WhoAmI();
+	if (lis_whoami != 0x3D){
+		return 1;
+	}
 
-//	bmp388_whoami = BMP388_WhoAmI();
-//	if (bmp388_whoami != 0x50){
-//		return 1;
-//	}
-//	//BMX
-//	bmx_acc_whoami = BMX055_ACC_WhoAmI();
-//	if (bmx_acc_whoami != 0xFA){
-//		return 1;
-//	}
-//	bmx_gyro_whoami = BMX055_GYRO_WhoAmI();
-//	if (bmx_gyro_whoami != 0x0f){
-//		return 1;
-//	}
-//
-//	bmx_mag_whoami = BMX055_MAG_WhoAmI();
-//	if (bmx_mag_whoami != 0x32){
-//		return 1;
-//	}
+	bmp388_whoami = BMP388_WhoAmI();
+	if (bmp388_whoami != 0x50){
+		return 1;
+	}
+	//BMX
+	bmx_acc_whoami = BMX055_ACC_WhoAmI();
+	if (bmx_acc_whoami != 0xFA){
+		return 1;
+	}
+	bmx_gyro_whoami = BMX055_GYRO_WhoAmI();
+	if (bmx_gyro_whoami != 0x0f){
+		return 1;
+	}
+
+	bmx_mag_whoami = BMX055_MAG_WhoAmI();
+	if (bmx_mag_whoami != 0x32){
+		return 1;
+	}
 	return 0;
 
 }
@@ -147,7 +147,7 @@ static void SPI_Write(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
 }
 
 // Sensor Initialization
-void init_sensors(SPI_HandleTypeDef *hspi)
+void init_sensors(SPI_HandleTypeDef *hspi2, SPI_HandleTypeDef *hspi3, SPI_HandleTypeDef *hspi4)
 {
     // Force all CS HIGH immediately
     HAL_GPIO_WritePin(Baro_CS_GPIO_Port, Baro_CS_Pin, GPIO_PIN_SET);
@@ -161,35 +161,35 @@ void init_sensors(SPI_HandleTypeDef *hspi)
 
     HAL_Delay(100);
 
-//    // Initialize Baro
-//    LPS22HH_Init(hspi, Baro_CS_GPIO_Port, Baro_CS_Pin);
-//    HAL_Delay(20);
+    // Initialize Baro 1
+    LPS22HH_Init(hspi2, Baro_CS_GPIO_Port, Baro_CS_Pin);
+    HAL_Delay(20);
 
-//    //Initialize BMP baro
-//    BMP388_Init(hspi, Baro2_CS_GPIO_Port, Baro2_CS_Pin);
-//    HAL_Delay(20);
+    //Initialize BMP baro 2
+    BMP388_Init(hspi3, Baro2_CS_GPIO_Port, Baro2_CS_Pin);
+    HAL_Delay(20);
 
-//    // Initialize LSM
-//    LSM6DSL_Init(hspi, IMU_2_CS_GPIO_Port, IMU_2_CS_Pin);
-//    HAL_Delay(20);
+    // Initialize LSM 2
+    LSM6DSL_Init(hspi3, IMU_2_CS_GPIO_Port, IMU_2_CS_Pin);
+    HAL_Delay(20);
 
-//    // Initialize LIS
-//    LIS3MDLTR_Init(hspi, Mag_CS_GPIO_Port, Mag_CS_Pin);
-//    HAL_Delay(20);
+    // Initialize LIS
+    LIS3MDLTR_Init(hspi4, Mag_CS_GPIO_Port, Mag_CS_Pin);
+    HAL_Delay(20);
 
-//    // Initialize BMX
-//    BMX055_Init(hspi, BMX_ACCEL_CS_GPIO_Port, BMX_ACCEL_CS_Pin, BMX_GYRO_CS_GPIO_Port, BMX_GYRO_CS_Pin, BMX_MAG_CS_GPIO_Port, BMX_MAG_CS_Pin);
-//    Bias_Init(&bias);
+    // Initialize BMX 1
+    BMX055_Init(hspi2, BMX_ACCEL_CS_GPIO_Port, BMX_ACCEL_CS_Pin, BMX_GYRO_CS_GPIO_Port, BMX_GYRO_CS_Pin, BMX_MAG_CS_GPIO_Port, BMX_MAG_CS_Pin);
+    Bias_Init(&bias);
 }
 
 // Sensor Reading
 void read_sensors(Telemetry_t *telemetry)
 {
-//    LPS22HH_Read(telemetry);
-//    LSM6DSL_Read(telemetry);
-//    LIS3MDLTR_Read(telemetry);
-//    BMP388_Read(telemetry);
-//    BMX055_Read(telemetry);
+    LPS22HH_Read(telemetry);
+    LSM6DSL_Read(telemetry);
+    LIS3MDLTR_Read(telemetry);
+    BMP388_Read(telemetry);
+    BMX055_Read(telemetry);
     Apply_Bias(&bias, telemetry);
 
     transform_accel_to_world(telemetry);

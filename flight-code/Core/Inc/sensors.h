@@ -100,7 +100,7 @@ typedef struct {
 // Function Declarations
 uint8_t Verify_Sensors(void);
 
-void init_sensors(SPI_HandleTypeDef *hspi);
+void init_sensors(SPI_HandleTypeDef *hspi2, SPI_HandleTypeDef *hspi3, SPI_HandleTypeDef *hspi4);
 void read_sensors(Telemetry_t *telemetry);
 
 // LPS22HHTR Functions
