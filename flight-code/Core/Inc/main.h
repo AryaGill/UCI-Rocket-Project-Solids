@@ -191,8 +191,6 @@ uint64_t micros(void);
 #define CAM_ADC1_GPIO_Port GPIOB
 #define CAM_ADC2_Pin GPIO_PIN_1
 #define CAM_ADC2_GPIO_Port GPIOB
-#define IMU_2_CS_Pin GPIO_PIN_2
-#define IMU_2_CS_GPIO_Port GPIOB
 #define SD_CS_Pin GPIO_PIN_9
 #define SD_CS_GPIO_Port GPIOE
 #define SD_CD_Pin GPIO_PIN_10
@@ -219,8 +217,8 @@ uint64_t micros(void);
 #define BMX_GYRO_CS_GPIO_Port GPIOD
 #define BMX_MAG_CS_Pin GPIO_PIN_2
 #define BMX_MAG_CS_GPIO_Port GPIOD
-#define IMU_2_CSD5_Pin GPIO_PIN_5
-#define IMU_2_CSD5_GPIO_Port GPIOD
+#define IMU_2_CS_Pin GPIO_PIN_5
+#define IMU_2_CS_GPIO_Port GPIOD
 #define Airbrakes_PWM_1_Pin GPIO_PIN_4
 #define Airbrakes_PWM_1_GPIO_Port GPIOB
 #define Airbrakes_PWM_2_Pin GPIO_PIN_5

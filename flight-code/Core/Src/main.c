@@ -60,7 +60,6 @@ ADC_HandleTypeDef hadc1;
 
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
-SPI_HandleTypeDef hspi3;
 SPI_HandleTypeDef hspi4;
 
 TIM_HandleTypeDef htim3;
@@ -105,7 +104,6 @@ static void MX_ADC1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_SPI2_Init(void);
-static void MX_SPI3_Init(void);
 static void MX_SPI4_Init(void);
 /* USER CODE BEGIN PFP */
 void Success_pattern(void);
@@ -164,7 +162,7 @@ void Success_Pattern(void)
     }
 
     // Turn buzzer ON and keep it on
-//    __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, htim4.Init.Period / 2);
+    __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, htim4.Init.Period / 2);
 }
 
 // Error: Rapid LED flashing + continuous buzzer beeps, system halts
@@ -237,7 +235,6 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_SPI2_Init();
-  MX_SPI3_Init();
   MX_SPI4_Init();
   /* USER CODE BEGIN 2 */
 
@@ -254,7 +251,7 @@ int main(void)
 
 	// Initialize all sensors
     HAL_Delay(100);
-	init_sensors(&hspi2, &hspi3,&hspi4);
+	init_sensors(&hspi2, &hspi4);
 	HAL_Delay(100);
 
 	// Verify all sensors work
@@ -266,7 +263,7 @@ int main(void)
 	HAL_Delay(500);
 
 	// Turn buzzer ON for normal operation
-//	buzzer_set_frequency(4000);
+	buzzer_set_frequency(4000);
 
 	// Turn Cameras on
 	turn_camera_on(0);
@@ -612,54 +609,6 @@ static void MX_SPI2_Init(void)
 }
 
 /**
-  * @brief SPI3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_SPI3_Init(void)
-{
-
-  /* USER CODE BEGIN SPI3_Init 0 */
-
-  /* USER CODE END SPI3_Init 0 */
-
-  /* USER CODE BEGIN SPI3_Init 1 */
-
-  /* USER CODE END SPI3_Init 1 */
-  /* SPI3 parameter configuration*/
-  hspi3.Instance = SPI3;
-  hspi3.Init.Mode = SPI_MODE_MASTER;
-  hspi3.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi3.Init.NSS = SPI_NSS_SOFT;
-  hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
-  hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi3.Init.CRCPolynomial = 0x0;
-  hspi3.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-  hspi3.Init.NSSPolarity = SPI_NSS_POLARITY_LOW;
-  hspi3.Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
-  hspi3.Init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-  hspi3.Init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-  hspi3.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
-  hspi3.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
-  hspi3.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
-  hspi3.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
-  hspi3.Init.IOSwap = SPI_IO_SWAP_DISABLE;
-  if (HAL_SPI_Init(&hspi3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN SPI3_Init 2 */
-
-  /* USER CODE END SPI3_Init 2 */
-
-}
-
-/**
   * @brief SPI4 Initialization Function
   * @param None
   * @retval None
@@ -988,11 +937,11 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, Flash_CS_Pin|LED_Pin|Drogue_Parachute_2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, IMU_2_CS_Pin|BMX_ACCEL_CS_Pin|Baro2_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, BMX_ACCEL_CS_Pin|Baro2_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, Camera_1_Pin|Camera_2_Pin|BMX_GYRO_CS_Pin|BMX_MAG_CS_Pin
-                          |IMU_2_CSD5_Pin, GPIO_PIN_RESET);
+                          |IMU_2_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, Drogue_Parachute_1_Pin|Main_Parachute_2_Pin|Main_Parachute_1_Pin, GPIO_PIN_RESET);
@@ -1013,23 +962,23 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : IMU_2_CS_Pin BMX_ACCEL_CS_Pin Baro2_CS_Pin */
-  GPIO_InitStruct.Pin = IMU_2_CS_Pin|BMX_ACCEL_CS_Pin|Baro2_CS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
   /*Configure GPIO pin : SD_CD_Pin */
   GPIO_InitStruct.Pin = SD_CD_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(SD_CD_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : BMX_ACCEL_CS_Pin Baro2_CS_Pin */
+  GPIO_InitStruct.Pin = BMX_ACCEL_CS_Pin|Baro2_CS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   /*Configure GPIO pins : Camera_1_Pin Camera_2_Pin BMX_GYRO_CS_Pin BMX_MAG_CS_Pin
-                           IMU_2_CSD5_Pin */
+                           IMU_2_CS_Pin */
   GPIO_InitStruct.Pin = Camera_1_Pin|Camera_2_Pin|BMX_GYRO_CS_Pin|BMX_MAG_CS_Pin
-                          |IMU_2_CSD5_Pin;
+                          |IMU_2_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1041,6 +990,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC12 */
+  GPIO_InitStruct.Pin = GPIO_PIN_12;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
   /* USER CODE END MX_GPIO_Init_2 */

@@ -11,10 +11,6 @@ GPIO_TypeDef *LSM_port;
 uint16_t LSM_pin;
 SPI_HandleTypeDef *LSM_hspi;
 
-GPIO_TypeDef *ADXL_port;
-uint16_t ADXL_pin;
-SPI_HandleTypeDef *ADXL_hspi;
-
 GPIO_TypeDef *LIS_port;
 uint16_t LIS_pin;
 SPI_HandleTypeDef *LIS_hspi;
@@ -43,7 +39,6 @@ extern Bias_t bias;
 
 volatile uint8_t lps_whoami = 0; // Should be 0xB3 for LPS22HH
 volatile uint8_t lsm_whoami = 0; // Should be 0x6A
-volatile uint8_t adxl_whoami = 0; // Should be 0xE5
 volatile uint8_t lis_whoami = 0; // Should be 0x3D
 volatile uint8_t bmp388_whoami = 0; //Should be 0x50
 
@@ -69,25 +64,20 @@ uint8_t Verify_Sensors(void){
 	}
 
 	//Check LSM6DSL IMU
-	lsm_whoami = LSM6DSL_WhoAmI();
-	if (lsm_whoami != 0x6a){
-		return 1;
-	}
+//	lsm_whoami = LSM6DSL_WhoAmI();
+//	if (lsm_whoami != 0x6a){
+//		return 1;
+//	}
+//
+//	lis_whoami = LIS3MDLTR_WhoAmI();
+//	if (lis_whoami != 0x3D){
+//		return 1;
+//	}
 
-	adxl_whoami = ADXL375_WhoAmI();
-	if (adxl_whoami != 0xE5){
-		return 1;
-	}
-
-	lis_whoami = LIS3MDLTR_WhoAmI();
-	if (lis_whoami != 0x3D){
-		return 1;
-	}
-
-	bmp388_whoami = BMP388_WhoAmI();
-	if (bmp388_whoami != 0x50){
-		return 1;
-	}
+//	bmp388_whoami = BMP388_WhoAmI();
+//	if (bmp388_whoami != 0x50){
+//		return 1;
+//	}
 	//BMX
 	bmx_acc_whoami = BMX055_ACC_WhoAmI();
 	if (bmx_acc_whoami != 0xFA){
@@ -98,12 +88,11 @@ uint8_t Verify_Sensors(void){
 		return 1;
 	}
 
-	bmx_mag_whoami = BMX055_MAG_WhoAmI();
-	if (bmx_mag_whoami != 0x32){
-		return 1;
-	}
+//	bmx_mag_whoami = BMX055_MAG_WhoAmI();
+//	if (bmx_mag_whoami != 0x32){
+//		return 1;
+//	}
 	return 0;
-
 }
 
 // SPI Helper Functions
@@ -147,14 +136,13 @@ static void SPI_Write(SPI_HandleTypeDef *hspi, GPIO_TypeDef *port, uint16_t pin,
 }
 
 // Sensor Initialization
-void init_sensors(SPI_HandleTypeDef *hspi2, SPI_HandleTypeDef *hspi3, SPI_HandleTypeDef *hspi4)
+void init_sensors(SPI_HandleTypeDef *hspi2, SPI_HandleTypeDef *hspi4)
 {
     // Force all CS HIGH immediately
     HAL_GPIO_WritePin(Baro_CS_GPIO_Port, Baro_CS_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(Baro2_CS_GPIO_Port, Baro2_CS_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(IMU_2_CS_GPIO_Port, IMU_2_CS_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(Mag_CS_GPIO_Port, Mag_CS_Pin, GPIO_PIN_SET);
-
+	HAL_GPIO_WritePin(Baro2_CS_GPIO_Port, Baro2_CS_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(BMX_ACCEL_CS_GPIO_Port, BMX_ACCEL_CS_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(BMX_GYRO_CS_GPIO_Port, BMX_GYRO_CS_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(BMX_MAG_CS_GPIO_Port, BMX_MAG_CS_Pin, GPIO_PIN_SET);
@@ -165,30 +153,20 @@ void init_sensors(SPI_HandleTypeDef *hspi2, SPI_HandleTypeDef *hspi3, SPI_Handle
     LPS22HH_Init(hspi2, Baro_CS_GPIO_Port, Baro_CS_Pin);
     HAL_Delay(20);
 
-    //Initialize BMP baro 2
-    BMP388_Init(hspi3, Baro2_CS_GPIO_Port, Baro2_CS_Pin);
-    HAL_Delay(20);
-
-    // Initialize LSM 2
-    LSM6DSL_Init(hspi3, IMU_2_CS_GPIO_Port, IMU_2_CS_Pin);
-    HAL_Delay(20);
+    // Initialize BMX 1
+    BMX055_Init(hspi2, BMX_ACCEL_CS_GPIO_Port, BMX_ACCEL_CS_Pin, BMX_GYRO_CS_GPIO_Port, BMX_GYRO_CS_Pin, BMX_MAG_CS_GPIO_Port, BMX_MAG_CS_Pin);
+    Bias_Init(&bias);
 
     // Initialize LIS
     LIS3MDLTR_Init(hspi4, Mag_CS_GPIO_Port, Mag_CS_Pin);
     HAL_Delay(20);
-
-    // Initialize BMX 1
-    BMX055_Init(hspi2, BMX_ACCEL_CS_GPIO_Port, BMX_ACCEL_CS_Pin, BMX_GYRO_CS_GPIO_Port, BMX_GYRO_CS_Pin, BMX_MAG_CS_GPIO_Port, BMX_MAG_CS_Pin);
-    Bias_Init(&bias);
 }
 
 // Sensor Reading
 void read_sensors(Telemetry_t *telemetry)
 {
     LPS22HH_Read(telemetry);
-    LSM6DSL_Read(telemetry);
     LIS3MDLTR_Read(telemetry);
-    BMP388_Read(telemetry);
     BMX055_Read(telemetry);
     Apply_Bias(&bias, telemetry);
 
@@ -351,106 +329,6 @@ uint8_t LSM6DSL_WhoAmI(void) {
     return id;
 }
 
-/**
- * Switch SPI1 to Mode 3 (CPOL=1, CPHA=1)
- * Saves previous CPOL/CPHA settings
- */
-static inline void SPI_SwitchToMode3(void)
-{
-//	// Disable SPI before changing mode
-//	CLEAR_BIT(SPI1->CR1, SPI_CR1_SPE);
-//
-//	// Save current CPOL/CPHA (in CFG2 register)
-//	spi_saved_mode = SPI1->CFG2 & (SPI_CFG2_CPOL | SPI_CFG2_CPHA);
-//
-//    // Set Mode 3 (CPOL=1, CPHA=1)
-//    SET_BIT(SPI1->CFG2, SPI_CFG2_CPOL | SPI_CFG2_CPHA);
-//
-//    // Re-enable SPI
-//    SET_BIT(SPI1->CR1, SPI_CR1_SPE);
-
-	HAL_SPI_DeInit(ADXL_hspi); // Disable SPI and clean up
-	ADXL_hspi->Init.CLKPolarity = SPI_POLARITY_HIGH; // CPOL 1
-	ADXL_hspi->Init.CLKPhase = SPI_PHASE_2EDGE;      // CPHA 1
-	HAL_SPI_Init(ADXL_hspi);   // Re-initialize with new settings
-}
-
-/**
- * Restore previous SPI1 CPOL/CPHA settings
- */
-static inline void SPI_RestoreMode(void)
-{
-//    // Disable SPI before restoring
-//    CLEAR_BIT(SPI1->CR1, SPI_CR1_SPE);
-//
-//    // Restore saved CPOL/CPHA bits
-//    MODIFY_REG(SPI1->CFG2,
-//               SPI_CFG2_CPOL | SPI_CFG2_CPHA,
-//               spi_saved_mode);
-//
-//    // Re-enable SPI
-//    SET_BIT(SPI1->CR1, SPI_CR1_SPE);
-
-	HAL_SPI_DeInit(ADXL_hspi); // Disable SPI and clean up
-	ADXL_hspi->Init.CLKPolarity = SPI_POLARITY_LOW;
-	ADXL_hspi->Init.CLKPhase = SPI_PHASE_1EDGE;
-	HAL_SPI_Init(ADXL_hspi);   // Re-initialize with new settings
-}
-
-void ADXL375_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin)
-{
-	ADXL_port = cs_port;
-    ADXL_pin = cs_pin;
-	ADXL_hspi = hspi;
-
-	SPI_SwitchToMode3();
-
-//	SPI_Write(hspi, cs_port, cs_pin, ADXL375_POWER_CTL, 0x00); // standby
-
-    // Data format: Full resolution, ±200g (range bits = 00 for 200g)
-//    SPI_Write(hspi, cs_port, cs_pin, ADXL375_DATA_FORMAT, 0x04);
-
-    // Set bandwidth to 800 Hz (example)
-    SPI_Write(hspi, cs_port, cs_pin, ADXL375_BW_RATE, 0x0F);
-
-    // Measurement mode
-    SPI_Write(hspi, cs_port, cs_pin, ADXL375_POWER_CTL, 0x08);
-
-    SPI_RestoreMode();
-
-    HAL_Delay(10);
-}
-
-void ADXL375_Read(Telemetry_t *telemetry)
-{
-	SPI_SwitchToMode3();
-
-	uint8_t buffer[6];
-
-    SPI_Read_Multi(ADXL_hspi, ADXL_port, ADXL_pin, ADXL375_DATAX0, buffer, 6);
-
-    int16_t accel_x = (int16_t)(buffer[1] << 8 | buffer[0]);
-    int16_t accel_y = (int16_t)(buffer[3] << 8 | buffer[2]);
-    int16_t accel_z = (int16_t)(buffer[5] << 8 | buffer[4]);
-
-    telemetry->adxl_accel_r = accel_x * 0.4805f;   // 0.049g * 9.80665
-    telemetry->adxl_accel_p = -accel_y * 0.4805f;   // 0.049g * 9.80665
-    telemetry->adxl_accel_y = -accel_z * 0.4805f;   // 0.049g * 9.80665
-
-    SPI_RestoreMode();
-}
-
-uint8_t ADXL375_WhoAmI(void) {
-	SPI_SwitchToMode3();
-
-    uint8_t id = 0;
-    SPI_Read(ADXL_hspi, ADXL_port, ADXL_pin, ADXL375_DEVID, &id, 1);
-
-    SPI_RestoreMode();
-
-    return id;
-}
-
 void LIS3MDLTR_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin) {
     LIS_port = cs_port;
     LIS_pin = cs_pin;
@@ -545,85 +423,6 @@ static float BMP388_compensate_pressure(uint32_t uncomp_press, BMP388_CalibData 
     return comp_press;
 }
 
-void BMP388_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin)
-{
-    BMP388_port = cs_port;
-    BMP388_pin = cs_pin;
-    BMP388_hspi = hspi;
-    HAL_Delay(20);
-
-    SPI_Write(hspi, cs_port, cs_pin, BMP388_CMD, 0xB6);
-    HAL_Delay(10);
-
-    SPI_Write(hspi, cs_port, cs_pin, BMP388_PWR_CTRL, 0x33);
-
-    SPI_Write(hspi, cs_port, cs_pin, BMP388_OSR, 0x03);
-
-    SPI_Write(hspi, cs_port, cs_pin, BMP388_CONFIG, 0x02);
-
-    HAL_Delay(10);
-
-    //calibration value read
-    uint8_t calib[21];
-    SPI_Read_Multi(BMP388_hspi, BMP388_port, BMP388_pin, BMP388_CALIB_DATA, calib, 21);
-
-    // Raw calibration values
-    uint16_t T1 = (calib[1] << 8) | calib[0];
-    uint16_t T2 = (calib[3] << 8) | calib[2];
-    int8_t   T3 = calib[4];
-
-    int16_t P1  = (calib[6] << 8) | calib[5];
-    int16_t P2  = (calib[8] << 8) | calib[7];
-    int8_t  P3  = calib[9];
-    int8_t  P4  = calib[10];
-    uint16_t P5 = (calib[12] << 8) | calib[11];
-    uint16_t P6 = (calib[14] << 8) | calib[13];
-    int8_t  P7  = calib[15];
-    int8_t  P8  = calib[16];
-    int16_t P9  = (calib[18] << 8) | calib[17];
-    int8_t  P10 = calib[19];
-    int8_t  P11 = calib[20];
-
-    //convert based on datasheet
-    bmp388_calib.par_t1 = T1 * 256.0f;
-    bmp388_calib.par_t2 = T2 / 1073741824.0f;
-    bmp388_calib.par_t3 = T3 / 281474976710656.0f;
-
-    bmp388_calib.par_p1 = (P1 - 16384.0f) / 1048576.0f;
-    bmp388_calib.par_p2 = (P2 - 16384.0f) / 536870912.0f;
-    bmp388_calib.par_p3 = P3 / 4294967296.0f;
-    bmp388_calib.par_p4 = P4 / 137438953472.0f;
-    bmp388_calib.par_p5 = P5 * 8.0f;
-    bmp388_calib.par_p6 = P6 / 64.0f;
-    bmp388_calib.par_p7 = P7 / 256.0f;
-    bmp388_calib.par_p8 = P8 / 32768.0f;
-    bmp388_calib.par_p9 = P9 / 281474976710656.0f;
-    bmp388_calib.par_p10 = P10 / 281474976710656.0f;
-    bmp388_calib.par_p11 = P11 / 36893488147419103232.0f;
-}
-
-void BMP388_Read(Telemetry_t *telemetry)
-{
-    uint8_t buf[6];
-    SPI_Read_Multi(BMP388_hspi, BMP388_port, BMP388_pin, BMP388_PRESS_DATA, buf, 6);
-
-    int32_t raw_p = ((int32_t)buf[2] << 16) | ((int32_t)buf[1] << 8) | buf[0];
-    int32_t raw_t = ((int32_t)buf[5] << 16) | ((int32_t)buf[4] << 8) | buf[3];
-
-    //need to calibrate a lot
-    telemetry->temperature2 = BMP388_compensate_temperature(raw_t, &bmp388_calib);
-    telemetry->pressure2 = BMP388_compensate_pressure(raw_p, &bmp388_calib)/100.0f; // Pa → hPa
-
-    telemetry->altitude2 = Calculate_Altitude(telemetry->pressure2);
-}
-
-uint8_t BMP388_WhoAmI(void)
-{
-    uint8_t id = 0;
-    SPI_Read(BMP388_hspi, BMP388_port, BMP388_pin, BMP388_CHIP_ID, &id, 1);
-    return id;
-}
-
 void BMX055_Init(SPI_HandleTypeDef *hspi,
                  GPIO_TypeDef *acc_port, uint16_t acc_pin,
                  GPIO_TypeDef *gyro_port, uint16_t gyro_pin,
@@ -665,19 +464,19 @@ void BMX055_Init(SPI_HandleTypeDef *hspi,
     SPI_Write(BMX_GYRO_hspi, BMX_GYRO_port, BMX_GYRO_pin,
               BMX055_GYRO_BW, BMX055_GYRO_BW_200HZ);
 
-    // ---------- MAG ----------
-    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
-              BMX055_MAG_POWER_CTRL, BMX055_MAG_POWER_ON);
-    HAL_Delay(10);
-
-    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
-              BMX055_MAG_OP_MODE, BMX055_MAG_NORMAL_MODE);
-
-    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
-              BMX055_MAG_REP_XY, BMX055_MAG_REPXY_DEFAULT);
-
-    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
-              BMX055_MAG_REP_Z, BMX055_MAG_REPZ_DEFAULT);
+//    // ---------- MAG ----------
+//    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+//              BMX055_MAG_POWER_CTRL, BMX055_MAG_POWER_ON);
+//    HAL_Delay(10);
+//
+//    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+//              BMX055_MAG_OP_MODE, BMX055_MAG_NORMAL_MODE);
+//
+//    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+//              BMX055_MAG_REP_XY, BMX055_MAG_REPXY_DEFAULT);
+//
+//    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+//              BMX055_MAG_REP_Z, BMX055_MAG_REPZ_DEFAULT);
 
     HAL_Delay(10);
 }
@@ -710,14 +509,14 @@ void BMX055_Read_Accel(Telemetry_t *t)
 {
     uint8_t buf[6];
 
-    SPI_Read_Multi(BMX_ACC_hspi, BMX_ACC_port, BMX_ACC_pin,
+    SPI_Read(BMX_ACC_hspi, BMX_ACC_port, BMX_ACC_pin,
                    BMX055_ACC_X_LSB, buf, 6);
 
     int16_t ax = ((int16_t)(buf[1] << 8) | buf[0]) >> 4;
     int16_t ay = ((int16_t)(buf[3] << 8) | buf[2]) >> 4;
     int16_t az = ((int16_t)(buf[5] << 8) | buf[4]) >> 4;
 
-    const float scale = 9.81f / 1024.0f;
+    const float scale = 9.81f / 128.0f;
 
     t->bmx_accel_r = ay * scale;
     t->bmx_accel_p = ax * scale;
@@ -728,7 +527,7 @@ void BMX055_Read_Gyro(Telemetry_t *t)
 {
     uint8_t buf[6];
 
-    SPI_Read_Multi(BMX_GYRO_hspi, BMX_GYRO_port, BMX_GYRO_pin,
+    SPI_Read(BMX_GYRO_hspi, BMX_GYRO_port, BMX_GYRO_pin,
                    BMX055_GYRO_RATE_X_LSB, buf, 6);
 
     int16_t gx = (int16_t)((buf[1] << 8) | buf[0]);
@@ -746,7 +545,7 @@ void BMX055_Read_Mag(Telemetry_t *t)
 {
     uint8_t buf[8];
 
-    SPI_Read_Multi(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+    SPI_Read(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
                    BMX055_MAG_DATA_X_LSB, buf, 8);
 
     int16_t mx = ((int16_t)(buf[1] << 8) | buf[0]) >> 3;
@@ -762,50 +561,50 @@ void BMX055_Read(Telemetry_t *t)
 {
     BMX055_Read_Accel(t);
     BMX055_Read_Gyro(t);
-    BMX055_Read_Mag(t);
+//    BMX055_Read_Mag(t);
 }
 
 void calibrate_mag(Telemetry_t *telemetry){
-	LIS3MDLTR_Read(telemetry);
-
-	// Initialize max and min
-	if (max_r == 0) max_r = telemetry->mag_r;
-	if (max_p == 0) max_p = telemetry->mag_p;
-	if (max_y == 0) max_y = telemetry->mag_y;
-	if (min_r == 0) min_r = telemetry->mag_r;
-	if (min_y == 0) min_y = telemetry->mag_y;
-	if (min_p == 0) min_p = telemetry->mag_p;
-
-	// Update max and min
-	if (telemetry->mag_r > max_r) max_r = telemetry->mag_r;
-	if (telemetry->mag_p > max_p) max_p = telemetry->mag_p;
-	if (telemetry->mag_y > max_y) max_y = telemetry->mag_y;
-	if (telemetry->mag_r < min_r) min_r = telemetry->mag_r;
-	if (telemetry->mag_p < min_p) min_p = telemetry->mag_p;
-	if (telemetry->mag_y < min_y) min_y = telemetry->mag_y;
-
-	float offset_r = (max_r + min_r) / 2.0f;
-	float offset_p = (max_p + min_p) / 2.0f;
-	float offset_y = (max_y + min_y) / 2.0f;
-
-	float radius_r = (max_r - min_r) / 2.0f;
-	float radius_p = (max_p - min_p) / 2.0f;
-	float radius_y = (max_y - min_y) / 2.0f;
-
-	float avg_radius = (radius_r + radius_p + radius_y) / 3.0f;
-
-	float scale_r = avg_radius / radius_r;
-	float scale_p = avg_radius / radius_p;
-	float scale_y = avg_radius / radius_y;
-
-	write_mag("MAG_CALIB.csv", offset_r, offset_p, offset_y, scale_r, scale_p, scale_y);
+//	LIS3MDLTR_Read(telemetry);
+//
+//	// Initialize max and min
+//	if (max_r == 0) max_r = telemetry->mag_r;
+//	if (max_p == 0) max_p = telemetry->mag_p;
+//	if (max_y == 0) max_y = telemetry->mag_y;
+//	if (min_r == 0) min_r = telemetry->mag_r;
+//	if (min_y == 0) min_y = telemetry->mag_y;
+//	if (min_p == 0) min_p = telemetry->mag_p;
+//
+//	// Update max and min
+//	if (telemetry->mag_r > max_r) max_r = telemetry->mag_r;
+//	if (telemetry->mag_p > max_p) max_p = telemetry->mag_p;
+//	if (telemetry->mag_y > max_y) max_y = telemetry->mag_y;
+//	if (telemetry->mag_r < min_r) min_r = telemetry->mag_r;
+//	if (telemetry->mag_p < min_p) min_p = telemetry->mag_p;
+//	if (telemetry->mag_y < min_y) min_y = telemetry->mag_y;
+//
+//	float offset_r = (max_r + min_r) / 2.0f;
+//	float offset_p = (max_p + min_p) / 2.0f;
+//	float offset_y = (max_y + min_y) / 2.0f;
+//
+//	float radius_r = (max_r - min_r) / 2.0f;
+//	float radius_p = (max_p - min_p) / 2.0f;
+//	float radius_y = (max_y - min_y) / 2.0f;
+//
+//	float avg_radius = (radius_r + radius_p + radius_y) / 3.0f;
+//
+//	float scale_r = avg_radius / radius_r;
+//	float scale_p = avg_radius / radius_p;
+//	float scale_y = avg_radius / radius_y;
+//
+//	write_mag("MAG_CALIB.csv", offset_r, offset_p, offset_y, scale_r, scale_p, scale_y);
 }
 
 void transform_accel_to_world(Telemetry_t *telemetry) {
   // Average IMUs (body frame)
-  float ax = telemetry->lsm_accel_p;
-  float ay = telemetry->lsm_accel_y;
-  float az = telemetry->lsm_accel_r;
+  float ax = telemetry->bmx_accel_p;
+  float ay = telemetry->bmx_accel_y;
+  float az = telemetry->bmx_accel_r;
 
   // Quaternion (w, x, y, z)
   float qw = telemetry->q0;
@@ -839,6 +638,10 @@ void deselect_all_spi(){
 	HAL_GPIO_WritePin(Baro_CS_GPIO_Port, Baro_CS_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(Flash_CS_GPIO_Port, Flash_CS_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(Baro2_CS_GPIO_Port, Baro2_CS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(BMX_ACCEL_CS_GPIO_Port, BMX_ACCEL_CS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(BMX_GYRO_CS_GPIO_Port, BMX_GYRO_CS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(BMX_MAG_CS_GPIO_Port, BMX_MAG_CS_Pin, GPIO_PIN_SET);
 }
 
 void Gyro_CalibrateBias(Bias_t* bias, Telemetry_t* telemetry, int num_samples){
@@ -878,17 +681,8 @@ void Bias_Init(Bias_t *bias)
 	bias->lsm_accel_r_bias = 0.0f;
 	bias->lsm_accel_p_bias = 0.0f;
 	bias->lsm_accel_y_bias = 0.0f;
-
-	bias->adxl_accel_r_bias = 0.0f;
-	bias->adxl_accel_p_bias = 0.0f;
-	bias->adxl_accel_y_bias = 0.0f;
-
 	bias->bias_count = 0;
 
-//    bias->adxl_accel_r_bias = 0.0f;
-//    bias->adxl_accel_p_bias = 0.0f;
-//    bias->adxl_accel_y_bias = 0.0f;
-//
     bias->mag_r_bias = 25.816f; // 25.83, 25.305, 26.313
     bias->mag_p_bias = 2.196f; // 3.934, 1.547, 1.106
     bias->mag_y_bias = 20.629f; // 22.043, 21.798, 18.046
@@ -896,8 +690,6 @@ void Bias_Init(Bias_t *bias)
     bias->mag_r_scale = 1.0;
     bias->mag_p_scale = 1.0;
     bias->mag_y_scale = 1.0;
-
-//    bias->bias_count = 0;
 }
 
 void Bias_Calculate(Bias_t *bias, Telemetry_t *t, int num_samples){
@@ -911,9 +703,7 @@ void Bias_Calculate(Bias_t *bias, Telemetry_t *t, int num_samples){
 //
 //    float n = bias->bias_count;
 //
-//    bias->adxl_accel_r_bias += ((t->adxl_accel_r - 9.81) - bias->adxl_accel_r_bias) / n;
-//    bias->adxl_accel_p_bias += (t->adxl_accel_p - bias->adxl_accel_p_bias) / n;
-//    bias->adxl_accel_y_bias += (t->adxl_accel_y - bias->adxl_accel_y_bias) / n;
+
 //
 //    bias->lsm_accel_r_bias += ((t->lsm_accel_r - 9.81) - bias->lsm_accel_r_bias) / n;
 //    bias->lsm_accel_p_bias += (t->lsm_accel_p - bias->lsm_accel_p_bias) / n;
@@ -930,10 +720,6 @@ void Apply_Bias(Bias_t *bias, Telemetry_t *t)
 	t->lsm_accel_r -= bias->lsm_accel_r_bias;
 	t->lsm_accel_p -= bias->lsm_accel_p_bias;
 	t->lsm_accel_y -= bias->lsm_accel_y_bias;
-
-    t->adxl_accel_r -= bias->adxl_accel_r_bias;
-    t->adxl_accel_p -= bias->adxl_accel_p_bias;
-    t->adxl_accel_y -= bias->adxl_accel_y_bias;
 
 
     t->mag_r -= bias->mag_r_bias;
