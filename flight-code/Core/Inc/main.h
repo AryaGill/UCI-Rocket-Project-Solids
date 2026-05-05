@@ -123,13 +123,13 @@ typedef struct{
 	float adxl_accel_p_bias;
 	float adxl_accel_y_bias;
 
-	float lsm_accel_r_bias;
-	float lsm_accel_p_bias;
-	float lsm_accel_y_bias;
+	float bmx_accel_r_bias;
+	float bmx_accel_p_bias;
+	float bmx_accel_y_bias;
 
-	float lsm_gyro_r_bias;
-	float lsm_gyro_p_bias;
-	float lsm_gyro_y_bias;
+	float bmx_gyro_r_bias;
+	float bmx_gyro_p_bias;
+	float bmx_gyro_y_bias;
 
 	float mag_r_bias;
 	float mag_p_bias;

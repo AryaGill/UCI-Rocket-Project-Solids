@@ -254,13 +254,13 @@ int main(void)
 	init_sensors(&hspi2, &hspi4);
 	HAL_Delay(100);
 
-	// Verify all sensors work
-	if (Verify_Sensors() == 0){
-		Success_Pattern();
-	} else {
-		Error_Pattern();
-	}
-	HAL_Delay(500);
+	// Verify all sensors work todo
+//	if (Verify_Sensors() == 0){
+//		Success_Pattern();
+//	} else {
+//		Error_Pattern();
+//	}
+//	HAL_Delay(500);
 
 	// Turn buzzer ON for normal operation
 	buzzer_set_frequency(4000);
@@ -295,6 +295,8 @@ int main(void)
 
 	// ROCKET MUST BE STILL
 	Bias_Init(&bias);
+
+	Gyro_CalibrateBias(&bias, &telemetry, 500);
 
   /* USER CODE END 2 */
 

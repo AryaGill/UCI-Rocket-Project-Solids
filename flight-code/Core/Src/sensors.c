@@ -155,27 +155,29 @@ void init_sensors(SPI_HandleTypeDef *hspi2, SPI_HandleTypeDef *hspi4)
 
     // Initialize BMX 1
     BMX055_Init(hspi2, BMX_ACCEL_CS_GPIO_Port, BMX_ACCEL_CS_Pin, BMX_GYRO_CS_GPIO_Port, BMX_GYRO_CS_Pin, BMX_MAG_CS_GPIO_Port, BMX_MAG_CS_Pin);
+
     Bias_Init(&bias);
 
-    // Initialize LIS
-    LIS3MDLTR_Init(hspi4, Mag_CS_GPIO_Port, Mag_CS_Pin);
-    HAL_Delay(20);
+//    // Initialize LIS
+//    LIS3MDLTR_Init(hspi4, Mag_CS_GPIO_Port, Mag_CS_Pin);
+//    HAL_Delay(20);
 }
 
 // Sensor Reading
 void read_sensors(Telemetry_t *telemetry)
 {
     LPS22HH_Read(telemetry);
-    LIS3MDLTR_Read(telemetry);
+//    LIS3MDLTR_Read(telemetry);
     BMX055_Read(telemetry);
-    Apply_Bias(&bias, telemetry);
 
-    transform_accel_to_world(telemetry);
+//    Apply_Bias(&bias, telemetry);
+
+//    transform_accel_to_world(telemetry);
 
     telemetry->time = HAL_GetTick();
 
     // Comment out for flight
-    calibrate_accel_bias_stationary(telemetry);
+//    calibrate_accel_bias_stationary(telemetry);
 }
 
 // Calculate altitude from pressure (standard atmosphere model)
@@ -200,6 +202,8 @@ void LPS22HH_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pi
 
     HAL_Delay(20); // Wait for sensor power-up
 
+    lps_whoami = LPS22HH_WhoAmI();
+
     // Software reset
     SPI_Write(hspi, cs_port, cs_pin, LPS22HH_CTRL_REG2, 0x04);
     HAL_Delay(10);
@@ -220,7 +224,7 @@ void LPS22HH_Read(Telemetry_t *telemetry)
     SPI_Read(LPS22HH_hspi, LPS22HH_port, LPS22HH_pin, LPS22HH_PRESS_OUT_XL, buf, 5);
 
     // Pressure is 24-bit, little-endian
-    raw_p = (int32_t)((buf[2] << 16) | (buf[1] << 8) | buf[0]);
+    raw_p = (int32_t)(((uint32_t)buf[2] << 16) | ((uint32_t)buf[1] << 8) | buf[0]);
 
     // Sign extend from 24-bit to 32-bit
     if (raw_p & 0x800000) {
@@ -228,7 +232,7 @@ void LPS22HH_Read(Telemetry_t *telemetry)
     }
 
     // Temperature is 16-bit, little-endian
-    raw_t = (int16_t)((buf[4] << 8) | buf[3]);
+    raw_t = (int16_t)(((uint16_t)buf[4] << 8) | buf[3]);
 
     // Convert to metric units
     telemetry->pressure = raw_p / 4096.0f;      // hPa (mbar)
@@ -338,6 +342,8 @@ void LIS3MDLTR_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_
     SPI_Write(hspi, cs_port, cs_pin, LIS3MDLTR_CTRL_REG2, 0x0C); // soft reset + reboot
     HAL_Delay(50);
 
+    lis_whoami = LIS3MDLTR_WhoAmI();
+
     // 2. Enable Block Data Update (BDU) and continuous mode
     // CTRL_REG1: Temp sensor off, Ultra-high-performance XY, 80Hz ODR
     SPI_Write(hspi, cs_port, cs_pin, LIS3MDLTR_CTRL_REG1, 0x70); // 0111 0000
@@ -375,53 +381,6 @@ uint8_t LIS3MDLTR_WhoAmI(void) {
     return id;
 }
 
-static float BMP388_compensate_temperature(uint32_t uncomp_temp, BMP388_CalibData *calib_data)
-{
-    float partial_data1;
-    float partial_data2;
-
-    partial_data1 = (float)(uncomp_temp - calib_data->par_t1);
-    partial_data2 = (float)(partial_data1 * calib_data->par_t2);
-
-    calib_data->t_lin = partial_data2 +
-                        (partial_data1 * partial_data1) * calib_data->par_t3;
-
-    return calib_data->t_lin;
-}
-
-static float BMP388_compensate_pressure(uint32_t uncomp_press, BMP388_CalibData *calib_data)
-{
-    float comp_press;
-    float partial_data1;
-    float partial_data2;
-    float partial_data3;
-    float partial_data4;
-    float partial_out1;
-    float partial_out2;
-
-    partial_data1 = calib_data->par_p6 * calib_data->t_lin;
-    partial_data2 = calib_data->par_p7 * (calib_data->t_lin * calib_data->t_lin);
-    partial_data3 = calib_data->par_p8 * (calib_data->t_lin * calib_data->t_lin * calib_data->t_lin);
-    partial_out1 = calib_data->par_p5 + partial_data1 + partial_data2 + partial_data3;
-
-    partial_data1 = calib_data->par_p2 * calib_data->t_lin;
-    partial_data2 = calib_data->par_p3 * (calib_data->t_lin * calib_data->t_lin);
-    partial_data3 = calib_data->par_p4 * (calib_data->t_lin * calib_data->t_lin * calib_data->t_lin);
-    partial_out2 = (float)uncomp_press *
-                   (calib_data->par_p1 + partial_data1 + partial_data2 + partial_data3);
-
-    partial_data1 = (float)uncomp_press * (float)uncomp_press;
-    partial_data2 = calib_data->par_p9 + calib_data->par_p10 * calib_data->t_lin;
-    partial_data3 = partial_data1 * partial_data2;
-
-    partial_data4 = partial_data3 +
-                    ((float)uncomp_press * (float)uncomp_press * (float)uncomp_press) *
-                    calib_data->par_p11;
-
-    comp_press = partial_out1 + partial_out2 + partial_data4;
-
-    return comp_press;
-}
 
 void BMX055_Init(SPI_HandleTypeDef *hspi,
                  GPIO_TypeDef *acc_port, uint16_t acc_pin,
@@ -447,6 +406,9 @@ void BMX055_Init(SPI_HandleTypeDef *hspi,
               BMX055_ACC_SOFTRESET, BMX055_ACC_SOFTRESET_CMD);
     HAL_Delay(10);
 
+    bmx_acc_whoami = BMX055_ACC_WhoAmI();
+
+
     SPI_Write(BMX_ACC_hspi, BMX_ACC_port, BMX_ACC_pin,
               BMX055_ACC_PMU_RANGE, BMX055_ACC_RANGE_16G);
 
@@ -458,6 +420,8 @@ void BMX055_Init(SPI_HandleTypeDef *hspi,
               BMX055_GYRO_SOFTRESET, BMX055_GYRO_SOFTRESET_CMD);
     HAL_Delay(10);
 
+    bmx_gyro_whoami = BMX055_GYRO_WhoAmI();
+
     SPI_Write(BMX_GYRO_hspi, BMX_GYRO_port, BMX_GYRO_pin,
               BMX055_GYRO_RANGE, BMX055_GYRO_RANGE_500DPS);
 
@@ -465,18 +429,20 @@ void BMX055_Init(SPI_HandleTypeDef *hspi,
               BMX055_GYRO_BW, BMX055_GYRO_BW_200HZ);
 
 //    // ---------- MAG ----------
-//    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
-//              BMX055_MAG_POWER_CTRL, BMX055_MAG_POWER_ON);
-//    HAL_Delay(10);
-//
-//    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
-//              BMX055_MAG_OP_MODE, BMX055_MAG_NORMAL_MODE);
-//
-//    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
-//              BMX055_MAG_REP_XY, BMX055_MAG_REPXY_DEFAULT);
-//
-//    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
-//              BMX055_MAG_REP_Z, BMX055_MAG_REPZ_DEFAULT);
+    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+              BMX055_MAG_POWER_CTRL, BMX055_MAG_POWER_ON);
+    HAL_Delay(10);
+
+    bmx_mag_whoami = BMX055_MAG_WhoAmI();
+
+    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+              BMX055_MAG_OP_MODE, BMX055_MAG_NORMAL_MODE);
+
+    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+              BMX055_MAG_REP_XY, BMX055_MAG_REPXY_DEFAULT);
+
+    SPI_Write(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
+              BMX055_MAG_REP_Z, BMX055_MAG_REPZ_DEFAULT);
 
     HAL_Delay(10);
 }
@@ -508,13 +474,12 @@ uint8_t BMX055_MAG_WhoAmI(void)
 void BMX055_Read_Accel(Telemetry_t *t)
 {
     uint8_t buf[6];
-
     SPI_Read(BMX_ACC_hspi, BMX_ACC_port, BMX_ACC_pin,
-                   BMX055_ACC_X_LSB, buf, 6);
+             BMX055_ACC_X_LSB, buf, 6);
 
-    int16_t ax = ((int16_t)(buf[1] << 8) | buf[0]) >> 4;
-    int16_t ay = ((int16_t)(buf[3] << 8) | buf[2]) >> 4;
-    int16_t az = ((int16_t)(buf[5] << 8) | buf[4]) >> 4;
+    int16_t ax = ((int16_t)((int16_t)buf[1] << 8 | buf[0])) >> 4;
+    int16_t ay = ((int16_t)((int16_t)buf[3] << 8 | buf[2])) >> 4;
+    int16_t az = ((int16_t)((int16_t)buf[5] << 8 | buf[4])) >> 4;
 
     const float scale = 9.81f / 128.0f;
 
@@ -526,13 +491,12 @@ void BMX055_Read_Accel(Telemetry_t *t)
 void BMX055_Read_Gyro(Telemetry_t *t)
 {
     uint8_t buf[6];
-
     SPI_Read(BMX_GYRO_hspi, BMX_GYRO_port, BMX_GYRO_pin,
-                   BMX055_GYRO_RATE_X_LSB, buf, 6);
+             BMX055_GYRO_RATE_X_LSB, buf, 6);
 
-    int16_t gx = (int16_t)((buf[1] << 8) | buf[0]);
-    int16_t gy = (int16_t)((buf[3] << 8) | buf[2]);
-    int16_t gz = (int16_t)((buf[5] << 8) | buf[4]);
+    int16_t gx = (int16_t)((int16_t)buf[1] << 8 | buf[0]);
+    int16_t gy = (int16_t)((int16_t)buf[3] << 8 | buf[2]);
+    int16_t gz = (int16_t)((int16_t)buf[5] << 8 | buf[4]);
 
     const float scale = 1.0f / 65.5f;
 
@@ -546,11 +510,12 @@ void BMX055_Read_Mag(Telemetry_t *t)
     uint8_t buf[8];
 
     SPI_Read(BMX_MAG_hspi, BMX_MAG_port, BMX_MAG_pin,
-                   BMX055_MAG_DATA_X_LSB, buf, 8);
+             BMX055_MAG_DATA_X_LSB, buf, 8);
 
-    int16_t mx = ((int16_t)(buf[1] << 8) | buf[0]) >> 3;
-    int16_t my = ((int16_t)(buf[3] << 8) | buf[2]) >> 3;
-    int16_t mz = ((int16_t)(buf[5] << 8) | buf[4]) >> 1;
+    // Cast buf[n] to int16_t BEFORE shifting to preserve sign extension
+    int16_t mx = ((int16_t)((int16_t)buf[1] << 8 | buf[0])) >> 3;
+    int16_t my = ((int16_t)((int16_t)buf[3] << 8 | buf[2])) >> 3;
+    int16_t mz = ((int16_t)((int16_t)buf[5] << 8 | buf[4])) >> 1;
 
     t->bmx_mag_r = mx;
     t->bmx_mag_p = my;
@@ -561,7 +526,7 @@ void BMX055_Read(Telemetry_t *t)
 {
     BMX055_Read_Accel(t);
     BMX055_Read_Gyro(t);
-//    BMX055_Read_Mag(t);
+    BMX055_Read_Mag(t);
 }
 
 void calibrate_mag(Telemetry_t *telemetry){
@@ -658,34 +623,34 @@ void Gyro_CalibrateBias(Bias_t* bias, Telemetry_t* telemetry, int num_samples){
 	// Sum all values for num_smaples
 	for (int i = 0; i < num_samples; i++){
 		read_sensors(telemetry);
-
-		sum_gr += telemetry->lsm_gyro_r + bias->lsm_gyro_r_bias;
-		sum_gp += telemetry->lsm_gyro_p + bias->lsm_gyro_p_bias;
-		sum_gy += telemetry->lsm_gyro_y + bias->lsm_gyro_y_bias;
+		// converted from lsm -> bmx
+		sum_gr += telemetry->bmx_gyro_r + bias->bmx_gyro_r_bias;
+		sum_gp += telemetry->bmx_gyro_p + bias->bmx_gyro_p_bias;
+		sum_gy += telemetry->bmx_gyro_y + bias->bmx_gyro_y_bias;
 
 		HAL_Delay(2);
 	}
 
 	// Divide by total samples to get average
-	bias->lsm_gyro_r_bias = sum_gr / num_samples;
-	bias->lsm_gyro_p_bias = sum_gp / num_samples;
-	bias->lsm_gyro_y_bias = sum_gy / num_samples;
+	bias->bmx_gyro_r_bias = sum_gr / num_samples;
+	bias->bmx_gyro_p_bias = sum_gp / num_samples;
+	bias->bmx_gyro_y_bias = sum_gy / num_samples;
 }
 
 void Bias_Init(Bias_t *bias)
 {
-	bias->lsm_gyro_r_bias = -0.0784721822f;
-	bias->lsm_gyro_p_bias = 0.0172601528f;
-	bias->lsm_gyro_y_bias = 0.0110466592f;
+	bias->bmx_gyro_r_bias = 0.0;
+	bias->bmx_gyro_p_bias = 0.0;
+	bias->bmx_gyro_y_bias = 0.0f;
 
-	bias->lsm_accel_r_bias = 0.0f;
-	bias->lsm_accel_p_bias = 0.0f;
-	bias->lsm_accel_y_bias = 0.0f;
+	bias->bmx_accel_r_bias = 0.0f;
+	bias->bmx_accel_p_bias = 0.0f;
+	bias->bmx_accel_y_bias = 0.0f;
 	bias->bias_count = 0;
 
-    bias->mag_r_bias = 25.816f; // 25.83, 25.305, 26.313
-    bias->mag_p_bias = 2.196f; // 3.934, 1.547, 1.106
-    bias->mag_y_bias = 20.629f; // 22.043, 21.798, 18.046
+    bias->mag_r_bias = 0.0f; // 25.83, 25.305, 26.313
+    bias->mag_p_bias = 0.0f; // 3.934, 1.547, 1.106
+    bias->mag_y_bias = 0.0f; // 22.043, 21.798, 18.046
 
     bias->mag_r_scale = 1.0;
     bias->mag_p_scale = 1.0;
@@ -713,22 +678,22 @@ void Bias_Calculate(Bias_t *bias, Telemetry_t *t, int num_samples){
 void Apply_Bias(Bias_t *bias, Telemetry_t *t)
 {
 
-	t->lsm_gyro_r -= bias->lsm_gyro_r_bias;
-	t->lsm_gyro_p -= bias->lsm_gyro_p_bias;
-	t->lsm_gyro_y -= bias->lsm_gyro_y_bias;
+	t->bmx_gyro_r -= bias->bmx_gyro_r_bias;
+	t->bmx_gyro_p -= bias->bmx_gyro_p_bias;
+	t->bmx_gyro_y -= bias->bmx_gyro_y_bias;
 
-	t->lsm_accel_r -= bias->lsm_accel_r_bias;
-	t->lsm_accel_p -= bias->lsm_accel_p_bias;
-	t->lsm_accel_y -= bias->lsm_accel_y_bias;
+	t->bmx_accel_r -= bias->bmx_accel_r_bias;
+	t->bmx_accel_p -= bias->bmx_accel_p_bias;
+	t->bmx_accel_y -= bias->bmx_accel_y_bias;
 
 
-    t->mag_r -= bias->mag_r_bias;
-    t->mag_p -= bias->mag_p_bias;
-    t->mag_y -= bias->mag_y_bias;
+    t->bmx_mag_r -= bias->mag_r_bias;
+    t->bmx_mag_p -= bias->mag_p_bias;
+    t->bmx_mag_y -= bias->mag_y_bias;
 
-    t->mag_r *= bias->mag_r_scale;
-    t->mag_p *= bias->mag_p_scale;
-    t->mag_y *= bias->mag_y_scale;
+    t->bmx_mag_r *= bias->mag_r_scale;
+    t->bmx_mag_p *= bias->mag_p_scale;
+    t->bmx_mag_y *= bias->mag_y_scale;
 }
 
 // How to calibrate accel: run in debugger. Hold still.
@@ -737,16 +702,17 @@ void Apply_Bias(Bias_t *bias, Telemetry_t *t)
 // For each position, record the average output of all three axes.
 // For each axis, the offset is: Offset = (Value_+1g + Value_-1g) / 2
 // The scale factor is: Scale = (Value_+1g - Value_-1g) / 2 (Theoretically, this should be 1g, but you can use it to correct minor gain errors).
-float lsm_accel_r_bias_instance;
-float lsm_accel_p_bias_instance;
-float lsm_accel_y_bias_instance;
+float bmx_accel_r_bias_instance;
+float bmx_accel_p_bias_instance;
+float bmx_accel_y_bias_instance;
 uint32_t prev_time_accel_bias;
+
 void calibrate_accel_bias_stationary(Telemetry_t *telemetry)
 {
 	// Average IMUs (body frame)
-	float ax = telemetry->lsm_accel_p;
-	float ay = telemetry->lsm_accel_y;
-	float az = telemetry->lsm_accel_r;
+	float ax = telemetry->bmx_accel_p;
+	float ay = telemetry->bmx_accel_y;
+	float az = telemetry->bmx_accel_r;
 
 	// Quaternion (w, x, y, z)
 	float qw = telemetry->q0;
@@ -787,7 +753,7 @@ void calibrate_accel_bias_stationary(Telemetry_t *telemetry)
     float dt = (now - prev_time_accel_bias) * 1e-6;
     prev_time_accel_bias = now;
     float alpha = TAU / (TAU + dt);
-    lsm_accel_p_bias_instance = lsm_accel_p_bias_instance * alpha + bias_x * (alpha - 1);
-    lsm_accel_y_bias_instance = lsm_accel_y_bias_instance * alpha + bias_y * (alpha - 1);
-    lsm_accel_r_bias_instance = lsm_accel_r_bias_instance * alpha + bias_z * (alpha - 1);
+    bmx_accel_p_bias_instance = bmx_accel_p_bias_instance * alpha + bias_x * (alpha - 1);
+    bmx_accel_y_bias_instance = bmx_accel_y_bias_instance * alpha + bias_y * (alpha - 1);
+    bmx_accel_r_bias_instance = bmx_accel_r_bias_instance * alpha + bias_z * (alpha - 1);
 }
