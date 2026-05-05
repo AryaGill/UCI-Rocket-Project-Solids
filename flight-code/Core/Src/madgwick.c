@@ -25,9 +25,9 @@ void Madgwick_Init(Telemetry_t* telemetry, float b)
 {
     beta = b;
 
-    float ax = telemetry->lsm_accel_p;
-    float ay = telemetry->lsm_accel_y;
-    float az = telemetry->lsm_accel_r;
+    float ax = telemetry->bmx_accel_p;
+    float ay = telemetry->bmx_accel_y;
+    float az = telemetry->bmx_accel_r;
 
     // guard accel norm
     float norm = ax*ax + ay*ay + az*az;
@@ -81,13 +81,13 @@ void Madgwick_Update(Telemetry_t* telemetry)
     float q2 = telemetry->q2;
     float q3 = telemetry->q3;
 
-    float gx = telemetry->lsm_gyro_p; // rad/s
-    float gy = telemetry->lsm_gyro_y;
-    float gz = telemetry->lsm_gyro_r;
+    float gx = telemetry->bmx_gyro_p; // rad/s
+    float gy = telemetry->bmx_gyro_y;
+    float gz = telemetry->bmx_gyro_r;
 
-    float ax = telemetry->lsm_accel_p;
-    float ay = telemetry->lsm_accel_y;
-    float az = telemetry->lsm_accel_r;
+    float ax = telemetry->bmx_accel_p;
+    float ay = telemetry->bmx_accel_y;
+    float az = telemetry->bmx_accel_r;
 
     // basic sanity on inputs
     if (!isfinite(q0) || !isfinite(q1) || !isfinite(q2) || !isfinite(q3) ||
