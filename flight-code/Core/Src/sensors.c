@@ -498,7 +498,7 @@ void BMX055_Read_Gyro(Telemetry_t *t)
     int16_t gy = (int16_t)((int16_t)buf[3] << 8 | buf[2]);
     int16_t gz = (int16_t)((int16_t)buf[5] << 8 | buf[4]);
 
-    const float scale = 1.0f / 65.5f;
+    const float scale = (1.0f / 65.5f) * (M_PI / 180.0f); //radians
 
     t->bmx_gyro_r = gy * scale;
     t->bmx_gyro_p = gx * scale;
