@@ -18,6 +18,7 @@ FRESULT write_sd_state(const char *filename, FlightState_t state, float start_al
 FRESULT read_sd_state(const char *filename, FlightState_t *state, float *start_alt);
 uint8_t sd_file_exists(const char *filename);
 FRESULT sd_delete_file(const char *filename);
-FRESULT sd_clear_all(void);
+//FRESULT sd_clear_all(void);
+FRESULT sd_remove_file(File_t *f);
 
 FRESULT write_mag(const char *filename, float mag_r_bias, float mag_r_scale, float mag_p_bias, float mag_p_scale, float mag_y_bias, float mag_y_scale);

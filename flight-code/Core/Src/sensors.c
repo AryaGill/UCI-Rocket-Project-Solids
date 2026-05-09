@@ -481,9 +481,9 @@ void BMX055_Read_Accel(Telemetry_t *t)
 
     const float scale = 9.81f / 128.0f;
 
-    t->bmx_accel_r = ay * scale;
+    t->bmx_accel_r = -ay * scale;
     t->bmx_accel_p = ax * scale;
-    t->bmx_accel_y = -az * scale;
+    t->bmx_accel_y = az * scale;
 }
 
 void BMX055_Read_Gyro(Telemetry_t *t)
@@ -498,7 +498,7 @@ void BMX055_Read_Gyro(Telemetry_t *t)
 
     const float scale = (1.0f / 65.5f) * (M_PI / 180.0f); //radians
 
-    t->bmx_gyro_r = gy * scale;
+    t->bmx_gyro_r = -gy * scale;
     t->bmx_gyro_p = gx * scale;
     t->bmx_gyro_y = gz * scale;
 }
@@ -515,8 +515,8 @@ void BMX055_Read_Mag(Telemetry_t *t)
     int16_t my = ((int16_t)((int16_t)buf[3] << 8 | buf[2])) >> 3;
     int16_t mz = ((int16_t)((int16_t)buf[5] << 8 | buf[4])) >> 1;
 
-    t->bmx_mag_r = mx;
-    t->bmx_mag_p = my;
+    t->bmx_mag_r = -my;
+    t->bmx_mag_p = mx;
     t->bmx_mag_y = mz;
 }
 

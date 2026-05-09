@@ -288,40 +288,85 @@ FRESULT write_mag(const char *filename,
     return FR_OK;
 }
 
-FRESULT sd_clear_all(void)
+//FRESULT sd_clear_all(void)
+//{
+//    DIR dir;
+//    FILINFO fno;
+//    FRESULT res;
+//
+//    SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
+//
+//    res = f_opendir(&dir, "/");
+//    if (res != FR_OK) {
+//        SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+//        return res;
+//    }
+//
+//    while (1) {
+//        res = f_readdir(&dir, &fno);
+//
+//        if (res != FR_OK) {
+//            f_closedir(&dir);
+//            SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+//            return res;
+//        }
+//
+//        if (fno.fname[0] == 0)
+//            break;
+//
+//        if (strcmp(fno.fname, ".") == 0 || strcmp(fno.fname, "..") == 0)
+//            continue;
+//
+//        if (fno.fattrib & AM_DIR)
+//            continue;
+//
+//        res = f_unlink(fno.fname);
+//        if (res != FR_OK) {
+//            f_closedir(&dir);
+//            SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+//            return res;
+//        }
+//    }
+//
+//    f_closedir(&dir);
+//    SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+//
+//    return FR_OK;
+//}
+
+//FRESULT sd_remove_file(const char *filename)
+//{
+//    FRESULT res;
+//
+//    if (filename == NULL || filename[0] == '\0')
+//        return FR_INVALID_PARAMETER;
+//
+//    SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
+//
+//    res = f_unlink(filename);
+//
+//    SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
+//
+//    return res;
+//}
+
+FRESULT sd_remove_file(File_t *f)
 {
-    DIR dir;
-    FILINFO fno;
     FRESULT res;
+
+    if (f == NULL || f->file_name[0] == '\0')
+        return FR_INVALID_PARAMETER;
 
     SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
 
-    res = f_opendir(&dir, "/");
-    if (res != FR_OK) {
-        SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
-        return res;
+    if (f->file_open) {
+        f_close(&f->file);
+        f->file_open = 0;
     }
 
-    while (1) {
-        res = f_readdir(&dir, &fno);
-        if (res != FR_OK || fno.fname[0] == 0)
-            break;  // error or end of directory
+    res = f_unlink(f->file_name);
 
-        // Skip "." and ".."
-        if (strcmp(fno.fname, ".") == 0 || strcmp(fno.fname, "..") == 0)
-            continue;
-
-        // Delete file
-        res = f_unlink(fno.fname);
-        if (res != FR_OK) {
-            f_closedir(&dir);
-            SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
-            return res;
-        }
-    }
-
-    f_closedir(&dir);
     SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
 
-    return FR_OK;
+    return res;
 }

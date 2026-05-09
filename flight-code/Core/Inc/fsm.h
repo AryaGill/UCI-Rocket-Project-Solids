@@ -22,7 +22,7 @@
 // Liftoff detection constants
 #define LAUNCH_ACCEL_THRESHOLD 40
 #define RAIL_DELAY_TIME 250
-#define LAUNCH_EVAL_PERIOD_TIME 250
+#define LAUNCH_EVAL_PERIOD_TIME 0 // TODO: set back to 250
 
 #define STATE_FILE "flight_state.csv"
 #define MIN_RESET_ALT 50 // m

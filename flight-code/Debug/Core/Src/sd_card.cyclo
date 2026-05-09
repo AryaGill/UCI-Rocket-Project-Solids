@@ -11,4 +11,4 @@
 ../Core/Src/sd_card.c:224:9:sd_file_exists	2
 ../Core/Src/sd_card.c:241:9:sd_delete_file	1
 ../Core/Src/sd_card.c:248:9:write_mag	3
-../Core/Src/sd_card.c:291:9:sd_clear_all	7
+../Core/Src/sd_card.c:353:9:sd_remove_file	4
