@@ -61,7 +61,7 @@ class GroundStationWindow(QMainWindow):
         self.camera_panel = None
         self.max_table = None
         self.ematch_panel = None
-        self.airbrakes_panel = None
+        #self.airbrakes_panel = None
         self.camera_is_on = False
         self.camera_pending = None
         self.max_points = 100
@@ -240,6 +240,7 @@ class GroundStationWindow(QMainWindow):
         self.gyrocal_btn.clicked.connect(self.send_gyrocal)
         control_layout.addWidget(self.gyrocal_btn)
 
+        '''
         self.servo_btn = QPushButton("⚙ Airbrakes Test")
         self.servo_btn.setStyleSheet("""
             QPushButton {
@@ -255,6 +256,7 @@ class GroundStationWindow(QMainWindow):
         """)
         self.servo_btn.clicked.connect(self.test_servo_sequence)
         control_layout.addWidget(self.servo_btn)
+        '''
         
         self.clear_btn = QPushButton("Clear All")
         self.clear_btn.setStyleSheet("""
@@ -288,15 +290,15 @@ class GroundStationWindow(QMainWindow):
 
         try:
             from Frontend.ematch_panel import EMatchPanel
-            from Frontend.airbrakes_panel import AirbrakesPanel
+            #from Frontend.airbrakes_panel import AirbrakesPanel
 
             self.ematch_panel = EMatchPanel()
-            self.airbrakes_panel = AirbrakesPanel()
+            #self.airbrakes_panel = AirbrakesPanel()
             top_row = QHBoxLayout()
             top_row.setContentsMargins(0, 0, 0, 0)
             top_row.setSpacing(12)
 
-            top_row.addWidget(self.airbrakes_panel)
+            #top_row.addWidget(self.airbrakes_panel)
             top_row.addStretch()
             top_row.addWidget(self.ematch_panel)
 
@@ -623,8 +625,8 @@ class GroundStationWindow(QMainWindow):
         if self.ematch_panel is not None:
             self.ematch_panel.update_data(data)
 
-        if self.airbrakes_panel is not None:
-            self.airbrakes_panel.update_data(data)
+        #if self.airbrakes_panel is not None:
+        #    self.airbrakes_panel.update_data(data)
 
         if hasattr(self, 'flight_state_display') and data.get('flight_state') is not None:
             new_state = data.get('flight_state')
