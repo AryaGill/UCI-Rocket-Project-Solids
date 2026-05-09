@@ -18,7 +18,6 @@
 
 #define APOGEE_VELO_THRESHOLD -1.0
 #define LANDED_VELO_THRESHOLD -0.2
-#define ALT_DIF_BUF_SIZE 10
 
 // Liftoff detection constants
 #define LAUNCH_ACCEL_THRESHOLD 40

@@ -84,7 +84,7 @@ void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 	telemetry->alt_fused = 0;
 	
 	//possible start altitude after reset fix
-	for (int i = 0; i < ALT_DIF_BUF_SIZE + 1; ++i) {
+	for (int i = 0; i < 10; ++i) {
 		LPS22HH_Read(telemetry);
 		if (telemetry->temperature != -999) {
 			telemetry->startAlt = telemetry->altitude;
@@ -140,7 +140,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		if (launch_accel_detected_time == -1){
 				// Acceleration not detected yet
 				//changed to < for vacuum testing
-				if (telemetry->lsm_accel_r > LAUNCH_ACCEL_THRESHOLD){
+				if (telemetry->bmx_accel_r > LAUNCH_ACCEL_THRESHOLD){
 					// Positive acceleration detected. Begin period of waiting to get off rail.
 					launch_accel_detected_time = HAL_GetTick();
 					negative_accel_counter = 0;
@@ -156,7 +156,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 					launch_buffer_flush(&launch_buffer);
 					state_start_time = HAL_GetTick();
 				}
-				else if (telemetry->lsm_accel_r < 0){
+				else if (telemetry->bmx_accel_r < 0){
 					// Negative acceleration detected. Reset system.
 					if (++negative_accel_counter >= 20){
 						launch_accel_detected_time = -1;
