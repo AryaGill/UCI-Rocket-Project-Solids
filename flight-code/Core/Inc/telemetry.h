@@ -5,6 +5,7 @@
 
 #define FLIGHT_DATA_FILE "flight_data.csv"
 
+void begin_data_file();
 void init_data_file();
 void get_rf_msg(FlightState_t flight_state, Telemetry_t *t, char* msg, size_t msg_size);
 void get_rf_msg_2(FlightState_t flight_state, Telemetry_t *t, char* msg, size_t msg_size);

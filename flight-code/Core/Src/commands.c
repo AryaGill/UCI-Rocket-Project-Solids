@@ -18,7 +18,7 @@ extern Bias_t bias;
 void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *telemetry) {
 	// Check if receiving command from burst from gs
 	uint32_t cur_time = HAL_GetTick();
-	if (strcmp(last_received_command, cmd) == 0 && cur_time - last_command_time < 2300){
+	if (strcmp(last_received_command, cmd) == 0 && cur_time - last_command_time < 5000){
 		return;
 	}
 
@@ -61,7 +61,11 @@ void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *tele
 	} else if (strcmp(cmd, "GYROCAL") == 0){
 		Gyro_CalibrateBias(&bias, telemetry, 500);
 	} else if (strcmp(cmd, "RESET_SD") == 0){
-		sd_clear_all();
-		init_data_file();
+		extern File_t data_file;
+		sd_remove_file(&data_file);
+		begin_data_file();
+		snprintf(line, sizeof(line), "Received command: %s", cmd);
+		snprintf(telemetry->cmd_echo, sizeof(telemetry->cmd_echo), cmd);
+		write_datafile_message(line);
 	}
 }

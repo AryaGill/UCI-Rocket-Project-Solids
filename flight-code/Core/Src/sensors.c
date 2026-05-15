@@ -46,8 +46,6 @@ volatile uint8_t bmx_acc_whoami = 0; // Should be 11111010 or 0xFA
 volatile uint8_t bmx_gyro_whoami = 0; // Should be 0x0f
 volatile uint8_t bmx_mag_whoami = 0; //Should be 0x32
 
-static BMP388_CalibData bmp388_calib; //calibration struct for bmp388
-
 float max_r;
 float max_p;
 float max_y;
@@ -170,9 +168,9 @@ void read_sensors(Telemetry_t *telemetry)
 //    LIS3MDLTR_Read(telemetry);
     BMX055_Read(telemetry);
 
-//    Apply_Bias(&bias, telemetry);
+    Apply_Bias(&bias, telemetry);
 
-//    transform_accel_to_world(telemetry);
+    transform_accel_to_world(telemetry);
 
     telemetry->time = HAL_GetTick();
 
@@ -517,8 +515,8 @@ void BMX055_Read_Mag(Telemetry_t *t)
     int16_t my = ((int16_t)((int16_t)buf[3] << 8 | buf[2])) >> 3;
     int16_t mz = ((int16_t)((int16_t)buf[5] << 8 | buf[4])) >> 1;
 
-    t->bmx_mag_r = -mx;
-    t->bmx_mag_p = my;
+    t->bmx_mag_r = -my;
+    t->bmx_mag_p = mx;
     t->bmx_mag_y = mz;
 }
 

@@ -1,9 +1,10 @@
-../Core/Src/telemetry.c:8:6:init_data_file	1
-../Core/Src/telemetry.c:17:6:get_rf_msg	1
-../Core/Src/telemetry.c:61:6:log_data	1
-../Core/Src/telemetry.c:120:6:save_data_file	1
-../Core/Src/telemetry.c:124:6:write_datafile_message	1
-../Core/Src/telemetry.c:128:9:write_headers	1
+../Core/Src/telemetry.c:8:6:begin_data_file	1
+../Core/Src/telemetry.c:15:6:init_data_file	1
+../Core/Src/telemetry.c:21:6:get_rf_msg	1
+../Core/Src/telemetry.c:65:6:log_data	1
+../Core/Src/telemetry.c:121:6:save_data_file	1
+../Core/Src/telemetry.c:125:6:write_datafile_message	1
+../Core/Src/telemetry.c:129:9:write_headers	1
 ../Core/Src/telemetry.c:146:6:state_to_string_num	14
 ../Core/Src/telemetry.c:193:6:state_to_string_name	14
 ../Core/Src/telemetry.c:240:10:telemetry_log_period	4

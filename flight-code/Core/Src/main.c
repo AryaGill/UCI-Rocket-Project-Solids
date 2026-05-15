@@ -296,7 +296,7 @@ int main(void)
 	// ROCKET MUST BE STILL
 	Bias_Init(&bias);
 
-	Gyro_CalibrateBias(&bias, &telemetry, 500);
+//	Gyro_CalibrateBias(&bias, &telemetry, 500);
 
   /* USER CODE END 2 */
 
@@ -323,15 +323,6 @@ int main(void)
 
 		//add to launch_buffer
 		launch_buffer_add(&launch_buffer, flight_state, &telemetry);
-
-		// Set target apogee (Remove unless want dynamic target apogee)
-		if (gliding_ascent_start_time == 0 && flight_state == GLIDING_ASCENT){
-			gliding_ascent_start_time = HAL_GetTick();
-		}
-		if (set_airbrakes_target_apogee == 0 && flight_state == GLIDING_ASCENT && HAL_GetTick() - gliding_ascent_start_time > 2000) {
-			set_target_apogee(&telemetry);
-			set_airbrakes_target_apogee = 1;
-		}
 
 		// Control Airbrakes
 		set_optimal_deployment(flight_state, &telemetry);

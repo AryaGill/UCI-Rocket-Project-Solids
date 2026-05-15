@@ -5,13 +5,17 @@
 
 File_t data_file = {0};
 
-void init_data_file(SPI_HandleTypeDef *hspi){
-	init_sd(hspi);
-	strcpy(data_file.file_name, FLIGHT_DATA_FILE);
+void begin_data_file() {
 	open_file(&data_file);
 	write_sd(&data_file, "FLIGHT BEGIN");
 	write_headers();
 	flush_file(&data_file);
+}
+
+void init_data_file(SPI_HandleTypeDef *hspi){
+	init_sd(hspi);
+	strcpy(data_file.file_name, FLIGHT_DATA_FILE);
+	begin_data_file();
 }
 
 void get_rf_msg(FlightState_t flight_state, Telemetry_t *t, char* msg, size_t msg_size){
@@ -63,7 +67,7 @@ void log_data(FlightState_t flight_state, Telemetry_t *t){
 	char state_str[3];
 	state_to_string_num(flight_state, state_str);
 	snprintf(data_string, sizeof(data_string),
-	        "%lu,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%u,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%u,%u,%lu,%lu,%lu,%lu,%.3f,%.3f,%.3f,%lu,%lu,%lu,%lu,%lu,%i,%i",
+	        "%lu,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%u,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%u,%u,%lu,%lu,%lu,%lu,%.3f,%.3f,%.3f,%lu,%lu,%lu,%lu,%lu,%i,%i",
 	        t->time,
 			state_str,
 			t->pressure,
@@ -74,15 +78,12 @@ void log_data(FlightState_t flight_state, Telemetry_t *t){
 			t->velocity_world_y,
 			t->velocity_world_z,
 			t->baro_vz,
-	        t->lsm_accel_r,
-	        t->lsm_accel_p,
-	        t->lsm_accel_y,
-	        t->lsm_gyro_r,
-	        t->lsm_gyro_p,
-	        t->lsm_gyro_y,
-	        t->adxl_accel_r,
-	        t->adxl_accel_p,
-	        t->adxl_accel_y,
+	        t->bmx_accel_r,
+	        t->bmx_accel_p,
+	        t->bmx_accel_y,
+	        t->bmx_gyro_r,
+	        t->bmx_gyro_p,
+	        t->bmx_gyro_y,
 	        t->predicted_apogee,
 	        t->airbrake_deployment,
 	        t->mag_r,
@@ -130,9 +131,8 @@ FRESULT write_headers(void)
     const char *header =
     	  "time,state,pressure,altitude,startAlt,temperature,"
           "velocity_world_x,velocity_world_y,velocity_world_z,"
-    	  "baro_vz,lsm_accel_r,lsm_accel_p,lsm_accel_y,"
-          "lsm_gyro_r,lsm_gyro_p,lsm_gyro_y,"
-    	  "adxl_accel_r,adxl_accel_p,adxl_accel_y,"
+    	  "baro_vz,bmx_accel_r,bmx_accel_p,bmx_accel_y,"
+          "bmx_gyro_r,bmx_gyro_p,bmx_gyro_y,"
     	  "predicted_apogee,airbrake_deployment,mag_r,mag_p,mag_y,"
     	  "q0,q1,q2,q3,accel_world_x,accel_world_y,accel_world_z,"
     	  "alt_fused,cam1_on,cam2_on,main_p_ematch_voltage,main_s_ematch_voltage,"
