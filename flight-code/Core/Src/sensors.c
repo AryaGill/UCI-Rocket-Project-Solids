@@ -55,23 +55,43 @@ float min_y;
 
 
 uint8_t Verify_Sensors(void){
-	// Check Barometer
+	//Check Barometer
 	lps_whoami = LPS22HH_WhoAmI();
 	if (lps_whoami != 0xB3){
 		return 1;
 	}
-    // BMX
+
+	//Check LSM6DSL IMU
+//	lsm_whoami = LSM6DSL_WhoAmI();
+//	if (lsm_whoami != 0x6a){
+//		return 1;
+//	}
+//
+//	lis_whoami = LIS3MDLTR_WhoAmI();
+//	if (lis_whoami != 0x3D){
+//		return 1;
+//	}
+
+//	bmp388_whoami = BMP388_WhoAmI();
+//	if (bmp388_whoami != 0x50){
+//		return 1;
+//	}
+	//BMX
 	bmx_acc_whoami = BMX055_ACC_WhoAmI();
 	if (bmx_acc_whoami != 0xFA){
 		return 1;
 	}
-    bmx_gyro_whoami = BMX055_GYRO_WhoAmI();
+	bmx_gyro_whoami = BMX055_GYRO_WhoAmI();
 	if (bmx_gyro_whoami != 0x0f){
 		return 1;
 	}
+
+//	bmx_mag_whoami = BMX055_MAG_WhoAmI();
+//	if (bmx_mag_whoami != 0x32){
+//		return 1;
+//	}
 	return 0;
 }
-	
 
 // SPI Helper Functions
 static inline void SPI_CS_LOW(GPIO_TypeDef *port, uint16_t pin)
@@ -187,7 +207,7 @@ void LPS22HH_Init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pi
     HAL_Delay(10);
 
     // Configure: 75 Hz ODR, continuous mode, BDU enabled
-    // CTRL_REG1: ODR=75Hz (0101), AVG=512 (11), EN_LPFP=0, BDU=1 WRONG
+    // CTRL_REG1: ODR=75Hz (0101), AVG=512 (11), EN_LPFP=0, BDU=1
     SPI_Write(hspi, cs_port, cs_pin, LPS22HH_CTRL_REG1, 0x5C);
     HAL_Delay(10);
 }

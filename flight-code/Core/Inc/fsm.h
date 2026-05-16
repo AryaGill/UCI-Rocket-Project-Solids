@@ -7,12 +7,12 @@
 #define MAIN_DEPLOY_MAX_ALT 304 // m (1000 ft)
 #define MAIN_DEPLOY_MIN_ALT 50 // m
 #define DROGUE_DEPLOY_MIN_ALT 50 // m
-
-////Bright Fury
-//#define MOTOR_BURN_TIME 6000 // ms
-
-// Leilani
-#define MOTOR_BURN_TIME 2800 // ms
+// Leilani rocket
+//#define MOTOR_BURN_TIME 1700 // ms
+// Night Fury
+#define MOTOR_BURN_TIME 5000 // ms
+// Light Fury
+//#define MOTOR_BURN_TIME 4700 // ms
 
 #define POWER_RESET_MIN_ALT_CHANGE 10
 
@@ -22,7 +22,7 @@
 // Liftoff detection constants
 #define LAUNCH_ACCEL_THRESHOLD 40
 #define RAIL_DELAY_TIME 250
-#define LAUNCH_EVAL_PERIOD_TIME 0
+#define LAUNCH_EVAL_PERIOD_TIME 0 // TODO: set back to 250
 
 #define STATE_FILE "flight_state.csv"
 #define MIN_RESET_ALT 50 // m
