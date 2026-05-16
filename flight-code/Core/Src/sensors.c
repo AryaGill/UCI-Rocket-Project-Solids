@@ -69,6 +69,7 @@ uint8_t Verify_Sensors(void){
 	if (bmx_gyro_whoami != 0x0f){
 		return 1;
 	}
+	return 0;
 }
 	
 
