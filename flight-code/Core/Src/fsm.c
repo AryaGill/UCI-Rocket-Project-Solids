@@ -156,9 +156,9 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 					launch_buffer_flush(&launch_buffer);
 					state_start_time = HAL_GetTick();
 				}
-				else if (telemetry->bmx_accel_r < 0){
+				else if (telemetry->bmx_accel_r < 9.81){ // 0
 					// Negative acceleration detected. Reset system.
-					if (++negative_accel_counter >= 20){
+					if (++negative_accel_counter >= 5){ // 20
 						launch_accel_detected_time = -1;
 						write_datafile_message("LAUNCH DETECTION FAILED");
 					}

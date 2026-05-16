@@ -60,6 +60,16 @@ uint8_t Verify_Sensors(void){
 	if (lps_whoami != 0xB3){
 		return 1;
 	}
+    //BMX
+	bmx_acc_whoami = BMX055_ACC_WhoAmI();
+	if (bmx_acc_whoami != 0xFA){
+		return 1;
+	}
+	bmx_gyro_whoami = BMX055_GYRO_WhoAmI();
+	if (bmx_gyro_whoami != 0x0f){
+		return 1;
+	}
+    return 0;
 
 	//Check LSM6DSL IMU
 //	lsm_whoami = LSM6DSL_WhoAmI();
@@ -76,21 +86,13 @@ uint8_t Verify_Sensors(void){
 //	if (bmp388_whoami != 0x50){
 //		return 1;
 //	}
-	//BMX
-	bmx_acc_whoami = BMX055_ACC_WhoAmI();
-	if (bmx_acc_whoami != 0xFA){
-		return 1;
-	}
-	bmx_gyro_whoami = BMX055_GYRO_WhoAmI();
-	if (bmx_gyro_whoami != 0x0f){
-		return 1;
-	}
+	
 
 //	bmx_mag_whoami = BMX055_MAG_WhoAmI();
 //	if (bmx_mag_whoami != 0x32){
 //		return 1;
 //	}
-	return 0;
+	
 }
 
 // SPI Helper Functions

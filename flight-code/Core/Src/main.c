@@ -255,12 +255,12 @@ int main(void)
 	HAL_Delay(100);
 
 	// Verify all sensors work todo
-//	if (Verify_Sensors() == 0){
-//		Success_Pattern();
-//	} else {
-//		Error_Pattern();
-//	}
-//	HAL_Delay(500);
+	if (Verify_Sensors() == 0){
+		Success_Pattern();
+	} else {
+		Error_Pattern();
+	}
+	HAL_Delay(500);
 
 	// Turn buzzer ON for normal operation
 	buzzer_set_frequency(4000);
