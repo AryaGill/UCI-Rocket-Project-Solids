@@ -100,26 +100,6 @@ FRESULT flush_file(File_t *f)
     return f_sync(&f->file);
 }
 
-//FRESULT read_sd_line(const char *filename, char *buffer, UINT buffer_size)
-//{
-//    FIL file;
-//    FRESULT res;
-//
-//    // Open file for reading
-//    res = f_open(&file, filename, FA_READ);
-//    if (res != FR_OK)
-//        return res;
-//
-//    // Read one line
-//    if (f_gets(buffer, buffer_size, &file) == NULL) {
-//        f_close(&file);
-//        return FR_DISK_ERR;   // or FR_DISK_ERR if you prefer
-//    }
-//
-//    f_close(&file);
-//    return FR_OK;
-//}
-
 FRESULT write_sd_state(const char *filename, FlightState_t state, float start_alt){
 	FIL file;
 	UINT bytes_written;
@@ -287,68 +267,6 @@ FRESULT write_mag(const char *filename,
     SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
     return FR_OK;
 }
-
-//FRESULT sd_clear_all(void)
-//{
-//    DIR dir;
-//    FILINFO fno;
-//    FRESULT res;
-//
-//    SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
-//
-//    res = f_opendir(&dir, "/");
-//    if (res != FR_OK) {
-//        SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
-//        return res;
-//    }
-//
-//    while (1) {
-//        res = f_readdir(&dir, &fno);
-//
-//        if (res != FR_OK) {
-//            f_closedir(&dir);
-//            SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
-//            return res;
-//        }
-//
-//        if (fno.fname[0] == 0)
-//            break;
-//
-//        if (strcmp(fno.fname, ".") == 0 || strcmp(fno.fname, "..") == 0)
-//            continue;
-//
-//        if (fno.fattrib & AM_DIR)
-//            continue;
-//
-//        res = f_unlink(fno.fname);
-//        if (res != FR_OK) {
-//            f_closedir(&dir);
-//            SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
-//            return res;
-//        }
-//    }
-//
-//    f_closedir(&dir);
-//    SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
-//
-//    return FR_OK;
-//}
-
-//FRESULT sd_remove_file(const char *filename)
-//{
-//    FRESULT res;
-//
-//    if (filename == NULL || filename[0] == '\0')
-//        return FR_INVALID_PARAMETER;
-//
-//    SPI_CS_LOW(SD_CS_GPIO_Port, SD_CS_Pin);
-//
-//    res = f_unlink(filename);
-//
-//    SPI_CS_HIGH(SD_CS_GPIO_Port, SD_CS_Pin);
-//
-//    return res;
-//}
 
 FRESULT sd_remove_file(File_t *f)
 {

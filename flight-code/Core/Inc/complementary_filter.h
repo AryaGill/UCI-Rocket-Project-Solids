@@ -1,11 +1,5 @@
 //#pragma once
 //#include "main.h"
-//
-//// Complementary filter weights
-//#define ALPHA_VELOCITY 0.99f  // 99% IMU integrated velocity
-//#define ALPHA_ALTITUDE 0.95f  // 95% integrated fused velocity
-//
-//void complementary_filter(Telemetry_t* telemetry);
 
 #ifndef COMPLEMENTARY_FILTER_H
 #define COMPLEMENTARY_FILTER_H

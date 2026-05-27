@@ -10,11 +10,6 @@
 #include "launch_buffer.h"
 #include <stdio.h>
 
-//float alt_dif_buffer[ALT_DIF_BUF_SIZE];
-//int alt_dif_buffer_idx = 0;
-//int prev_alt_time = 0;
-//float prev_alt = 0;
-
 // Some states need to know the time that the state started
 uint32_t state_start_time = 0;
 
@@ -30,29 +25,6 @@ uint32_t prev_led_toggle_time = 0;
 
 extern launch_buffer_t launch_buffer;
 extern File_t data_file;
-//float get_avg_alt_dif() {
-//	float sum = 0;
-//	float largest = alt_dif_buffer[0];
-//	float smallest = alt_dif_buffer[0];
-//	for (int i = 0; i < ALT_DIF_BUF_SIZE; ++i){
-//		sum += alt_dif_buffer[i];
-//		largest = fmax(largest, alt_dif_buffer[i]);
-//    	smallest = fmin (smallest, alt_dif_buffer[i]);
-//	}
-//  	return (sum - largest - smallest) / (ALT_DIF_BUF_SIZE - 2);
-//}
-//
-//void update_alt_dif_buf(float new_alt_dif) {
-//
-//	float cur_time = micros();
-//	if (cur_time <= prev_alt_time){
-//		return;
-//	}
-//	float dt = (float)(cur_time - prev_alt_time) * 1e-6f;
-//	alt_dif_buffer[alt_dif_buffer_idx] = new_alt_dif / dt;
-//	alt_dif_buffer_idx = (alt_dif_buffer_idx + 1) % ALT_DIF_BUF_SIZE;
-//	prev_alt_time = cur_time;
-//}
 
 void set_flight_state(FlightState_t new_state, FlightState_t *flight_state, Telemetry_t *telemetry) {
 	*flight_state = new_state;
@@ -88,8 +60,6 @@ void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 		LPS22HH_Read(telemetry);
 		if (telemetry->temperature != -999) {
 			telemetry->startAlt = telemetry->altitude;
-//			update_alt_dif_buf(telemetry->startAlt - prev_alt);
-//			prev_alt = telemetry->startAlt;
 		}
 		HAL_Delay(10);
 	}
@@ -121,9 +91,6 @@ void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 }
 
 void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
-//	update_alt_dif_buf(telemetry->altitude - prev_alt);
-//	prev_alt = telemetry->altitude;
-
 	// Determine Next State
 	switch(*flight_state) {
 		case DISARMED:
@@ -186,7 +153,6 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case GLIDING_ASCENT:
-//    		if (get_avg_alt_dif() < APOGEE_VELO_THRESHOLD && telemetry->altitude - telemetry->startAlt > DROGUE_DEPLOY_MIN_ALT) {
     		if (telemetry->baro_vz < APOGEE_VELO_THRESHOLD && telemetry->altitude - telemetry->startAlt > DROGUE_DEPLOY_MIN_ALT) {
     			set_flight_state(DROGUE_PRIMARY_DEPLOYING, flight_state, telemetry);
     			drogue_primary_on();
