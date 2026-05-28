@@ -5,6 +5,7 @@ from PyQt6.QtCore import (Qt, QTimer, QThread, pyqtSignal, QCoreApplication)
 from PyQt6.QtGui import QAction
 from Backend.backend import SerialStreamer
 from Frontend.flight_state_display import FlightStateDisplay
+from Frontend.rocket_model import RocketView
 
 import csv
 import sys
@@ -285,6 +286,9 @@ class GroundStationWindow(QMainWindow):
         self.clearSD_btn = QPushButton("Clear SD")
         self.clearSD_btn.clicked.connect(self.send_clearSD)
         control_layout.addWidget(self.clearSD_btn)
+
+        self.resetState_btn = QPushButton("Reset FS")
+        control_layout.addWidget(self.resetState_btn)
         
         main_layout.addLayout(control_layout)
 
@@ -414,14 +418,15 @@ class GroundStationWindow(QMainWindow):
             self.rpy_graph = RPYGraph()
             self.velocity_graph = VelocityGraph()
             self.quaternion_graph = QuaternionGraph()
-            self.ab_graph = ABGraph()
             self.ap_graph = APGraph()
+
+            self.rocket_view = RocketView()
 
             for graph in (self.altitude_graph, self.temp_graph,
                     self.accel_lis_graph, self.accel_world_graph,
                     self.ang_graph, self.mag_graph,
                     self.rpy_graph, self.velocity_graph,
-                    self.quaternion_graph, self.ab_graph,
+                    self.quaternion_graph,
                     self.ap_graph):
                 graph.setMinimumSize(320, 340)
 
@@ -434,8 +439,8 @@ class GroundStationWindow(QMainWindow):
             layout.addWidget(self.rpy_graph,            2, 1)
             layout.addWidget(self.velocity_graph,       2, 2)
             layout.addWidget(self.quaternion_graph,     3, 0)
-            layout.addWidget(self.ab_graph,             3, 1)
-            layout.addWidget(self.ap_graph,             3, 2)
+            layout.addWidget(self.ap_graph,             3, 1)
+            layout.addWidget(self.rocket_view,          4, 1)
 
             for col in range(3):
                 layout.setColumnStretch(col, 1)
@@ -700,17 +705,15 @@ class GroundStationWindow(QMainWindow):
                     data['Time'], data['velocity_x'], data['velocity_y'], data['velocity_z'],
                     max_points=self.max_points)
 
+
+        #Use this and just input these into the flightreviewer
         if hasattr(self, 'quaternion_graph'):
             if all(data.get(k) is not None for k in ['Time', 'Quaternion_W', 'Quaternion_X', 'Quaternion_Y', 'Quaternion_Z']):
                 self.quaternion_graph.update_data(
                     data['Time'], data['Quaternion_W'], data['Quaternion_X'],
                     data['Quaternion_Y'], data['Quaternion_Z'],
                     max_points=self.max_points)
-        
-        if hasattr(self, 'ab_graph'):
-            if all(data.get(k) is not None for k in ['Time', 'AB_Deployment']):
-                self.ab_graph.update_data(
-                        data['Time'], (data['AB_Deployment'] / 63) * 100, max_points = self.max_points)
+
                 
         if hasattr(self, 'ap_graph'):
             if all(data.get(k) is not None for k in ['Time', 'pred_apo']):
@@ -754,6 +757,10 @@ class GroundStationWindow(QMainWindow):
     def arm_rocket(self):
         from PyQt6.QtWidgets import QMessageBox
         
+        #Allow the button to be pushed multiple times, even after arming
+        #Don't send anything different, it will do the same thing, literally just remove 
+        #conditional deletion
+
         reply1 = QMessageBox.warning(
             self, "⚠️ ARM ROCKET - FIRST CONFIRMATION",
             "You are about to ARM the rocket.\n\n"
@@ -794,7 +801,7 @@ class GroundStationWindow(QMainWindow):
                         border-radius: 5px;
                     }
                 """)
-                self.arm_btn.setEnabled(False)
+                #self.arm_btn.setEnabled(False)
             else:
                 self.update_status("Error: No serial connection active")
                 QMessageBox.warning(self, "Connection Error",

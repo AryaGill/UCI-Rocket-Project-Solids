@@ -4,7 +4,6 @@ import qdarktheme
 from Backend.backend import select_serial_port
 from Frontend.main_window import GroundStationWindow
 
-
 def main():
     """Main entry point for the Ground Station application."""
     # Get port selection before starting GUI
