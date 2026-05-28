@@ -146,7 +146,11 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		}
     		prev_accel = telemetry->accel_world_z;
 
-    		if (HAL_GetTick() - state_start_time > MOTOR_BURN_TIME || (num_increasing_accel > 10 && telemetry->accel_world_z < 0)){
+    		if (HAL_GetTick() - state_start_time > MOTOR_BURN_TIME) {
+    			set_flight_state(GLIDING_ASCENT, flight_state, telemetry);
+    		}
+    		else if (num_increasing_accel > 10 && telemetry->accel_world_z < 0) {
+    			write_datafile_message("MOTOR BURNOUT DETECTED");
     			set_flight_state(GLIDING_ASCENT, flight_state, telemetry);
     		}
 
