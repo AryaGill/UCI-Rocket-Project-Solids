@@ -9,6 +9,7 @@
 #include "parachute.h"
 #include <math.h>
 
+//verify parachute deployment was successful
 void parachute_update_recovery_validation(FlightState_t *state, Telemetry_t *t){
 	static uint16_t drogue_in_band_count = 0;
 	static uint16_t main_in_band_count = 0;

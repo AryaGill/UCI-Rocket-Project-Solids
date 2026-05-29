@@ -11,6 +11,7 @@ static float baro_velocity_filt = 0.0f;
 
 static bool cf_initialized = false;
 
+//Initializes Complementary filter values
 void complementary_filter_init(Telemetry_t *telemetry)
 {
     float baro_alt = telemetry->altitude - telemetry->startAlt;
@@ -32,6 +33,14 @@ void complementary_filter_init(Telemetry_t *telemetry)
     cf_initialized = true;
 }
 
+/**
+ * Updates fused altitude and vertical velocity estimates.
+ *
+ * telemetry: flight telemetry struct to update
+ * flight_state: current flight state
+ *
+ * Combines IMU acceleration with barometer altitude/velocity.
+ */
 void complementary_filter(Telemetry_t *telemetry, FlightState_t *flight_state)
 {
     if (!cf_initialized) {
@@ -39,15 +48,17 @@ void complementary_filter(Telemetry_t *telemetry, FlightState_t *flight_state)
         return;
     }
 
+    //calculate change in time (time step)
     uint64_t cur_time_us = micros();
     float dt = (float)(cur_time_us - prev_time_cf_us) * 1e-6f;
     prev_time_cf_us = cur_time_us;
 
+    //skips computation if time step is invalid
     if (!isfinite(dt) || dt <= 0.0f || dt > 0.1f) {
         return;
     }
 
-    // Determine weight of baro
+    // Determine weight of barometer measurements based on time since last airbrakes change
     if (telemetry->airbrake_deployment == telemetry->prev_deployment){
     	telemetry->time_until_trust_baro = fmaxf(0.0f, telemetry->time_until_trust_baro - dt);
     }else {
@@ -80,7 +91,7 @@ void complementary_filter(Telemetry_t *telemetry, FlightState_t *flight_state)
 
 	telemetry->velocity_world_z = (1-w_baro) * velocity_imu + w_baro * velocity_fused;
 
-    // Calculate alt_fused
+    // Calculate fused altitude
     float altitude_pred =
         telemetry->alt_fused + telemetry->velocity_world_z * dt;
 

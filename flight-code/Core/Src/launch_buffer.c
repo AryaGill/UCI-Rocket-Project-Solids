@@ -6,6 +6,7 @@
 
 extern File_t data_file;
 
+//initialize the empty launch buffer
 void launch_buffer_init(launch_buffer_t *lb)
 {
     lb->head = 0;
@@ -13,8 +14,15 @@ void launch_buffer_init(launch_buffer_t *lb)
     lb->flushed = 0;
 }
 
+/**
+ * Adds new entries to the launch buffer in the same format as SD card entries
+ *
+ * High speed data rate for pre-launch, allows for more datapoints right as launch occurs
+ * Circular buffer structure, no entry deletions needed
+ */
 void launch_buffer_add(launch_buffer_t *lb, FlightState_t flight_state, Telemetry_t *t)
 {
+	//if buffer was already flushed return, else move head to next entry
 	if (lb->flushed) return;
     char *data_string = lb->buffer[lb->head];
     char state_str[3];
@@ -75,12 +83,14 @@ void launch_buffer_add(launch_buffer_t *lb, FlightState_t flight_state, Telemetr
 
     lb->head++;
 
+    //if head is greater than size of buffer, move head back to start
     if (lb->head >= LAUNCH_BUFFER_SIZE) {
         lb->head = 0;
         lb->full = 1;
     }
 }
 
+//Flush all entries in buffer to SD card once launch detected
 void launch_buffer_flush(launch_buffer_t *lb)
 {
     if (lb->flushed) return;

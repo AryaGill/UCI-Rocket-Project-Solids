@@ -153,7 +153,7 @@ void LPS22HH_WriteReg(uint8_t reg, uint8_t val);
 void transform_accel_to_world(Telemetry_t *telemetry);
 void deselect_all_spi();
 
-// Bias
+// Bias calculations and application
 void Bias_Init(Bias_t *bias);
 void Apply_Bias(Bias_t *bias, Telemetry_t *telemetry);
 void Gyro_CalibrateBias(Bias_t* bias, Telemetry_t* telemetry, int num_samples);

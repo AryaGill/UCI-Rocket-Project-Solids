@@ -27,8 +27,7 @@
 #define STATE_FILE "flight_state.csv"
 #define MIN_RESET_ALT 50 // m
 
-//float get_avg_alt_dif();
-//void update_alt_dif_buf(float new_alt_dif);
+//Update and initializations for flight state FSM
 void set_flight_state(FlightState_t new_state, FlightState_t *flight_state, Telemetry_t *telemetry);
 void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry);
 void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry);

@@ -2,6 +2,7 @@
 
 extern ADC_HandleTypeDef hadc1;
 
+//read ADC value returned by Ematch connection to verify connection
 uint32_t read_ematch_voltage(ADC_HandleTypeDef *hadc, uint32_t channel){
 	ADC_ChannelConfTypeDef sConfig = {0};
 	  sConfig.Rank = ADC_REGULAR_RANK_1;
@@ -25,6 +26,7 @@ uint32_t read_ematch_voltage(ADC_HandleTypeDef *hadc, uint32_t channel){
 	return adc;
 }
 
+//Returns E match ADC values for each charge
 void read_ematch_connections(Telemetry_t *telemetry){
 	telemetry->main_p_ematch_voltage = read_ematch_voltage(&hadc1, MAIN_P_ADC_CHANNEL);
 	telemetry->main_s_ematch_voltage = read_ematch_voltage(&hadc1, MAIN_S_ADC_CHANNEL);
@@ -32,6 +34,7 @@ void read_ematch_connections(Telemetry_t *telemetry){
 	telemetry->drogue_s_ematch_voltage = read_ematch_voltage(&hadc1, DROGUE_S_ADC_CHANNEL);
 }
 
+//Functions for activating ematch charges
 void drogue_primary_on(){
 	HAL_GPIO_WritePin(Drogue_Parachute_1_GPIO_Port, Drogue_Parachute_1_Pin, GPIO_PIN_SET);
 }

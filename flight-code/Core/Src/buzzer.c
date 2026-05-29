@@ -2,6 +2,12 @@
 
 extern TIM_HandleTypeDef htim4;
 
+/**
+ * Returns the clock speed used by the given timer.
+ *
+ * htim: timer handle
+ * return: timer clock speed in Hz
+ */
 uint32_t get_timer_clock(TIM_HandleTypeDef *htim){
     RCC_ClkInitTypeDef clkconfig;
     uint32_t flash_latency;
@@ -30,7 +36,11 @@ uint32_t get_timer_clock(TIM_HandleTypeDef *htim){
     return pclk;
 }
 
-
+/**
+ * Sets the buzzer tone frequency.
+ *
+ * freq: frequency in Hz, or 0 to turn the buzzer off
+ */
 void buzzer_set_frequency(uint32_t freq){
 	if (freq == 0 || BUZZER_ON == 0)
 	{

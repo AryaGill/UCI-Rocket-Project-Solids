@@ -12,7 +12,7 @@ static uint32_t prev_time_madgwick = 0;
 volatile int g_accel_valid = 0;
 
 
-
+//compute inverse square root of a value
 static float invSqrt(float x)
 {
     if (x <= 0.0f || !isfinite(x)) {
@@ -21,6 +21,14 @@ static float invSqrt(float x)
     return 1.0f / sqrtf(x);
 }
 
+/**
+ * Initializes the Madgwick filter.
+ *
+ * telemetry: flight telemetry struct
+ * b: filter gain value
+ *
+ * Sets the initial quaternion from accelerometer data.
+ */
 void Madgwick_Init(Telemetry_t* telemetry, float b)
 {
     beta = b;
@@ -64,6 +72,13 @@ void Madgwick_Init(Telemetry_t* telemetry, float b)
     prev_time_madgwick = micros();
 }
 
+/**
+ * Updates the Madgwick filter.
+ *
+ * telemetry: flight telemetry struct
+ *
+ * Uses gyroscope and accelerometer data to update the orientation quaternion.
+ */
 void Madgwick_Update(Telemetry_t* telemetry)
 {
     // --- dt ---
@@ -191,6 +206,7 @@ void Madgwick_Update(Telemetry_t* telemetry)
     telemetry->q3 = q3 * recipNorm;
 }
 
+//converts current quaternion into euler angles-> roll pitch yaw
 void Madgwick_GetEuler(Telemetry_t* telemetry)
 {
     float q0 = telemetry->q0;

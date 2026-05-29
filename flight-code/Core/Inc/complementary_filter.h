@@ -30,6 +30,7 @@ extern "C" {
 
 #define BARO_TRUST_TIME 4.0f
 
+//Initialize and update complementary filter
 void complementary_filter_init(Telemetry_t *telemetry);
 void complementary_filter(Telemetry_t *telemetry, FlightState_t *flight_state);
 

@@ -7,14 +7,18 @@ uint16_t CAM_PINS[2] = {Camera_1_Pin, Camera_2_Pin};
 ADC_HandleTypeDef *CAM_ADCs[2] = {&hadc1, &hadc1};
 uint32_t CAM_ADC_CHANNELS[2] = {ADC_CHANNEL_9, ADC_CHANNEL_5};
 
+//turns on the camera indicated by cam_num
 void turn_camera_on(int cam_num){
 	HAL_GPIO_WritePin(CAM_PORTS[cam_num], CAM_PINS[cam_num], GPIO_PIN_SET);
 }
 
+//turns off the camera indicated by cam_num
 void turn_camera_off(int cam_num){
 	HAL_GPIO_WritePin(CAM_PORTS[cam_num], CAM_PINS[cam_num], GPIO_PIN_RESET);
 }
 
+//reads ADC value at the given channel
+//returns 0 if read fails
 uint32_t read_adc(uint32_t channel, ADC_HandleTypeDef *hadc){
 	ADC_ChannelConfTypeDef sConfig = {0};
 	sConfig.Rank = ADC_REGULAR_RANK_1;
@@ -38,6 +42,8 @@ uint32_t read_adc(uint32_t channel, ADC_HandleTypeDef *hadc){
 
 uint32_t cam1_adc;
 uint32_t cam2_adc;
+
+//reads the adcs for both cameras and updates to telemetry struct
 void read_camera_adcs(Telemetry_t *telemetry){
 	// Read ADC 1
 	cam1_adc = read_adc(CAM_ADC_CHANNELS[0], CAM_ADCs[0]);

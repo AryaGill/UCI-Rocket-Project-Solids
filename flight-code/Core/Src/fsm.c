@@ -26,6 +26,7 @@ uint32_t prev_led_toggle_time = 0;
 extern launch_buffer_t launch_buffer;
 extern File_t data_file;
 
+//changes the state the the FSM is in
 void set_flight_state(FlightState_t new_state, FlightState_t *flight_state, Telemetry_t *telemetry) {
 	*flight_state = new_state;
 
@@ -38,6 +39,12 @@ void set_flight_state(FlightState_t new_state, FlightState_t *flight_state, Tele
 	write_sd_state(STATE_FILE, *flight_state, telemetry->startAlt);
 }
 
+/**
+ * Checks on startup if the Rocket could already be in flight
+ *
+ * Uses the change in altitude from 250 samples to check if a software reset occured
+ * If change in altitude change is greater than set min altitude change then flag reset
+ */
 uint8_t sensors_indicate_flight(Telemetry_t *telemetry){
 	float alt_i = telemetry->altitude;
 
@@ -52,6 +59,14 @@ uint8_t sensors_indicate_flight(Telemetry_t *telemetry){
 	return 0;
 }
 
+/**
+ * Initializes the flight state machine.
+ *
+ * flight_state: FSM state to initialize
+ * telemetry: flight telemetry struct
+ *
+ * Sets the starting altitude and checks for a power reset.
+ */
 void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 	telemetry->alt_fused = 0;
 	
@@ -90,6 +105,14 @@ void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 	set_flight_state(DISARMED, flight_state, telemetry);
 }
 
+/**
+ * Updates the flight state machine.
+ *
+ * flight_state: current FSM state
+ * telemetry: latest flight telemetry
+ *
+ * Handles state transitions throughout flight.
+ */
 void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 	// Determine Next State
 	switch(*flight_state) {
@@ -103,7 +126,6 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 			break;
     	case LAUNCH_PAD:
     		// Detect if launched
-
     		if (launch_accel_detected_time == -1){
 				// Acceleration not detected yet
 				//changed to < for vacuum testing
@@ -138,6 +160,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case MOTOR_BURN:
+    		//use acceleration to detect motor burnout conclusion with measured time passing as backup
     		if (telemetry->accel_world_z > prev_accel){
     			++num_increasing_accel;
     		}
@@ -146,9 +169,12 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		}
     		prev_accel = telemetry->accel_world_z;
 
+    		//if max measured motor burn time ends transition to gliding ascent
     		if (HAL_GetTick() - state_start_time > MOTOR_BURN_TIME) {
     			set_flight_state(GLIDING_ASCENT, flight_state, telemetry);
     		}
+
+    		//indicate early conclusion and log it
     		else if (num_increasing_accel > 10 && telemetry->accel_world_z < 0) {
     			write_datafile_message("MOTOR BURNOUT DETECTED");
     			set_flight_state(GLIDING_ASCENT, flight_state, telemetry);
@@ -157,6 +183,7 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
     		break;
 
     	case GLIDING_ASCENT:
+    		//use starting alt to detect apogee
     		if (telemetry->baro_vz < APOGEE_VELO_THRESHOLD && telemetry->altitude - telemetry->startAlt > DROGUE_DEPLOY_MIN_ALT) {
     			set_flight_state(DROGUE_PRIMARY_DEPLOYING, flight_state, telemetry);
     			drogue_primary_on();
