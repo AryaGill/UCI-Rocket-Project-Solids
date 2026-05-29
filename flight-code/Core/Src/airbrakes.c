@@ -6,16 +6,18 @@
 // Servo timer
 extern TIM_HandleTypeDef htim3;
 
-// Air Brakes variables
+// Simulation variables
 #define GAMMA 1.4
 #define R 287.05287
 #define g 9.80665 // Gravity
 #define L 0.0065 // Temperature Lapse Rate
+
+// Search time variables
 #define DESIRED_SEARCH_TIME 20 // ms
 #define TIME_PER_SIM_STEP 0.0132 // ms
 float deltaT_coefficient = TIME_PER_SIM_STEP * log2f(NUM_DEPLOYMENT_LEVELS) / DESIRED_SEARCH_TIME / g;
-float ground_temp = 300;
 
+float ground_temp = 300;
 float TARGET_APOGEE_M = TARGET_APOGEE_FT * 0.3048;
 
 // Deployment levels should be evenly spread between least and most deployment (inclusive)
@@ -61,6 +63,7 @@ float air_brakes_CdA[NUM_RECORDED_DEPLOYMENT_LEVELS][NUM_RECORDED_MACH_NUMS] = {
 
 };
 
+// Clamp output to be within min and max
 static inline float clampf(float x, float min, float max)
 {
     if (x < min) return min;
@@ -68,6 +71,7 @@ static inline float clampf(float x, float min, float max)
     return x;
 }
 
+// Angle in radians from vertical to where nose cone is pointing
 float angle_from_vertical(Telemetry_t *telemetry)
 {
     float c = 1.0f - 2.0f * (telemetry->q1*telemetry->q1 + telemetry->q2*telemetry->q2);
@@ -78,6 +82,8 @@ float angle_from_vertical(Telemetry_t *telemetry)
     return acosf(c);   // radians
 }
 
+// Returns coefficient of drag times reference area to be used to calculate drag force
+// Inputs are airbrakes deployment level and mach number
 float get_CdA(uint8_t deployment_level, float mach)
 {
 	float deployment = ((float)deployment_level) / (float)(NUM_DEPLOYMENT_LEVELS - 1);
@@ -120,19 +126,24 @@ float get_CdA(uint8_t deployment_level, float mach)
     return CdA;
 }
 
+// Returns mach number given velocity and air temp
 float get_mach_number(const float velocity, const float temp){
 	float speed_of_sound = pow(R * GAMMA * temp, 0.5);
 	return velocity / speed_of_sound;
 }
 
+// Returns magnitude of 2D vector
 float get_mag2(float x, float y){
 	return sqrtf(x*x + y*y);
 }
 
+// Returns magnitude of 3D vector
 float get_mag3(float x, float y, float z){
 	return sqrtf(x*x + y*y + z*z);
 }
 
+// Simulates a flight given the current state in the telemetry struct and the airbrakes deployment level
+// Returns the apogee of this simulated flight
 float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 	// Get time step
 	float deltaT = clampf(telemetry->velocity_world_z * deltaT_coefficient, 0.01, 0.1);
@@ -178,9 +189,10 @@ float predict_apogee(Telemetry_t *telemetry, uint8_t deployment_level){
 	return alt_sim;
 }
 
+// Binary searches through deployment levels using predict_apogee() function
+// Sets the airbrakes deployment level to the level that minimizes overshoot
+// of target apogee
 void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
-//	float horizontal_speed = get_mag2(telemetry->velocity_world_x, telemetry->velocity_world_y);
-//	float angle_of_attack = atan2f(horizontal_speed, telemetry->velocity_world_z);
 	float angle_of_attack = angle_from_vertical(telemetry);
 	float local_temp = fmaxf(ground_temp - (L * telemetry->altitude), 1);
 	if (flight_state != GLIDING_ASCENT
@@ -222,15 +234,20 @@ void set_optimal_deployment(FlightState_t flight_state, Telemetry_t *telemetry){
 	set_airbrakes_deployment_level(telemetry, low);
 }
 
+// Begin PWM for airbrakes servo
 void init_airbrakes_servo(){
 	HAL_TIM_PWM_Start(&htim3, AIRBRAKES_SERVO_1_CHANNEL);
 	HAL_TIM_PWM_Start(&htim3, AIRBRAKES_SERVO_2_CHANNEL);
 }
 
+// Sets the initial temperature to be used in the airbrakes simulation.
+// Call this when the flight computer turns on.
+// Prevents heat from the sun from inflating air temperature estimates
 void set_airbrakes_initial_temp(Telemetry_t *telemetry){
 	ground_temp = telemetry->temperature + 273.15;
 }
 
+// Set the airbrakes servo motor to the given angle
 void set_airbrakes_servo_angle(float angle)
 {
 	if (angle < 0.0f) angle = 0.0f;
@@ -244,9 +261,9 @@ void set_airbrakes_servo_angle(float angle)
 	__HAL_TIM_SET_COMPARE(&htim3, AIRBRAKES_SERVO_2_CHANNEL, pulse);
 }
 
+// Set the airbrakes deployment level. Convert from deployment to servo angle.
+// deployment is int from 0 to NUM_DEPLOYMENT_LEVELS - 1
 void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment){
-	// TODO: change this to be a map from deployment level to servo angle
-	// deployment is int from 0 to NUM_DEPLOYMENT_LEVELS - 1
 	if (deployment >= NUM_DEPLOYMENT_LEVELS) deployment = NUM_DEPLOYMENT_LEVELS - 1;
 
 	telemetry->airbrake_deployment = deployment;
@@ -259,9 +276,10 @@ void set_airbrakes_deployment_level(Telemetry_t *telemetry, uint8_t deployment){
 	set_airbrakes_servo_angle(angle);
 }
 
+// When the rocket is on the rail, it may not be able to fully extend. Use this function
+// to limit the max deployment if this is the case.
+// Use this function for performing the airbrake sequence on the rail.
 void set_airbrakes_deployment_level_on_rail(Telemetry_t *telemetry, uint8_t deployment){
-	// TODO: change this to be a map from deployment level to servo angle
-	// deployment is int from 0 to NUM_DEPLOYMENT_LEVELS - 1
 	if (deployment >= NUM_DEPLOYMENT_LEVELS) deployment = NUM_DEPLOYMENT_LEVELS - 1;
 
 	telemetry->airbrake_deployment = deployment;
@@ -271,6 +289,7 @@ void set_airbrakes_deployment_level_on_rail(Telemetry_t *telemetry, uint8_t depl
 	set_airbrakes_servo_angle(angle);
 }
 
+// Perform a sequence to verify that the airbrakes are working and the servo is connected.
 void perform_airbrakes_servo_sequence(Telemetry_t *telemetry){
 	for (uint8_t i = 0; i < NUM_DEPLOYMENT_LEVELS; ++i){
 		set_airbrakes_deployment_level_on_rail(telemetry, i);
@@ -298,6 +317,10 @@ void perform_airbrakes_servo_sequence(Telemetry_t *telemetry){
 	set_airbrakes_deployment_level_on_rail(telemetry, 0);
 }
 
+// Use this function only if needing to verify that the algorithm works.
+// If need to be 100% sure that we will overshoot the target, call this
+// at the beginning of gliding ascent, which will set the target apogee.
+// DO NOT USE IN COMPETITION FLIGHT
 void set_target_apogee(Telemetry_t *telemetry) {
 	// Set to predicted apogee at about half deployment
 	TARGET_APOGEE_M = predict_apogee(telemetry, 30);
