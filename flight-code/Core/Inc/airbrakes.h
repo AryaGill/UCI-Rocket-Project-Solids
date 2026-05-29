@@ -10,18 +10,22 @@
 #define MASS 24.2 // kg
 #define TARGET_APOGEE_FT 1000
 
-//#define TARGET_APOGEE_M TARGET_APOGEE_FT * 0.3048
-
+// Servo angles
 #define SERVO_ANGLE_NOT_EXTENDED 154.0f
 #define SERVO_ANGLE_EXTENDED 120.0f
 #define SERVO_ANGLE_BEFORE_RAIL 157.0f
 
+// Number of deployment levels. Determines how deep of a binary search we need to do
+// Should be a power of 2
 #define NUM_DEPLOYMENT_LEVELS 64
+// Define 2d array size for coefficient of drag lookup table
 #define NUM_RECORDED_DEPLOYMENT_LEVELS 11
 #define NUM_RECORDED_MACH_NUMS 14
 
+// Use to shift the velocity forwards in time if it is observed to lag because of sensor filtering
 #define VELOCITY_TIME_SHIFT 0
 
+// Servo PWM variables
 #define SERVO_MIN_US 1000
 #define SERVO_MAX_US 2000
 
