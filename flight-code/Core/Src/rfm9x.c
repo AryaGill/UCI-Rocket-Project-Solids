@@ -122,7 +122,7 @@ void RFM9X_Init(SPI_HandleTypeDef *hspi_p, GPIO_TypeDef *cs_port_p, uint16_t cs_
 	}
 
 	/* Frequency */
-	RFM9X_SetFrequency(433000000);
+	RFM9X_SetFrequency(441740000);
 
 	/* Power */
 	RFM9X_SetTxPower(17);
