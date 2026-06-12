@@ -13,7 +13,7 @@ class CameraPanel(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Camera Control")
-        self.setModal(False)  # Allow interaction with main window
+        self.setModal(False)  # Allow interaction with cam2 window
         self.setMinimumWidth(400)
         self.setup_ui()
     
@@ -31,9 +31,9 @@ class CameraPanel(QDialog):
         # Button grid
         button_layout = QGridLayout()
         
-        # Drogue charges (Row 0)
-        drogue_label = QLabel("Camera 1")
-        drogue_label.setStyleSheet("""
+        # cam1s (Row 0)
+        cam1_label = QLabel("Camera 1")
+        cam1_label.setStyleSheet("""
             QLabel {
                 color: #00d4ff;
                 font-weight: bold;
@@ -41,19 +41,19 @@ class CameraPanel(QDialog):
                 padding: 5px;
             }
         """)
-        button_layout.addWidget(drogue_label, 0, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
+        button_layout.addWidget(cam1_label, 0, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
         
-        self.drogue_p_btn = self.create_pyro_button("Camera 1 ON", "#007bff")
-        self.drogue_p_btn.clicked.connect(lambda: self.send_command("CAM1ON", 1))
-        button_layout.addWidget(self.drogue_p_btn, 1, 0)
+        self.cam1_p_btn = self.create_pyro_button("Camera 1 ON", "#007bff")
+        self.cam1_p_btn.clicked.connect(lambda: self.send_command("CAM1ON", 1))
+        button_layout.addWidget(self.cam1_p_btn, 1, 0)
         
-        self.drogue_s_btn = self.create_pyro_button("Camera 1 OFF", "#007bff")
-        self.drogue_s_btn.clicked.connect(lambda: self.send_command("CAM1OFF", 1))
-        button_layout.addWidget(self.drogue_s_btn, 1, 1)
+        self.cam1_s_btn = self.create_pyro_button("Camera 1 OFF", "#007bff")
+        self.cam1_s_btn.clicked.connect(lambda: self.send_command("CAM1OFF", 1))
+        button_layout.addWidget(self.cam1_s_btn, 1, 1)
         
-        # Main charges (Row 2)
-        main_label = QLabel("Camera 2")
-        main_label.setStyleSheet("""
+        # cam2 (Row 2)
+        cam2_label = QLabel("Camera 2")
+        cam2_label.setStyleSheet("""
             QLabel {
                 color: #28dc5e;
                 font-weight: bold;
@@ -61,15 +61,37 @@ class CameraPanel(QDialog):
                 padding: 5px;
             }
         """)
-        button_layout.addWidget(main_label, 2, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
+        button_layout.addWidget(cam2_label, 2, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
         
-        self.main_p_btn = self.create_pyro_button("Camera 2 ON", "#ff36e4")
-        self.main_p_btn.clicked.connect(lambda: self.send_command("CAM2ON", 2))
-        button_layout.addWidget(self.main_p_btn, 3, 0)
+        self.cam2_p_btn = self.create_pyro_button("Camera 2 ON", "#9c60f6")
+        self.cam2_p_btn.clicked.connect(lambda: self.send_command("CAM2ON", 2))
+        button_layout.addWidget(self.cam2_p_btn, 3, 0)
         
-        self.main_s_btn = self.create_pyro_button("Camera 2 OFF", "#ff36e4")
-        self.main_s_btn.clicked.connect(lambda: self.send_command("CAM2OFF", 2))
-        button_layout.addWidget(self.main_s_btn, 3, 1)
+        self.cam2_s_btn = self.create_pyro_button("Camera 2 OFF", "#9c60f6")
+        self.cam2_s_btn.clicked.connect(lambda: self.send_command("CAM2OFF", 2))
+        button_layout.addWidget(self.cam2_s_btn, 3, 1)
+
+        #Dual cams (Row 3)
+        dual_label = QLabel("Both Cameras")
+        dual_label.setStyleSheet("""
+            QLabel {
+                color: #28dc5e;
+                font-weight: bold;
+                font-size: 13px;
+                padding: 5px;
+            }
+        """)
+        button_layout.addWidget(dual_label, 4, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
+        
+        self.dual_p_btn = self.create_pyro_button("Both Cameras ON", "#ff36e4")
+        self.dual_p_btn.clicked.connect(lambda: self.send_command("CAM1ON", 1))
+        self.dual_p_btn.clicked.connect(lambda: self.send_command("CAM2ON", 2))
+        button_layout.addWidget(self.dual_p_btn, 5, 0)
+        
+        self.dual_s_btn = self.create_pyro_button("Both Cameras OFF", "#ff36e4")
+        self.dual_s_btn.clicked.connect(lambda: self.send_command("CAM1OFF", 1))
+        self.dual_s_btn.clicked.connect(lambda: self.send_command("CAM2OFF", 2))
+        button_layout.addWidget(self.dual_s_btn, 5, 1)
         
         layout.addLayout(button_layout)
         
@@ -120,13 +142,4 @@ class CameraPanel(QDialog):
     def send_command(self, command, num):
         """Confirm and send camera command."""
         # Confirmation dialog
-        reply = QMessageBox.question(
-            self,
-            "Confirm Pyro Command",
-            f"Send command: '{command}'?\n\nThis will affect camera {num}",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        
-        if reply == QMessageBox.StandardButton.Yes:
-            self.command_signal.emit(command)
+        self.command_signal.emit(command)
