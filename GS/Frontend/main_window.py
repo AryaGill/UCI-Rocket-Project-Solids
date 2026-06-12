@@ -209,7 +209,7 @@ class GroundStationWindow(QMainWindow):
         self.pyro_btn.clicked.connect(self.open_pyro_panel)
         control_layout.addWidget(self.pyro_btn)
         
-        self.camera_btn = QPushButton("Camera OFF")
+        self.camera_btn = QPushButton("Camera Control")
         self.camera_btn.setStyleSheet("""
             QPushButton {
                 background-color: #fffb00;
@@ -222,7 +222,7 @@ class GroundStationWindow(QMainWindow):
             QPushButton:hover { background-color: #ffff33; }
             QPushButton:pressed { background-color: #e6e200; }
         """)
-        self.camera_btn.clicked.connect(self.toggle_camera)
+        self.camera_btn.clicked.connect(self.open_camera_panel)
         control_layout.addWidget(self.camera_btn)
 
         self.gyrocal_btn = QPushButton("🔄 Gyro Cal")
@@ -505,20 +505,7 @@ class GroundStationWindow(QMainWindow):
             from PyQt6.QtWidgets import QMessageBox
             QMessageBox.warning(self, "Connection Error",
                                 "Cannot send command: Serial connection is not active")
-    
-    def toggle_camera(self):
-        """Toggle camera on/off via serial command."""
-        command = "OFF" if self.camera_is_on else "ON"
-        if self.streamer and self.streamer.isRunning():
-            self.streamer.write_command(command)
-            self.camera_pending = command
-            self.update_status(f"Camera command sent: {command}")
-        else:
-            self.update_status("Error: No serial connection active")
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Connection Error",
-                                "Cannot send command: Serial connection is not active")
-
+            
     def test_servo_sequence(self):
         """Send SERVO SEQUENCE command with confirmation dialog."""
         from PyQt6.QtWidgets import QMessageBox

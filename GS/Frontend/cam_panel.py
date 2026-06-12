@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QGridLayout,
                              QPushButton, QLabel, QMessageBox)
 from PyQt6.QtCore import Qt, pyqtSignal
 
-class CameraPanel(QDialog):
+class CamPanel(QDialog):
     """
     Popup dialog for pyrotechnic charge control.
     Sends RF commands over serial to fire parachute deployment charges.
@@ -44,11 +44,11 @@ class CameraPanel(QDialog):
         button_layout.addWidget(drogue_label, 0, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
         
         self.drogue_p_btn = self.create_pyro_button("Camera 1 ON", "#007bff")
-        self.drogue_p_btn.clicked.connect(lambda: self.send_command("CAM1ON", 1))
+        self.drogue_p_btn.clicked.connect(lambda: self.send_command("CAM1ON"), 1)
         button_layout.addWidget(self.drogue_p_btn, 1, 0)
         
         self.drogue_s_btn = self.create_pyro_button("Camera 1 OFF", "#007bff")
-        self.drogue_s_btn.clicked.connect(lambda: self.send_command("CAM1OFF", 1))
+        self.drogue_s_btn.clicked.connect(lambda: self.send_command("CAM1OFF"), 1)
         button_layout.addWidget(self.drogue_s_btn, 1, 1)
         
         # Main charges (Row 2)
@@ -64,11 +64,11 @@ class CameraPanel(QDialog):
         button_layout.addWidget(main_label, 2, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
         
         self.main_p_btn = self.create_pyro_button("Camera 2 ON", "#ff36e4")
-        self.main_p_btn.clicked.connect(lambda: self.send_command("CAM2ON", 2))
+        self.main_p_btn.clicked.connect(lambda: self.send_command("CAM2ON"), 2)
         button_layout.addWidget(self.main_p_btn, 3, 0)
         
         self.main_s_btn = self.create_pyro_button("Camera 2 OFF", "#ff36e4")
-        self.main_s_btn.clicked.connect(lambda: self.send_command("CAM2OFF", 2))
+        self.main_s_btn.clicked.connect(lambda: self.send_command("CAM2OFF"), 2)
         button_layout.addWidget(self.main_s_btn, 3, 1)
         
         layout.addLayout(button_layout)
