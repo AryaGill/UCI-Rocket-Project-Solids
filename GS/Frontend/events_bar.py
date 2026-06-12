@@ -1,7 +1,7 @@
 import numpy as np
 from PyQt6 import QtWidgets, QtCore
 
-from motor import detect_burn_start, detect_burn_end
+from Frontend.motor import detect_burn_start, detect_burn_end
 
 LAND_ALT_WINDOW = 10.0
 LAND_CONFIRM    = 20

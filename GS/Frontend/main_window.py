@@ -440,7 +440,7 @@ class GroundStationWindow(QMainWindow):
             layout.addWidget(self.velocity_graph,       2, 2)
             layout.addWidget(self.quaternion_graph,     3, 0)
             layout.addWidget(self.ap_graph,             3, 1)
-            layout.addWidget(self.rocket_view,          4, 1)
+            layout.addWidget(self.rocket_view,          3, 2)
 
             for col in range(3):
                 layout.setColumnStretch(col, 1)
@@ -713,6 +713,7 @@ class GroundStationWindow(QMainWindow):
                     data['Time'], data['Quaternion_W'], data['Quaternion_X'],
                     data['Quaternion_Y'], data['Quaternion_Z'],
                     max_points=self.max_points)
+                self.rocket_view.set_quaternion(data['Quaternion_W'], data['Quaternion_X'], data['Quaternion_Y'], data['Quaternion_Z'],)
 
                 
         if hasattr(self, 'ap_graph'):
@@ -861,13 +862,31 @@ class GroundStationWindow(QMainWindow):
         rows = []
         try:
             with open(path, "r", newline="", encoding="utf-8", errors="ignore") as f:
-                reader = csv.DictReader(f)
-                for r in reader:
-                    r = {k.lower(): v for k, v in r.items()}
-                    t_ms = to_float(r.get("time"))
-                    if t_ms is None:
-                        continue
-                    rows.append(r)
+                raw_lines = f.readlines()
+
+            # Find the real header line (first line whose first token is a known column name
+            # or is purely alphabetic/underscore, not "FLIGHT BEGIN" etc.)
+            header_idx = 0
+            for i, line in enumerate(raw_lines):
+                first_token = line.strip().split(",")[0].strip().lower()
+                if first_token == "time":
+                    header_idx = i
+                    break
+
+            import io
+            csv_text = "".join(raw_lines[header_idx:])
+            reader = csv.DictReader(io.StringIO(csv_text))
+
+            for r in reader:
+                # Normalize keys to lowercase, strip whitespace
+                r = {k.strip().lower(): v.strip() for k, v in r.items() if k}
+
+                # Skip non-data rows (e.g. "Entering state: DISARMED")
+                t_ms = to_float(r.get("time"))
+                if t_ms is None:
+                    continue
+
+                rows.append(r)
 
             if not rows:
                 self.update_status("CSV is empty / no valid rows")
@@ -884,6 +903,7 @@ class GroundStationWindow(QMainWindow):
         except Exception as e:
             self.update_status(f"CSV load error: {e}")
 
+
     def _csv_step(self):
         if self.csv_idx >= len(self.csv_rows):
             self.update_status("CSV playback finished")
@@ -897,6 +917,14 @@ class GroundStationWindow(QMainWindow):
             except Exception:
                 return None
 
+        def get(*keys):
+            """Try multiple column name aliases, return first match as float."""
+            for k in keys:
+                v = to_float(r.get(k))
+                if v is not None:
+                    return v
+            return None
+
         t_ms = to_float(r.get("time"))
         if t_ms is None:
             self.csv_idx += 1
@@ -906,24 +934,46 @@ class GroundStationWindow(QMainWindow):
         t_sec = (t_ms - self.csv_t0_ms) / 1000.0
 
         data = {
-            "Time":          t_sec,
-            "Alt":           to_float(r.get("alt")),
-            "Filtered_Alt":  to_float(r.get("filtered_alt")),
-            "Gyro_X":        to_float(r.get("gyro_x")),
-            "Gyro_Y":        to_float(r.get("gyro_y")),
-            "Gyro_Z":        to_float(r.get("gyro_z")),
-            "Accel_X1":      to_float(r.get("accel_x1")),
-            "Accel_Y1":      to_float(r.get("accel_y1")),
-            "Accel_Z1":      to_float(r.get("accel_z1")),
-            "Accel_world_x": to_float(r.get("accel_world_x")),
-            "Accel_world_y": to_float(r.get("accel_world_y")),
-            "Accel_world_z": to_float(r.get("accel_world_z")),
-            "mag_r":         to_float(r.get("mag_r")),
-            "mag_p":         to_float(r.get("mag_p")),
-            "mag_y":         to_float(r.get("mag_y")),
-            "Temp":          to_float(r.get("temp")),
-            "Pressure":      to_float(r.get("pressure")),
-            "flight_state":  to_float(r.get("flight_state")),
+            "Time":           t_sec,
+            # Altitude: new format uses "altitude" and "alt_fused", old uses "alt" / "filtered_alt"
+            "Alt":            get("altitude", "alt"),
+            "Filtered_Alt":   get("alt_fused", "filtered_alt"),
+            # Gyro: new format uses "bmx_gyro_r/p/y", old uses "gyro_x/y/z"
+            "Gyro_X":         get("bmx_gyro_r", "gyro_x"),
+            "Gyro_Y":         get("bmx_gyro_p", "gyro_y"),
+            "Gyro_Z":         get("bmx_gyro_y", "gyro_z"),
+            # Accel body: new format uses "bmx_accel_r/p/y", old uses "accel_x1/y1/z1"
+            "Accel_X1":       get("bmx_accel_r", "accel_x1"),
+            "Accel_Y1":       get("bmx_accel_p", "accel_y1"),
+            "Accel_Z1":       get("bmx_accel_y", "accel_z1"),
+            # World accel: same name in both formats
+            "Accel_world_x":  get("accel_world_x"),
+            "Accel_world_y":  get("accel_world_y"),
+            "Accel_world_z":  get("accel_world_z"),
+            # Magnetometer: same in both
+            "mag_r":          get("mag_r"),
+            "mag_p":          get("mag_p"),
+            "mag_y":          get("mag_y"),
+            # Temperature/pressure
+            "Temp":           get("temperature", "temp"),
+            "Pressure":       get("pressure"),
+            # Flight state: new uses "state", old uses "flight_state"
+            "flight_state":   get("state", "flight_state"),
+            # Quaternion: new uses "q0/q1/q2/q3", old uses "quaternion_w/x/y/z"
+            "Quaternion_W":   get("q0", "quaternion_w"),
+            "Quaternion_X":   get("q1", "quaternion_x"),
+            "Quaternion_Y":   get("q2", "quaternion_y"),
+            "Quaternion_Z":   get("q3", "quaternion_z"),
+            # Velocity: new uses "velocity_world_x/y/z", old uses "velocity_x/y/z"
+            "velocity_x":     get("velocity_world_x", "velocity_x"),
+            "velocity_y":     get("velocity_world_y", "velocity_y"),
+            "velocity_z":     get("velocity_world_z", "velocity_z"),
+            # Predicted apogee: new uses "predicted_apogee", old uses "pred_apo"
+            "pred_apo":       get("predicted_apogee", "pred_apo"),
+            # Orientation angles: same in both
+            "roll":           get("roll"),
+            "pitch":          get("pitch"),
+            "yaw":            get("yaw"),
         }
 
         self.handle_new_data(data)

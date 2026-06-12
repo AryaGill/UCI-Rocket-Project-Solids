@@ -5,8 +5,8 @@ from PyQt6 import QtWidgets, QtCore, QtGui
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 
-from motor import derive_thrust, compute_motor_stats
-from events_bar import FlightEventsBar, compute_flight_events
+from Frontend.motor import derive_thrust, compute_motor_stats
+from Frontend.events_bar import FlightEventsBar, compute_flight_events
 
 QtWidgets.QApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
 
