@@ -57,6 +57,12 @@ void handle_rf_command(char *cmd, FlightState_t *flight_state, Telemetry_t *tele
 		turn_camera_off(0);
 	} else if (strcmp(cmd, "CAM2OFF") == 0){
 		turn_camera_off(1);
+	} else if (strcmp(cmd, "ON") == 0){
+			turn_camera_on(0);
+			turn_camera_on(1);
+	} else if (strcmp(cmd, "OFF") == 0){
+			turn_camera_off(0);
+			turn_camera_off(1);
 
 	//Arms Rocket after it is on the rail-> USE BEFORE ALL LAUNCHES
 	} else if (strcmp(cmd, "ARM") == 0){
