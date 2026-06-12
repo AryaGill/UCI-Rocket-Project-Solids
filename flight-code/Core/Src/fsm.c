@@ -102,7 +102,12 @@ void init_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 	// Remove Reset Flags
 	RCC->RSR |= RCC_RSR_RMVF;
 
-	set_flight_state(DISARMED, flight_state, telemetry);
+	if (REMOTE_ARM_ACTIVE){
+		set_flight_state(DISARMED, flight_state, telemetry);
+	}
+	else {
+		set_flight_state(LAUNCH_PAD, flight_state, telemetry);
+	}
 }
 
 /**
@@ -141,8 +146,8 @@ void update_flight_state(FlightState_t *flight_state, Telemetry_t *telemetry) {
 				if (HAL_GetTick() - launch_accel_detected_time > RAIL_DELAY_TIME + LAUNCH_EVAL_PERIOD_TIME){
 					// Enough time passed without negative acceleration. Launch detected
 					set_flight_state(MOTOR_BURN, flight_state, telemetry);
-					write_sd(&data_file, "launch buffer dump");
-					launch_buffer_flush(&launch_buffer);
+//					write_sd(&data_file, "launch buffer dump");
+//					launch_buffer_flush(&launch_buffer);
 					state_start_time = HAL_GetTick();
 				}
 				else if (telemetry->bmx_accel_r < 9.81){ // 0

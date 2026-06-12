@@ -5,10 +5,10 @@
 ../Core/Src/sd_card.c:39:9:open_file	24	static
 ../Core/Src/sd_card.c:65:9:write_sd	40	static
 ../Core/Src/sd_card.c:95:9:flush_file	16	static
-../Core/Src/sd_card.c:123:9:write_sd_state	4208	static
-../Core/Src/sd_card.c:169:6:strip_newline	24	static
-../Core/Src/sd_card.c:179:9:read_sd_state	4200	static
-../Core/Src/sd_card.c:224:9:sd_file_exists	304	static
-../Core/Src/sd_card.c:241:9:sd_delete_file	24	static
-../Core/Src/sd_card.c:248:9:write_mag	4496	static
-../Core/Src/sd_card.c:353:9:sd_remove_file	24	static
+../Core/Src/sd_card.c:103:9:write_sd_state	4208	static
+../Core/Src/sd_card.c:149:6:strip_newline	24	static
+../Core/Src/sd_card.c:159:9:read_sd_state	4200	static
+../Core/Src/sd_card.c:204:9:sd_file_exists	304	static
+../Core/Src/sd_card.c:221:9:sd_delete_file	24	static
+../Core/Src/sd_card.c:228:9:write_mag	4496	static
+../Core/Src/sd_card.c:271:9:sd_remove_file	24	static

@@ -276,7 +276,7 @@ int main(void)
 
 	// Get Inital state string
 	init_data_file(&hspi1);
-	launch_buffer_init(&launch_buffer);
+//	launch_buffer_init(&launch_buffer);
 
 	// Read sensors a bunch to ensure correct initial values
 	for(int i = 0; i < 20; ++i){
@@ -322,7 +322,7 @@ int main(void)
 		update_flight_state(&flight_state, &telemetry);
 
 		//add to launch_buffer
-		launch_buffer_add(&launch_buffer, flight_state, &telemetry);
+//		launch_buffer_add(&launch_buffer, flight_state, &telemetry);
 
 		// Control Airbrakes
 		set_optimal_deployment(flight_state, &telemetry);

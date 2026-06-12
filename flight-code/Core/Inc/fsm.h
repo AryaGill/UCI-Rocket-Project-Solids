@@ -8,11 +8,11 @@
 #define MAIN_DEPLOY_MIN_ALT 50 // m
 #define DROGUE_DEPLOY_MIN_ALT 50 // m
 // Leilani rocket
-#define MOTOR_BURN_TIME 2800 // ms
+//#define MOTOR_BURN_TIME 2800 // ms
 // Night Fury
 // #define MOTOR_BURN_TIME 5000 // ms
 // Bright Fury
-// #define MOTOR_BURN_TIME 6000` // ms
+ #define MOTOR_BURN_TIME 6000 // ms
 
 #define POWER_RESET_MIN_ALT_CHANGE 10
 
@@ -22,7 +22,9 @@
 // Liftoff detection constants
 #define LAUNCH_ACCEL_THRESHOLD 40
 #define RAIL_DELAY_TIME 250
-#define LAUNCH_EVAL_PERIOD_TIME 250// TODO: set back to 250
+#define LAUNCH_EVAL_PERIOD_TIME 250
+
+#define REMOTE_ARM_ACTIVE 0 // 1 -> need arm command, 0 -> no need for arm command
 
 #define STATE_FILE "flight_state.csv"
 #define MIN_RESET_ALT 50 // m

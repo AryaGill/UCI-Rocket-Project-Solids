@@ -1,4 +1,4 @@
-../Core/Src/fsm.c:57:6:set_flight_state	1
-../Core/Src/fsm.c:69:9:sensors_indicate_flight	3
-../Core/Src/fsm.c:83:6:init_flight_state	7
-../Core/Src/fsm.c:123:6:update_flight_state	36
+../Core/Src/fsm.c:30:6:set_flight_state	1
+../Core/Src/fsm.c:48:9:sensors_indicate_flight	3
+../Core/Src/fsm.c:70:6:init_flight_state	7
+../Core/Src/fsm.c:121:6:update_flight_state	36
