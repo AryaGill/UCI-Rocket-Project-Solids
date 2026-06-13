@@ -97,9 +97,13 @@ class GroundStationWindow(QMainWindow):
         menubar = self.menuBar()
         system_menu = menubar.addMenu("System")
 
+        '''
+        
         hard_reset_action = QAction("Hard Reset", self)
         hard_reset_action.triggered.connect(self.hard_reset)
         system_menu.addAction(hard_reset_action)
+
+        '''
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -286,9 +290,6 @@ class GroundStationWindow(QMainWindow):
         self.clearSD_btn = QPushButton("Clear SD")
         self.clearSD_btn.clicked.connect(self.send_clearSD)
         control_layout.addWidget(self.clearSD_btn)
-
-        self.resetState_btn = QPushButton("Reset FS")
-        control_layout.addWidget(self.resetState_btn)
         
         main_layout.addLayout(control_layout)
 
@@ -331,6 +332,9 @@ class GroundStationWindow(QMainWindow):
         self.statusBar().showMessage("Ready")
         self._tts_worker.say("Ground station online")
 
+    '''
+    Doesn't work
+
     def hard_reset(self):
         reply = QMessageBox.warning(
             self, "Hard Reset",
@@ -370,6 +374,7 @@ class GroundStationWindow(QMainWindow):
             return
 
         QTimer.singleShot(500, QCoreApplication.quit)
+    '''
 
     def _resolve_entry_script(self) -> str:
         try:
