@@ -1,3 +1,7 @@
+'''
+This is the main setup for our GroundStation. All front end UI is handled here.
+'''
+
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox,
                              QGridLayout, QPushButton, QLabel, QSlider, QLineEdit,
                              QScrollArea,)
@@ -15,6 +19,7 @@ import queue
 
 import queue
 
+#Text to speech state changes, startup, and altitude
 class TTSWorker(QThread):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -47,6 +52,7 @@ class TTSWorker(QThread):
             except Exception as e:
                 print(f"[TTS] Error: {e}")
 
+#Main application
 class GroundStationWindow(QMainWindow):
     def __init__(self, port=None, parent=None):
         super().__init__(parent)
@@ -92,6 +98,7 @@ class GroundStationWindow(QMainWindow):
 
         self._last_announced_m = 0
     
+    #Add UI widgets to the GS window
     def setup_ui(self):
         menubar = self.menuBar()
         system_menu = menubar.addMenu("System")
@@ -309,70 +316,6 @@ class GroundStationWindow(QMainWindow):
         self.statusBar().showMessage("Ready")
         self._tts_worker.say("Ground station online")
 
-    def hard_reset(self):
-        reply = QMessageBox.warning(
-            self, "Hard Reset",
-            "This will completely restart the Ground Station.\n\n"
-            "All current data and connections will be lost.\n\nContinue?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        if reply != QMessageBox.StandardButton.Yes:
-            return
-
-        if self.streamer:
-            self.streamer.stop()
-            self.streamer.wait(2000)
-
-        script_path = self._resolve_entry_script()
-        if not script_path:
-            QMessageBox.critical(self, "Hard Reset Failed",
-                "Could not determine the entry script path.\n\n"
-                "Make sure the app is launched as:\n  python main.py")
-            return
-
-        cmd = [sys.executable, script_path]
-        if self.selected_port:
-            cmd += ["--port", self.selected_port]
-
-        try:
-            kwargs = {"cwd": os.path.dirname(script_path)}
-            if sys.platform == "win32":
-                kwargs["creationflags"] = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-            else:
-                kwargs["start_new_session"] = True
-
-            subprocess.Popen(cmd, **kwargs)
-        except Exception as e:
-            QMessageBox.critical(self, "Hard Reset Failed", f"Could not relaunch:\n{e}")
-            return
-
-        QTimer.singleShot(500, QCoreApplication.quit)
-
-    def _resolve_entry_script(self) -> str:
-        try:
-            import __main__
-            main_file = getattr(__main__, "__file__", None)
-            if main_file:
-                path = os.path.abspath(main_file)
-                if os.path.isfile(path):
-                    return path
-        except Exception:
-            pass
-
-        argv = sys.argv[:]
-        if argv:
-            candidate = os.path.abspath(argv[0])
-            if os.path.isfile(candidate):
-                return candidate
-
-        for i in range(1, len(argv) + 1):
-            candidate = os.path.abspath(" ".join(argv[:i]))
-            if os.path.isfile(candidate):
-                return candidate
-
-        return ""
-
     def create_graphs(self, layout):
         try:
             from Frontend.altitude_graph import AltitudeGraph
@@ -442,6 +385,7 @@ class GroundStationWindow(QMainWindow):
             layout.addWidget(QLabel("Angular Velocity - Import Failed"), 1, 2)
             layout.addWidget(QLabel("Mag Graph - Import Failed"), 2, 0)
     
+    #Pyro button UI panel
     def open_pyro_panel(self):
         if self.pyro_panel is None:
             from Frontend.pyro_panel import PyroPanel
@@ -451,6 +395,7 @@ class GroundStationWindow(QMainWindow):
         self.pyro_panel.raise_()
         self.pyro_panel.activateWindow()
     
+    #Camera UI Panel
     def open_camera_panel(self):
         if self.camera_panel is None:
             from Frontend.camera_panel import CameraPanel
