@@ -62,7 +62,6 @@ class GroundStationWindow(QMainWindow):
         self.camera_panel = None
         self.max_table = None
         self.ematch_panel = None
-        #self.airbrakes_panel = None
         self.camera_is_on = False
         self.camera_pending = None
         self.max_points = 100
@@ -240,24 +239,6 @@ class GroundStationWindow(QMainWindow):
         """)
         self.gyrocal_btn.clicked.connect(self.send_gyrocal)
         control_layout.addWidget(self.gyrocal_btn)
-
-        '''
-        self.servo_btn = QPushButton("⚙ Airbrakes Test")
-        self.servo_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #a855f7;
-                color: #ffffff;
-                border: none;
-                padding: 5px 15px;
-                font-weight: bold;
-                border-radius: 3px;
-            }
-            QPushButton:hover { background-color: #bf7fff; }
-            QPushButton:pressed { background-color: #8b3dd4; }
-        """)
-        self.servo_btn.clicked.connect(self.test_servo_sequence)
-        control_layout.addWidget(self.servo_btn)
-        '''
         
         self.clear_btn = QPushButton("Clear All")
         self.clear_btn.setStyleSheet("""
@@ -294,15 +275,12 @@ class GroundStationWindow(QMainWindow):
 
         try:
             from Frontend.ematch_panel import EMatchPanel
-            #from Frontend.airbrakes_panel import AirbrakesPanel
 
             self.ematch_panel = EMatchPanel()
-            #self.airbrakes_panel = AirbrakesPanel()
             top_row = QHBoxLayout()
             top_row.setContentsMargins(0, 0, 0, 0)
             top_row.setSpacing(12)
 
-            #top_row.addWidget(self.airbrakes_panel)
             top_row.addStretch()
             top_row.addWidget(self.ematch_panel)
 
@@ -406,7 +384,6 @@ class GroundStationWindow(QMainWindow):
             from Frontend.rpy_graph import RPYGraph
             from Frontend.velocity_graph import VelocityGraph
             from Frontend.quaternion_graph import QuaternionGraph
-            from Frontend.ab_deployment_graph import ABGraph
             from Frontend.apogee_graph import APGraph
 
             self.altitude_graph = AltitudeGraph()
@@ -506,28 +483,6 @@ class GroundStationWindow(QMainWindow):
             QMessageBox.warning(self, "Connection Error",
                                 "Cannot send command: Serial connection is not active")
             
-    def test_servo_sequence(self):
-        """Send SERVO SEQUENCE command with confirmation dialog."""
-        from PyQt6.QtWidgets import QMessageBox
-        reply = QMessageBox.question(
-            self, "Airbrakes Servo Test",
-            "Send SERVO SEQUENCE command?\n\n"
-            "The airbrakes servo will run through its full test sequence.\n"
-            "Ensure the airbrakes are clear of obstructions before continuing.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        if reply != QMessageBox.StandardButton.Yes:
-            return
-
-        if self.streamer and self.streamer.isRunning():
-            self.streamer.write_command("SERVO SEQUENCE")
-            self.update_status("⚙ Airbrakes servo sequence triggered")
-        else:
-            self.update_status("Error: No serial connection active")
-            QMessageBox.warning(self, "Connection Error",
-                                "Cannot send command: Serial connection is not active")
-    
     def send_gyrocal(self):
         """Send GYROCAL command to calibrate the gyroscope."""
         from PyQt6.QtWidgets import QMessageBox
@@ -616,9 +571,6 @@ class GroundStationWindow(QMainWindow):
 
         if self.ematch_panel is not None:
             self.ematch_panel.update_data(data)
-
-        #if self.airbrakes_panel is not None:
-        #    self.airbrakes_panel.update_data(data)
 
         if hasattr(self, 'flight_state_display') and data.get('flight_state') is not None:
             new_state = data.get('flight_state')

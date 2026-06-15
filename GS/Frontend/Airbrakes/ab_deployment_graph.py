@@ -1,3 +1,5 @@
+#Deprecated, airbrakes no longer in use
+
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure

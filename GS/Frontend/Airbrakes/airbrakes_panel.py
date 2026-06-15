@@ -1,3 +1,5 @@
+#Deprecated, airbrakes no longer in use
+
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt
