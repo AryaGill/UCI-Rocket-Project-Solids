@@ -1,3 +1,7 @@
+'''
+This is the main setup for our GroundStation. All front end UI is handled here.
+'''
+
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox,
                              QGridLayout, QPushButton, QLabel, QSlider, QLineEdit,
                              QScrollArea,)
@@ -15,6 +19,7 @@ import queue
 
 import queue
 
+#Text to speech state changes, startup, and altitude
 class TTSWorker(QThread):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -47,6 +52,7 @@ class TTSWorker(QThread):
             except Exception as e:
                 print(f"[TTS] Error: {e}")
 
+#Main application
 class GroundStationWindow(QMainWindow):
     def __init__(self, port=None, parent=None):
         super().__init__(parent)
@@ -62,7 +68,7 @@ class GroundStationWindow(QMainWindow):
         self.camera_panel = None
         self.max_table = None
         self.ematch_panel = None
-        #self.airbrakes_panel = None
+        self.airbrakes_panel = None
         self.camera_is_on = False
         self.camera_pending = None
         self.max_points = 100
@@ -93,6 +99,7 @@ class GroundStationWindow(QMainWindow):
 
         self._last_announced_m = 0
     
+    #Add UI widgets to the GS window
     def setup_ui(self):
         menubar = self.menuBar()
         system_menu = menubar.addMenu("System")
@@ -244,24 +251,6 @@ class GroundStationWindow(QMainWindow):
         """)
         self.gyrocal_btn.clicked.connect(self.send_gyrocal)
         control_layout.addWidget(self.gyrocal_btn)
-
-        '''
-        self.servo_btn = QPushButton("⚙ Airbrakes Test")
-        self.servo_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #a855f7;
-                color: #ffffff;
-                border: none;
-                padding: 5px 15px;
-                font-weight: bold;
-                border-radius: 3px;
-            }
-            QPushButton:hover { background-color: #bf7fff; }
-            QPushButton:pressed { background-color: #8b3dd4; }
-        """)
-        self.servo_btn.clicked.connect(self.test_servo_sequence)
-        control_layout.addWidget(self.servo_btn)
-        '''
         
         self.clear_btn = QPushButton("Clear All")
         self.clear_btn.setStyleSheet("""
@@ -332,74 +321,6 @@ class GroundStationWindow(QMainWindow):
         self.statusBar().showMessage("Ready")
         self._tts_worker.say("Ground station online")
 
-    '''
-    Doesn't work
-
-    def hard_reset(self):
-        reply = QMessageBox.warning(
-            self, "Hard Reset",
-            "This will completely restart the Ground Station.\n\n"
-            "All current data and connections will be lost.\n\nContinue?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        if reply != QMessageBox.StandardButton.Yes:
-            return
-
-        if self.streamer:
-            self.streamer.stop()
-            self.streamer.wait(2000)
-
-        script_path = self._resolve_entry_script()
-        if not script_path:
-            QMessageBox.critical(self, "Hard Reset Failed",
-                "Could not determine the entry script path.\n\n"
-                "Make sure the app is launched as:\n  python main.py")
-            return
-
-        cmd = [sys.executable, script_path]
-        if self.selected_port:
-            cmd += ["--port", self.selected_port]
-
-        try:
-            kwargs = {"cwd": os.path.dirname(script_path)}
-            if sys.platform == "win32":
-                kwargs["creationflags"] = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-            else:
-                kwargs["start_new_session"] = True
-
-            subprocess.Popen(cmd, **kwargs)
-        except Exception as e:
-            QMessageBox.critical(self, "Hard Reset Failed", f"Could not relaunch:\n{e}")
-            return
-
-        QTimer.singleShot(500, QCoreApplication.quit)
-    '''
-
-    def _resolve_entry_script(self) -> str:
-        try:
-            import __main__
-            main_file = getattr(__main__, "__file__", None)
-            if main_file:
-                path = os.path.abspath(main_file)
-                if os.path.isfile(path):
-                    return path
-        except Exception:
-            pass
-
-        argv = sys.argv[:]
-        if argv:
-            candidate = os.path.abspath(argv[0])
-            if os.path.isfile(candidate):
-                return candidate
-
-        for i in range(1, len(argv) + 1):
-            candidate = os.path.abspath(" ".join(argv[:i]))
-            if os.path.isfile(candidate):
-                return candidate
-
-        return ""
-
     def create_graphs(self, layout):
         try:
             from Frontend.altitude_graph import AltitudeGraph
@@ -411,7 +332,6 @@ class GroundStationWindow(QMainWindow):
             from Frontend.rpy_graph import RPYGraph
             from Frontend.velocity_graph import VelocityGraph
             from Frontend.quaternion_graph import QuaternionGraph
-            from Frontend.ab_deployment_graph import ABGraph
             from Frontend.apogee_graph import APGraph
 
             self.altitude_graph = AltitudeGraph()
@@ -470,6 +390,7 @@ class GroundStationWindow(QMainWindow):
             layout.addWidget(QLabel("Angular Velocity - Import Failed"), 1, 2)
             layout.addWidget(QLabel("Mag Graph - Import Failed"), 2, 0)
     
+    #Pyro button UI panel
     def open_pyro_panel(self):
         if self.pyro_panel is None:
             from Frontend.pyro_panel import PyroPanel
@@ -479,6 +400,7 @@ class GroundStationWindow(QMainWindow):
         self.pyro_panel.raise_()
         self.pyro_panel.activateWindow()
     
+    #Camera UI Panel
     def open_camera_panel(self):
         if self.camera_panel is None:
             from Frontend.camera_panel import CameraPanel
@@ -511,28 +433,6 @@ class GroundStationWindow(QMainWindow):
             QMessageBox.warning(self, "Connection Error",
                                 "Cannot send command: Serial connection is not active")
             
-    def test_servo_sequence(self):
-        """Send SERVO SEQUENCE command with confirmation dialog."""
-        from PyQt6.QtWidgets import QMessageBox
-        reply = QMessageBox.question(
-            self, "Airbrakes Servo Test",
-            "Send SERVO SEQUENCE command?\n\n"
-            "The airbrakes servo will run through its full test sequence.\n"
-            "Ensure the airbrakes are clear of obstructions before continuing.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        if reply != QMessageBox.StandardButton.Yes:
-            return
-
-        if self.streamer and self.streamer.isRunning():
-            self.streamer.write_command("SERVO SEQUENCE")
-            self.update_status("⚙ Airbrakes servo sequence triggered")
-        else:
-            self.update_status("Error: No serial connection active")
-            QMessageBox.warning(self, "Connection Error",
-                                "Cannot send command: Serial connection is not active")
-    
     def send_gyrocal(self):
         """Send GYROCAL command to calibrate the gyroscope."""
         from PyQt6.QtWidgets import QMessageBox
@@ -621,9 +521,6 @@ class GroundStationWindow(QMainWindow):
 
         if self.ematch_panel is not None:
             self.ematch_panel.update_data(data)
-
-        #if self.airbrakes_panel is not None:
-        #    self.airbrakes_panel.update_data(data)
 
         if hasattr(self, 'flight_state_display') and data.get('flight_state') is not None:
             new_state = data.get('flight_state')
