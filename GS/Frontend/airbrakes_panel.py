@@ -14,7 +14,7 @@ class AirbrakesPanel(QWidget):
         root.setContentsMargins(6, 4, 0, 4)
         root.setSpacing(4)
 
-        title = QLabel("Airbrakes")
+        title = QLabel("Command Echo")
         title.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         title.setStyleSheet(
             "color: #b0b0b0; font-size: 10px; font-weight: bold;"

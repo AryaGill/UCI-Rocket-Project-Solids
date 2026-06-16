@@ -295,15 +295,15 @@ class GroundStationWindow(QMainWindow):
 
         try:
             from Frontend.ematch_panel import EMatchPanel
-            #from Frontend.airbrakes_panel import AirbrakesPanel
+            from Frontend.airbrakes_panel import AirbrakesPanel
 
             self.ematch_panel = EMatchPanel()
-            #self.airbrakes_panel = AirbrakesPanel()
+            self.airbrakes_panel = AirbrakesPanel()
             top_row = QHBoxLayout()
             top_row.setContentsMargins(0, 0, 0, 0)
             top_row.setSpacing(12)
 
-            #top_row.addWidget(self.airbrakes_panel)
+            top_row.addWidget(self.airbrakes_panel)
             top_row.addStretch()
             top_row.addWidget(self.ematch_panel)
 
