@@ -68,6 +68,7 @@ class GroundStationWindow(QMainWindow):
         self.camera_panel = None
         self.max_table = None
         self.ematch_panel = None
+        self.airbrakes_panel = None
         self.camera_is_on = False
         self.camera_pending = None
         self.max_points = 100
@@ -103,9 +104,9 @@ class GroundStationWindow(QMainWindow):
         menubar = self.menuBar()
         system_menu = menubar.addMenu("System")
 
-        hard_reset_action = QAction("Hard Reset", self)
+        '''hard_reset_action = QAction("Hard Reset", self)
         hard_reset_action.triggered.connect(self.hard_reset)
-        system_menu.addAction(hard_reset_action)
+        system_menu.addAction(hard_reset_action)'''
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -282,12 +283,15 @@ class GroundStationWindow(QMainWindow):
 
         try:
             from Frontend.ematch_panel import EMatchPanel
+            from Frontend.airbrakes_panel import AirbrakesPanel
 
             self.ematch_panel = EMatchPanel()
+            self.airbrakes_panel = AirbrakesPanel()
             top_row = QHBoxLayout()
             top_row.setContentsMargins(0, 0, 0, 0)
             top_row.setSpacing(12)
 
+            top_row.addWidget(self.airbrakes_panel)
             top_row.addStretch()
             top_row.addWidget(self.ematch_panel)
 
