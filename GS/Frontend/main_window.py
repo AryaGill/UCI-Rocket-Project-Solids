@@ -522,6 +522,9 @@ class GroundStationWindow(QMainWindow):
         if self.ematch_panel is not None:
             self.ematch_panel.update_data(data)
 
+        if self.airbrakes_panel is not None:
+            self.airbrakes_panel.update_data(data)
+
         if hasattr(self, 'flight_state_display') and data.get('flight_state') is not None:
             new_state = data.get('flight_state')
             self.flight_state_display.update_state(data.get('flight_state'))
