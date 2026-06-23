@@ -116,6 +116,9 @@ class MappingDialog(QtWidgets.QDialog):
         "qz":            ["quat_z", "q_z", "qz", "q3"],
         "accel_world_z": ["accel_world_z", "az_world", "a_world_z", "accel_z_world"],
         "altitude":      ["altitude", "alt", "altitude_m", "baro_alt", "height"],
+        "path_x":        ["path_x", "pos_x", "position_x", "x", "east", "easting", "longitude", "lon"],
+        "path_y":        ["path_y", "pos_y", "position_y", "y", "north", "northing", "latitude", "lat"],
+        "path_z":        ["path_z", "pos_z", "position_z", "z", "up", "altitude", "altitude_m", "height"],
     }
     LABELS = {
         "time":          "Time axis",
@@ -125,12 +128,15 @@ class MappingDialog(QtWidgets.QDialog):
         "qz":            "Quaternion Z",
         "accel_world_z": "Accel World Z (m/s^2)",
         "altitude":      "Altitude (m)",
+        "path_x":        "Path X / East (optional)",
+        "path_y":        "Path Y / North (optional)",
+        "path_z":        "Path Z / Up (optional)",
     }
     GROUPS = [
         ("General",    ["time"]),
         ("Quaternion", ["qw", "qx", "qy", "qz"]),
         ("Motor",      ["accel_world_z"]),
-        ("3D Flight",  ["altitude"]),
+        ("3D Flight",  ["altitude", "path_x", "path_y", "path_z"]),
     ]
 
     def __init__(self, headers, current_mapping, parent=None):
@@ -228,6 +234,65 @@ class RocketView(gl.GLViewWidget):
         self.info_label.adjustSize()
 
 
+class FlightPathView(gl.GLViewWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("RocketViewport")
+        self.setCameraPosition(distance=9, elevation=24, azimuth=45)
+        self.setBackgroundColor(QtGui.QColor(THEME["bg"]))
+
+        grid = gl.GLGridItem()
+        grid.setSize(8, 8)
+        grid.setSpacing(1, 1)
+        grid.setColor((52, 68, 92, 120))
+        self.addItem(grid)
+        self.addItem(gl.GLAxisItem(size=QtGui.QVector3D(1.2, 1.2, 2.0)))
+
+        self.path_line = gl.GLLinePlotItem(
+            pos=np.zeros((0, 3), dtype=np.float32),
+            color=(0.22, 0.74, 0.97, 1.0),
+            width=2.0,
+            antialias=True,
+            mode="line_strip",
+        )
+        self.addItem(self.path_line)
+        self.path_marker = gl.GLScatterPlotItem(
+            pos=np.zeros((0, 3), dtype=np.float32),
+            color=(0.96, 0.62, 0.04, 1.0),
+            size=10.0,
+            pxMode=True,
+        )
+        self.addItem(self.path_marker)
+
+        self.path_label = QtWidgets.QLabel("Path unavailable: map X/Y, Z, or altitude", self)
+        self.path_label.setStyleSheet(
+            "color:#91A0B5; background:rgba(16,23,36,220); "
+            "font-size:11px; padding:6px 10px; "
+            "border:1px solid rgba(52,68,92,170); border-radius:6px;"
+        )
+        self.path_label.move(10, 10)
+        self.path_label.adjustSize()
+
+    def set_path_status(self, text):
+        self.path_label.setText(text)
+        self.path_label.adjustSize()
+
+    def clear_path(self):
+        self.path_line.setData(pos=np.zeros((0, 3), dtype=np.float32))
+        self.path_marker.setData(pos=np.zeros((0, 3), dtype=np.float32))
+        self.set_path_status("Path unavailable: map X/Y, Z, or altitude")
+
+    def set_flight_path(self, points, idx):
+        if points is None or len(points) == 0:
+            self.clear_path()
+            return
+        idx = int(np.clip(idx, 0, len(points) - 1))
+        trail = np.asarray(points[:idx + 1], dtype=np.float32)
+        current = np.asarray(points[idx], dtype=np.float32)
+        self.path_line.setData(pos=trail)
+        self.path_marker.setData(pos=current.reshape(1, 3))
+
+
 class MotorPanel(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -297,6 +362,8 @@ class FlightReviewer(QtWidgets.QMainWindow):
         self._event_markers = []
         self._measure_times = []
         self._measure_markers = []
+        self._path_points = None
+        self._path_source = None
         self._build_ui()
         self._apply_dark_theme()
 
@@ -443,10 +510,16 @@ class FlightReviewer(QtWidgets.QMainWindow):
         right_panel = QtWidgets.QVBoxLayout(right_shell)
         right_panel.setContentsMargins(14, 14, 14, 14)
         right_panel.setSpacing(12)
-        right_panel.addLayout(self._section_title("3D Orientation", "Quaternion"))
+        right_panel.addLayout(self._section_title("3D Views", "Replay"))
+        self.visual_tabs = QtWidgets.QTabWidget()
+        self.visual_tabs.setObjectName("VisualTabs")
         self.rocket_view = RocketView()
-        self.rocket_view.setMinimumSize(320, 340)
-        right_panel.addWidget(self.rocket_view, stretch=3)
+        self.flight_path_view = FlightPathView()
+        self.rocket_view.setMinimumSize(320, 320)
+        self.flight_path_view.setMinimumSize(320, 320)
+        self.visual_tabs.addTab(self.rocket_view, "Orientation")
+        self.visual_tabs.addTab(self.flight_path_view, "Flight Path")
+        right_panel.addWidget(self.visual_tabs, stretch=3)
         self.motor_panel = MotorPanel()
         self.motor_panel.setMinimumHeight(230)
         right_panel.addWidget(self.motor_panel, stretch=2)
@@ -483,6 +556,29 @@ class FlightReviewer(QtWidgets.QMainWindow):
             QWidget#RocketViewport {{
                 border:1px solid {THEME["border"]};
                 border-radius:8px;
+            }}
+            QTabWidget#VisualTabs::pane {{
+                border:1px solid {THEME["border"]};
+                border-radius:8px;
+                top:-1px;
+            }}
+            QTabWidget#VisualTabs QTabBar::tab {{
+                background:{THEME["bg"]};
+                border:1px solid {THEME["border"]};
+                border-bottom:none;
+                border-top-left-radius:6px;
+                border-top-right-radius:6px;
+                color:{THEME["muted"]};
+                padding:7px 12px;
+                font-weight:650;
+            }}
+            QTabWidget#VisualTabs QTabBar::tab:selected {{
+                background:{THEME["panel_2"]};
+                color:{THEME["text"]};
+                border-color:{THEME["border_strong"]};
+            }}
+            QTabWidget#VisualTabs QTabBar::tab:hover {{
+                color:{THEME["primary"]};
             }}
             QLabel#SectionTitle {{
                 background:transparent;
@@ -663,9 +759,80 @@ class FlightReviewer(QtWidgets.QMainWindow):
         if time_col:
             self.plot_widget.setLabel("bottom", time_col)
         self._populate_list()
+        self._update_flight_path()
         self._rebuild_plots()
         self._update_motor_panel()
         self._update_events_bar()
+
+    def _normalize_path_points(self, x, y, z):
+        points = np.column_stack([x, y, z]).astype(float)
+        finite = np.all(np.isfinite(points), axis=1)
+        if not np.any(finite):
+            return None
+        cleaned = points.copy()
+        for axis in range(3):
+            values = cleaned[:, axis]
+            fill = np.nanmedian(values[finite])
+            values[~np.isfinite(values)] = fill
+            cleaned[:, axis] = values
+        mins = np.nanmin(cleaned[finite], axis=0)
+        maxs = np.nanmax(cleaned[finite], axis=0)
+        cleaned -= (mins + maxs) / 2.0
+        span = np.nanmax(maxs - mins)
+        if not np.isfinite(span) or span <= 0:
+            span = 1.0
+        return (cleaned / span * 4.2).astype(np.float32)
+
+    def _derived_path_from_attitude(self, altitude):
+        cols = [self.mapping.get(k) for k in ("qw", "qx", "qy", "qz")]
+        if not all(c and c in self.data for c in cols):
+            x = np.zeros_like(altitude, dtype=float)
+            y = np.zeros_like(altitude, dtype=float)
+            return x, y, "Altitude-only trail"
+
+        qw, qx, qy, qz = (self.data[c].astype(float) for c in cols)
+        forward_x = 2.0 * (qx * qz + qw * qy)
+        forward_y = 2.0 * (qy * qz - qw * qx)
+        dz = np.diff(altitude, prepend=altitude[0])
+        step = np.maximum(np.abs(dz), 0.05)
+        x = np.cumsum(forward_x * step)
+        y = np.cumsum(forward_y * step)
+        return x, y, "Derived trail from altitude + attitude"
+
+    def _update_flight_path(self):
+        x_col = self.mapping.get("path_x")
+        y_col = self.mapping.get("path_y")
+        z_col = self.mapping.get("path_z")
+        alt_col = self.mapping.get("altitude")
+
+        if x_col and y_col and x_col in self.data and y_col in self.data:
+            x = self.data[x_col].astype(float)
+            y = self.data[y_col].astype(float)
+            if z_col and z_col in self.data:
+                z = self.data[z_col].astype(float)
+                source = "Mapped X/Y/Z trail"
+            elif alt_col and alt_col in self.data:
+                z = self.data[alt_col].astype(float)
+                source = "Mapped X/Y + altitude trail"
+            else:
+                z = np.zeros_like(x, dtype=float)
+                source = "Mapped X/Y flat trail"
+            self._path_points = self._normalize_path_points(x, y, z)
+        else:
+            if not alt_col or alt_col not in self.data:
+                self._path_points = None
+                self._path_source = None
+                self.flight_path_view.clear_path()
+                return
+            altitude = self.data[alt_col].astype(float)
+            x, y, source = self._derived_path_from_attitude(altitude)
+            self._path_points = self._normalize_path_points(x, y, altitude)
+
+        self._path_source = source if self._path_points is not None else None
+        if self._path_points is None:
+            self.flight_path_view.clear_path()
+        else:
+            self.flight_path_view.set_path_status("%s: hover plot to replay path" % source)
 
     def _populate_list(self):
         time_col = self.mapping.get("time")
@@ -883,6 +1050,12 @@ class FlightReviewer(QtWidgets.QMainWindow):
             color = color_for_index(list_idx)
             parts.append('<span style="color:%s;">|%s: <b>%.4f</b></span>' % (color, ch, val))
         self.readout_label.setText("  ".join(parts))
+        if self._path_points is not None:
+            self.flight_path_view.set_flight_path(self._path_points, idx)
+            if self._path_source:
+                self.flight_path_view.set_path_status("%s: point %d / %d" % (
+                    self._path_source, idx + 1, len(self._path_points)
+                ))
         cols = [self.mapping.get(k) for k in ("qw", "qx", "qy", "qz")]
         if all(c and c in self.data for c in cols):
             self.rocket_view.set_quaternion(
