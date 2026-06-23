@@ -295,6 +295,8 @@ class FlightReviewer(QtWidgets.QMainWindow):
         self.mapping        = {}
         self._plot_refs     = []
         self._event_markers = []
+        self._measure_times = []
+        self._measure_markers = []
         self._build_ui()
         self._apply_dark_theme()
 
@@ -419,6 +421,18 @@ class FlightReviewer(QtWidgets.QMainWindow):
         self.readout_label.setFixedHeight(58)
         center.addWidget(self.readout_label)
 
+        measure_row = QtWidgets.QHBoxLayout()
+        measure_row.setSpacing(8)
+        self.measure_label = QtWidgets.QLabel("Click the plot twice to measure time difference.")
+        self.measure_label.setObjectName("StatusPill")
+        self.measure_label.setWordWrap(True)
+        measure_row.addWidget(self.measure_label, stretch=1)
+        clear_measure_btn = QtWidgets.QPushButton("Clear Measure")
+        clear_measure_btn.setFixedHeight(32)
+        clear_measure_btn.clicked.connect(self._clear_measurement)
+        measure_row.addWidget(clear_measure_btn)
+        center.addLayout(measure_row)
+
         self.events_bar = FlightEventsBar()
         self.events_bar.markers_toggled.connect(self._on_markers_toggled)
         center.addWidget(self.events_bar)
@@ -443,6 +457,7 @@ class FlightReviewer(QtWidgets.QMainWindow):
             pen=pg.mkPen(THEME["text"], width=1, style=QtCore.Qt.PenStyle.DashLine))
         self.plot_widget.addItem(self.vline, ignoreBounds=True)
         self.plot_widget.scene().sigMouseMoved.connect(self._on_mouse_moved)
+        self.plot_widget.scene().sigMouseClicked.connect(self._on_plot_clicked)
 
     def _apply_dark_theme(self):
         pg.setConfigOption("background", THEME["panel"])
@@ -721,6 +736,7 @@ class FlightReviewer(QtWidgets.QMainWindow):
         self.plot_widget.addItem(self.vline, ignoreBounds=True)
         self._plot_refs     = []
         self._event_markers = []
+        self._measure_markers = []
         time_col = self.mapping.get("time")
         if not time_col or time_col not in self.data:
             return
@@ -730,9 +746,77 @@ class FlightReviewer(QtWidgets.QMainWindow):
             self._plot_refs.append(self.plot_widget.plot(t, self.data[ch], pen=pen, name=ch))
         if self.events_bar.display_btn.isChecked():
             self._on_markers_toggled(True, self.events_bar._events)
+        self._redraw_measurement_markers()
 
     def _reset_zoom(self):
         self.plot_widget.autoRange()
+
+    def _format_time_delta(self, dt):
+        unit = self.mapping.get("time") or "time"
+        if "ms" in unit.lower():
+            return "%.3f ms  |  %.4f s" % (dt, dt / 1000.0)
+        return "%.4f %s" % (dt, unit)
+
+    def _clear_measurement(self):
+        self._measure_times.clear()
+        for marker in self._measure_markers:
+            self.plot_widget.removeItem(marker)
+        self._measure_markers.clear()
+        self.measure_label.setText("Click the plot twice to measure time difference.")
+
+    def _redraw_measurement_markers(self):
+        for marker in self._measure_markers:
+            self.plot_widget.removeItem(marker)
+        self._measure_markers.clear()
+        for idx, t_value in enumerate(self._measure_times):
+            label = "A" if idx == 0 else "B"
+            line = pg.InfiniteLine(
+                pos=t_value,
+                angle=90,
+                movable=False,
+                pen=pg.mkPen(THEME["accent"], width=2, style=QtCore.Qt.PenStyle.DotLine),
+                label=label,
+                labelOpts={
+                    "color": THEME["accent"],
+                    "position": 0.08,
+                    "anchors": [(0.5, 0), (0.5, 1)],
+                },
+            )
+            self.plot_widget.addItem(line)
+            self._measure_markers.append(line)
+
+    def _on_plot_clicked(self, event):
+        if event.button() != QtCore.Qt.MouseButton.LeftButton:
+            return
+        if not self.plot_widget.sceneBoundingRect().contains(event.scenePos()):
+            return
+        time_col = self.mapping.get("time")
+        if not time_col or time_col not in self.data:
+            self.measure_label.setText("Load data and map a time column before measuring.")
+            return
+
+        vb = self.plot_widget.getViewBox()
+        x = vb.mapSceneToView(event.scenePos()).x()
+        t = self.data[time_col]
+        idx = int(np.clip(np.searchsorted(t, x), 0, len(t) - 1))
+        clicked_t = float(t[idx])
+
+        if len(self._measure_times) >= 2:
+            self._measure_times.clear()
+        self._measure_times.append(clicked_t)
+        self._redraw_measurement_markers()
+
+        if len(self._measure_times) == 1:
+            self.measure_label.setText("A = %.4f. Click a second point for delta." % clicked_t)
+        else:
+            a, b = self._measure_times
+            dt = abs(b - a)
+            self.measure_label.setText(
+                "A = %.4f  |  B = %.4f  |  Δt = %s" % (
+                    a, b, self._format_time_delta(dt)
+                )
+            )
+        event.accept()
 
     def _update_motor_panel(self):
         time_col = self.mapping.get("time")
