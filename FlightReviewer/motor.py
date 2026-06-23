@@ -91,7 +91,8 @@ def compute_motor_stats(time_ms: np.ndarray, thrust: np.ndarray,
     t_burn        = time_s[i0:i1 + 1]
     f_burn        = thrust[i0:i1 + 1]
     burn_time     = float(t_burn[-1] - t_burn[0])
-    total_impulse = float(np.trapz(f_burn, t_burn))
+    integrate      = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
+    total_impulse = float(integrate(f_burn, t_burn))
     avg_thrust    = total_impulse / burn_time if burn_time > 0 else 0.0
     peak_thrust   = float(np.max(f_burn))
     designation   = classify_motor(total_impulse)

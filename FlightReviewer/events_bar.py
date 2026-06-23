@@ -52,22 +52,42 @@ def compute_flight_events(time_ms, accel_world_z=None, altitude=None):
 class FlightEventsBar(QtWidgets.QWidget):
     markers_toggled = QtCore.pyqtSignal(bool, dict)
 
-    _TILE_STYLE = "background:#181825; border:1px solid #45475a; border-radius:6px; padding:6px 14px;"
-    _VAL_STYLE  = "font-family:monospace; font-size:15px; font-weight:bold; color:{color};"
-    _LBL_STYLE  = "font-size:10px; color:#585b70;"
+    _TILE_STYLE = (
+        "background:#080C14; border:1px solid #263245; border-radius:7px; "
+        "padding:8px 14px;"
+    )
+    _VAL_STYLE  = (
+        "font-family:'Menlo','Monaco',monospace; font-size:16px; "
+        "font-weight:800; color:{color};"
+    )
+    _LBL_STYLE  = "font-size:10px; font-weight:650; color:#91A0B5;"
 
     _FIELDS = [
-        ("burn_time",   "Burn Time",    "#f39c12"),
-        ("max_alt",     "Max Altitude", "#2ecc71"),
-        ("flight_time", "Flight Time",  "#3498db"),
+        ("burn_time",   "Burn Time",    "#F59E0B"),
+        ("max_alt",     "Max Altitude", "#22C55E"),
+        ("flight_time", "Flight Time",  "#38BDF8"),
     ]
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setObjectName("Panel")
         self._events = {}
         outer = QtWidgets.QVBoxLayout(self)
-        outer.setContentsMargins(0, 4, 0, 0)
-        outer.setSpacing(4)
+        outer.setContentsMargins(12, 12, 12, 12)
+        outer.setSpacing(10)
+
+        header = QtWidgets.QHBoxLayout()
+        title = QtWidgets.QLabel("Flight Events")
+        title.setObjectName("SectionTitle")
+        header.addWidget(title)
+        header.addStretch()
+        self.display_btn = QtWidgets.QPushButton("Graph Markers")
+        self.display_btn.setCheckable(True)
+        self.display_btn.setFixedHeight(30)
+        self.display_btn.setFixedWidth(130)
+        self.display_btn.toggled.connect(self._on_toggle)
+        header.addWidget(self.display_btn)
+        outer.addLayout(header)
 
         tile_row = QtWidgets.QHBoxLayout()
         tile_row.setSpacing(8)
@@ -89,17 +109,7 @@ class FlightEventsBar(QtWidgets.QWidget):
             tile_row.addWidget(tile, stretch=1)
             self._tiles[key] = val_lbl
         outer.addLayout(tile_row)
-
-        btn_row = QtWidgets.QHBoxLayout()
-        btn_row.addStretch()
-        self.display_btn = QtWidgets.QPushButton("Display on Graph")
-        self.display_btn.setCheckable(True)
-        self.display_btn.setFixedHeight(26)
-        self.display_btn.setFixedWidth(140)
-        self.display_btn.toggled.connect(self._on_toggle)
-        btn_row.addWidget(self.display_btn)
-        outer.addLayout(btn_row)
-        self.setFixedHeight(96)
+        self.setFixedHeight(128)
 
     def _on_toggle(self, checked):
         self.markers_toggled.emit(checked, self._events)

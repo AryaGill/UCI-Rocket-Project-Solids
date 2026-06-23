@@ -16,10 +16,27 @@ fmt.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CoreProfile)
 fmt.setDepthBufferSize(24)
 QtGui.QSurfaceFormat.setDefaultFormat(fmt)
 
+THEME = {
+    "bg": "#080C14",
+    "panel": "#101724",
+    "panel_2": "#131D2B",
+    "panel_3": "#182235",
+    "border": "#263245",
+    "border_strong": "#34445C",
+    "text": "#E6EDF7",
+    "muted": "#91A0B5",
+    "subtle": "#5F6F86",
+    "primary": "#38BDF8",
+    "success": "#22C55E",
+    "warning": "#F59E0B",
+    "danger": "#EF4444",
+    "accent": "#A78BFA",
+}
+
 COLORS = [
-    "#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6",
-    "#1abc9c", "#e67e22", "#34495e", "#e91e63", "#00bcd4",
-    "#8bc34a", "#ff5722", "#607d8b", "#795548", "#ffeb3b",
+    "#38BDF8", "#22C55E", "#F59E0B", "#A78BFA", "#F43F5E",
+    "#14B8A6", "#EAB308", "#60A5FA", "#FB7185", "#34D399",
+    "#F97316", "#818CF8", "#2DD4BF", "#C084FC", "#FACC15",
 ]
 
 def color_for_index(i):
@@ -119,14 +136,18 @@ class MappingDialog(QtWidgets.QDialog):
     def __init__(self, headers, current_mapping, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Column Mapping")
-        self.setMinimumWidth(440)
+        self.setMinimumWidth(520)
         self.headers   = headers
         self.combos    = {}
         self.mass_spin = None
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setSpacing(12)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(14)
+        title = QtWidgets.QLabel("Column Mapping")
+        title.setObjectName("DialogTitle")
+        layout.addWidget(title)
         hint = QtWidgets.QLabel("Map CSV columns to program fields. Leave '-- none --' to skip.")
-        hint.setStyleSheet("color:#a6adc8; font-size:12px;")
+        hint.setObjectName("MutedText")
         layout.addWidget(hint)
         for group_name, fields in self.GROUPS:
             box  = QtWidgets.QGroupBox(group_name)
@@ -176,11 +197,13 @@ class MappingDialog(QtWidgets.QDialog):
 class RocketView(gl.GLViewWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setObjectName("RocketViewport")
         self.setCameraPosition(distance=5, elevation=20, azimuth=45)
+        self.setBackgroundColor(QtGui.QColor(THEME["bg"]))
         grid = gl.GLGridItem()
         grid.setSize(6, 6)
         grid.setSpacing(1, 1)
-        grid.setColor((60, 60, 80, 120))
+        grid.setColor((52, 68, 92, 120))
         self.addItem(grid)
         self.addItem(gl.GLAxisItem(size=QtGui.QVector3D(1.0, 1.0, 2.5)))
         verts, faces, face_colors = build_rocket_mesh()
@@ -189,10 +212,11 @@ class RocketView(gl.GLViewWidget):
         self.addItem(self.rocket)
         self.info_label = QtWidgets.QLabel("qw=1.000  qx=0.000  qy=0.000  qz=0.000", self)
         self.info_label.setStyleSheet(
-            "color:#cdd6f4; background:rgba(24,24,37,180); "
-            "font-family:monospace; font-size:11px; padding:4px 8px; border-radius:4px;"
+            "color:#E6EDF7; background:rgba(16,23,36,220); "
+            "font-family:'Menlo','Monaco',monospace; font-size:11px; "
+            "padding:6px 10px; border:1px solid rgba(56,189,248,80); border-radius:6px;"
         )
-        self.info_label.move(8, 8)
+        self.info_label.move(10, 10)
         self.info_label.adjustSize()
 
     def set_quaternion(self, w, x, y, z):
@@ -207,22 +231,23 @@ class RocketView(gl.GLViewWidget):
 class MotorPanel(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setObjectName("Panel")
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(6)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(10)
         title = QtWidgets.QLabel("Motor Classification")
-        title.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet("font-weight:bold; font-size:13px; color:#cdd6f4;")
+        title.setObjectName("SectionTitle")
         layout.addWidget(title)
         self.designation_label = QtWidgets.QLabel("--")
         self.designation_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.designation_label.setStyleSheet(
-            "font-size:42px; font-weight:bold; color:#f39c12; "
-            "background:#181825; border-radius:8px; padding:8px;"
+            "font-size:46px; font-weight:800; color:#F59E0B; "
+            "background:#080C14; border:1px solid #34445C; border-radius:8px; padding:12px;"
         )
         layout.addWidget(self.designation_label)
         grid = QtWidgets.QGridLayout()
-        grid.setSpacing(6)
+        grid.setHorizontalSpacing(10)
+        grid.setVerticalSpacing(8)
         self.stat_labels = {}
         for row, (key, label, unit) in enumerate([
             ("total_impulse", "Total Impulse", "N*s"),
@@ -231,14 +256,15 @@ class MotorPanel(QtWidgets.QWidget):
             ("peak_thrust",   "Peak Thrust",   "N"),
         ]):
             nl = QtWidgets.QLabel(label)
-            nl.setStyleSheet("color:#a6adc8; font-size:11px;")
+            nl.setObjectName("MetricLabel")
             vl = QtWidgets.QLabel("--")
             vl.setStyleSheet(
-                "color:#cdd6f4; font-family:monospace; font-size:12px; font-weight:bold;"
-                "background:#181825; border-radius:4px; padding:2px 6px;"
+                "color:#E6EDF7; font-family:'Menlo','Monaco',monospace; "
+                "font-size:12px; font-weight:700; background:#080C14; "
+                "border:1px solid #263245; border-radius:5px; padding:4px 8px;"
             )
             ul = QtWidgets.QLabel(unit)
-            ul.setStyleSheet("color:#585b70; font-size:11px;")
+            ul.setObjectName("UnitLabel")
             grid.addWidget(nl, row, 0)
             grid.addWidget(vl, row, 1)
             grid.addWidget(ul, row, 2)
@@ -263,7 +289,7 @@ class FlightReviewer(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Rocket Flight Reviewer")
-        self.resize(1700, 860)
+        self.resize(1760, 940)
         self.data           = {}
         self.headers        = []
         self.mapping        = {}
@@ -272,113 +298,306 @@ class FlightReviewer(QtWidgets.QMainWindow):
         self._build_ui()
         self._apply_dark_theme()
 
+    def _panel(self, name=None):
+        panel = QtWidgets.QWidget()
+        panel.setObjectName(name or "Panel")
+        return panel
+
+    def _section_title(self, text, detail=None):
+        row = QtWidgets.QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        title = QtWidgets.QLabel(text)
+        title.setObjectName("SectionTitle")
+        row.addWidget(title)
+        if detail:
+            row.addStretch()
+            detail_label = QtWidgets.QLabel(detail)
+            detail_label.setObjectName("SectionDetail")
+            row.addWidget(detail_label)
+        return row
+
     def _build_ui(self):
         central = QtWidgets.QWidget()
+        central.setObjectName("AppRoot")
         self.setCentralWidget(central)
         root = QtWidgets.QHBoxLayout(central)
-        root.setContentsMargins(8, 8, 8, 8)
-        root.setSpacing(8)
+        root.setContentsMargins(14, 14, 14, 14)
+        root.setSpacing(12)
 
         # Left
-        left = QtWidgets.QVBoxLayout()
-        left.setSpacing(6)
+        left_panel = self._panel()
+        left = QtWidgets.QVBoxLayout(left_panel)
+        left.setContentsMargins(14, 14, 14, 14)
+        left.setSpacing(12)
+        left.addLayout(self._section_title("Flight Data", "CSV"))
+        self.loaded_file_label = QtWidgets.QLabel("No file loaded")
+        self.loaded_file_label.setObjectName("StatusPill")
+        self.loaded_file_label.setToolTip("Current flight log")
+        self.loaded_file_label.setWordWrap(True)
+        left.addWidget(self.loaded_file_label)
+
         load_btn = QtWidgets.QPushButton("Load CSV")
-        load_btn.setFixedHeight(36)
+        load_btn.setObjectName("PrimaryButton")
+        load_btn.setFixedHeight(38)
         load_btn.clicked.connect(self._load_csv)
         left.addWidget(load_btn)
-        map_btn = QtWidgets.QPushButton("Column Mapping...")
-        map_btn.setFixedHeight(32)
+
+        map_btn = QtWidgets.QPushButton("Column Mapping")
+        map_btn.setFixedHeight(34)
         map_btn.clicked.connect(self._open_mapping)
         left.addWidget(map_btn)
+
+        left.addSpacing(2)
+        left.addLayout(self._section_title("Channels"))
         self.search_bar = QtWidgets.QLineEdit()
         self.search_bar.setPlaceholderText("Filter channels...")
+        self.search_bar.setClearButtonEnabled(True)
         self.search_bar.textChanged.connect(self._filter_list)
         left.addWidget(self.search_bar)
+
         self.channel_list = QtWidgets.QListWidget()
+        self.channel_list.setObjectName("ChannelList")
         self.channel_list.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self.channel_list.itemChanged.connect(self._on_item_changed)
         left.addWidget(self.channel_list, stretch=1)
+
+        self.selection_status = QtWidgets.QLabel("0 selected")
+        self.selection_status.setObjectName("MutedText")
+        left.addWidget(self.selection_status)
+
         btn_row = QtWidgets.QHBoxLayout()
+        btn_row.setSpacing(8)
         for label, slot in [("Select All", self._select_all), ("Clear All", self._clear_all)]:
             b = QtWidgets.QPushButton(label)
+            b.setFixedHeight(32)
             b.clicked.connect(slot)
             btn_row.addWidget(b)
         left.addLayout(btn_row)
-        lw = QtWidgets.QWidget()
-        lw.setLayout(left)
-        lw.setFixedWidth(220)
-        root.addWidget(lw)
+        left_panel.setFixedWidth(270)
+        root.addWidget(left_panel)
 
         # Center
-        center = QtWidgets.QVBoxLayout()
-        center.setSpacing(4)
+        center_panel = self._panel()
+        center = QtWidgets.QVBoxLayout(center_panel)
+        center.setContentsMargins(14, 14, 14, 14)
+        center.setSpacing(10)
         tb = QtWidgets.QHBoxLayout()
+        tb.setSpacing(10)
+        title_stack = QtWidgets.QVBoxLayout()
+        title_stack.setSpacing(2)
+        chart_title = QtWidgets.QLabel("Telemetry Plot")
+        chart_title.setObjectName("SectionTitle")
+        chart_subtitle = QtWidgets.QLabel("Hover the graph to inspect synchronized channel values and 3D attitude.")
+        chart_subtitle.setObjectName("MutedText")
+        title_stack.addWidget(chart_title)
+        title_stack.addWidget(chart_subtitle)
+        tb.addLayout(title_stack)
         rb = QtWidgets.QPushButton("Reset Zoom")
+        rb.setFixedHeight(32)
         rb.clicked.connect(self._reset_zoom)
         tb.addStretch()
         tb.addWidget(rb)
         center.addLayout(tb)
+
         self.plot_widget = pg.PlotWidget()
+        self.plot_widget.setObjectName("PlotWidget")
         self.plot_widget.showGrid(x=True, y=True, alpha=0.3)
         self.plot_widget.setLabel("bottom", "Time")
+        self.plot_widget.setMenuEnabled(False)
         self.legend = self.plot_widget.addLegend(offset=(10, 5))
         center.addWidget(self.plot_widget, stretch=1)
+
         self.readout_label = QtWidgets.QLabel("")
         self.readout_label.setWordWrap(True)
-        self.readout_label.setContentsMargins(4, 2, 4, 2)
+        self.readout_label.setObjectName("Readout")
+        self.readout_label.setText("Load a CSV, map columns, then select channels to inspect telemetry.")
+        self.readout_label.setContentsMargins(10, 7, 10, 7)
         self.readout_label.setStyleSheet(
-            "font-family:monospace; font-size:11px; "
-            "background:#181825; border-top:1px solid #45475a; padding:4px;"
+            "font-family:'Menlo','Monaco',monospace; font-size:11px; "
+            "background:#080C14; border:1px solid #263245; border-radius:7px; padding:6px;"
         )
-        self.readout_label.setFixedHeight(52)
+        self.readout_label.setFixedHeight(58)
         center.addWidget(self.readout_label)
+
         self.events_bar = FlightEventsBar()
         self.events_bar.markers_toggled.connect(self._on_markers_toggled)
         center.addWidget(self.events_bar)
-        cw = QtWidgets.QWidget()
-        cw.setLayout(center)
-        root.addWidget(cw, stretch=3)
+        root.addWidget(center_panel, stretch=3)
 
         # Right
-        right_panel = QtWidgets.QVBoxLayout()
-        right_panel.setSpacing(8)
-        rl = QtWidgets.QLabel("3D Orientation")
-        rl.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        rl.setStyleSheet("font-weight:bold; font-size:13px; color:#cdd6f4;")
-        right_panel.addWidget(rl)
+        right_shell = self._panel()
+        right_panel = QtWidgets.QVBoxLayout(right_shell)
+        right_panel.setContentsMargins(14, 14, 14, 14)
+        right_panel.setSpacing(12)
+        right_panel.addLayout(self._section_title("3D Orientation", "Quaternion"))
         self.rocket_view = RocketView()
-        self.rocket_view.setMinimumSize(300, 320)
+        self.rocket_view.setMinimumSize(320, 340)
         right_panel.addWidget(self.rocket_view, stretch=3)
         self.motor_panel = MotorPanel()
-        self.motor_panel.setMinimumHeight(200)
-        self.motor_panel.setStyleSheet("background:#1e1e2e; border-top:1px solid #45475a;")
+        self.motor_panel.setMinimumHeight(230)
         right_panel.addWidget(self.motor_panel, stretch=2)
-        rw = QtWidgets.QWidget()
-        rw.setLayout(right_panel)
-        rw.setFixedWidth(320)
-        root.addWidget(rw)
+        right_shell.setFixedWidth(360)
+        root.addWidget(right_shell)
 
         self.vline = pg.InfiniteLine(angle=90, movable=False,
-            pen=pg.mkPen("#cdd6f4", width=1, style=QtCore.Qt.PenStyle.DashLine))
+            pen=pg.mkPen(THEME["text"], width=1, style=QtCore.Qt.PenStyle.DashLine))
         self.plot_widget.addItem(self.vline, ignoreBounds=True)
         self.plot_widget.scene().sigMouseMoved.connect(self._on_mouse_moved)
 
     def _apply_dark_theme(self):
-        pg.setConfigOption("background", "#1e1e2e")
-        pg.setConfigOption("foreground", "#cdd6f4")
+        pg.setConfigOption("background", THEME["panel"])
+        pg.setConfigOption("foreground", THEME["text"])
+        self.plot_widget.setBackground(THEME["panel"])
+        self.plot_widget.getAxis("bottom").setPen(pg.mkPen(THEME["border_strong"]))
+        self.plot_widget.getAxis("left").setPen(pg.mkPen(THEME["border_strong"]))
+        self.plot_widget.getAxis("bottom").setTextPen(pg.mkPen(THEME["muted"]))
+        self.plot_widget.getAxis("left").setTextPen(pg.mkPen(THEME["muted"]))
         self.setStyleSheet(
-            "QMainWindow, QWidget { background:#1e1e2e; color:#cdd6f4; }"
-            "QListWidget { background:#181825; border:1px solid #45475a; border-radius:4px; font-size:12px; }"
-            "QListWidget::item { padding:4px 8px; }"
-            "QListWidget::item:hover { background:#313244; }"
-            "QPushButton { background:#313244; border:1px solid #45475a; border-radius:4px; padding:4px 12px; color:#cdd6f4; }"
-            "QPushButton:hover { background:#45475a; }"
-            "QPushButton:checked { background:#45475a; border-color:#89b4fa; color:#89b4fa; }"
-            "QLineEdit, QComboBox, QDoubleSpinBox { background:#181825; border:1px solid #45475a; border-radius:4px; padding:4px; color:#cdd6f4; }"
-            "QComboBox::drop-down { border:none; }"
-            "QGroupBox { border:1px solid #45475a; border-radius:4px; margin-top:8px; padding-top:6px; }"
-            "QGroupBox::title { subcontrol-origin:margin; left:8px; color:#a6adc8; }"
-            "QDialogButtonBox QPushButton { min-width:80px; }"
+            f"""
+            QMainWindow, QWidget#AppRoot {{
+                background:{THEME["bg"]};
+                color:{THEME["text"]};
+                font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                font-size:12px;
+            }}
+            QWidget#Panel {{
+                background:{THEME["panel"]};
+                border:1px solid {THEME["border"]};
+                border-radius:8px;
+            }}
+            QWidget#RocketViewport {{
+                border:1px solid {THEME["border"]};
+                border-radius:8px;
+            }}
+            QLabel#SectionTitle {{
+                background:transparent;
+                color:{THEME["text"]};
+                font-size:13px;
+                font-weight:700;
+                letter-spacing:0px;
+            }}
+            QLabel#SectionDetail, QLabel#MutedText, QLabel#MetricLabel {{
+                background:transparent;
+                color:{THEME["muted"]};
+                font-size:11px;
+            }}
+            QLabel#UnitLabel {{
+                background:transparent;
+                color:{THEME["subtle"]};
+                font-size:11px;
+            }}
+            QLabel#DialogTitle {{
+                background:transparent;
+                color:{THEME["text"]};
+                font-size:18px;
+                font-weight:800;
+            }}
+            QLabel#StatusPill {{
+                background:{THEME["panel_2"]};
+                border:1px solid {THEME["border"]};
+                border-radius:7px;
+                color:{THEME["muted"]};
+                padding:8px 10px;
+                font-family:"Menlo", "Monaco", monospace;
+                font-size:11px;
+            }}
+            QLabel#Readout {{
+                color:{THEME["text"]};
+            }}
+            QListWidget#ChannelList {{
+                background:{THEME["bg"]};
+                border:1px solid {THEME["border"]};
+                border-radius:7px;
+                font-size:12px;
+                outline:0;
+            }}
+            QListWidget#ChannelList::item {{
+                padding:6px 8px;
+                border-bottom:1px solid rgba(38,50,69,90);
+            }}
+            QListWidget#ChannelList::item:hover {{
+                background:{THEME["panel_3"]};
+            }}
+            QListWidget#ChannelList::indicator {{
+                width:14px;
+                height:14px;
+            }}
+            QPushButton {{
+                background:{THEME["panel_2"]};
+                border:1px solid {THEME["border_strong"]};
+                border-radius:6px;
+                padding:5px 12px;
+                color:{THEME["text"]};
+                font-weight:650;
+            }}
+            QPushButton:hover {{
+                background:{THEME["panel_3"]};
+                border-color:{THEME["primary"]};
+            }}
+            QPushButton:pressed {{
+                background:{THEME["bg"]};
+            }}
+            QPushButton:focus {{
+                border:1px solid {THEME["primary"]};
+            }}
+            QPushButton#PrimaryButton {{
+                background:{THEME["primary"]};
+                color:#04111E;
+                border-color:{THEME["primary"]};
+            }}
+            QPushButton#PrimaryButton:hover {{
+                background:#7DD3FC;
+                border-color:#7DD3FC;
+            }}
+            QPushButton:checked {{
+                background:#0E7490;
+                border-color:{THEME["primary"]};
+                color:#ECFEFF;
+            }}
+            QLineEdit, QComboBox, QDoubleSpinBox {{
+                background:{THEME["bg"]};
+                border:1px solid {THEME["border"]};
+                border-radius:6px;
+                padding:6px 8px;
+                color:{THEME["text"]};
+                selection-background-color:{THEME["primary"]};
+                selection-color:#04111E;
+            }}
+            QLineEdit:focus, QComboBox:focus, QDoubleSpinBox:focus {{
+                border:1px solid {THEME["primary"]};
+            }}
+            QComboBox::drop-down {{
+                border:none;
+                width:24px;
+            }}
+            QGroupBox {{
+                border:1px solid {THEME["border"]};
+                border-radius:7px;
+                margin-top:10px;
+                padding:10px 8px 8px 8px;
+                color:{THEME["text"]};
+                font-weight:700;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin:margin;
+                left:10px;
+                padding:0 5px;
+                color:{THEME["muted"]};
+            }}
+            QDialog {{
+                background:{THEME["panel"]};
+                color:{THEME["text"]};
+            }}
+            QDialogButtonBox QPushButton {{
+                min-width:88px;
+            }}
+            QToolTip {{
+                background:{THEME["panel_3"]};
+                color:{THEME["text"]};
+                border:1px solid {THEME["border_strong"]};
+                padding:6px;
+            }}
+            """
         )
 
     def _load_csv(self):
@@ -405,6 +624,11 @@ class FlightReviewer(QtWidgets.QMainWindow):
         if not self.headers:
             QtWidgets.QMessageBox.warning(self, "Error", "No numeric columns found.")
             return
+        file_name = QtCore.QFileInfo(path).fileName()
+        self.loaded_file_label.setText("%s\n%d ch  |  %d rows" % (
+            file_name, len(self.headers), len(rows)
+        ))
+        self.loaded_file_label.setToolTip(path)
         self.mapping = {}        # reset mapping, open dialog to set it
         self._raw_data = {k: v.copy() for k, v in self.data.items()}  # save original
         self._open_mapping()
@@ -438,22 +662,29 @@ class FlightReviewer(QtWidgets.QMainWindow):
             item = QtWidgets.QListWidgetItem(h)
             item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.CheckState.Unchecked)
+            item.setToolTip(h)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, i)
             item.setForeground(QtGui.QColor(color_for_index(i)))
             self.channel_list.addItem(item)
         self.channel_list.blockSignals(False)
+        self._update_selection_status()
 
-    def _on_item_changed(self, _): self._rebuild_plots()
+    def _on_item_changed(self, _):
+        self._update_selection_status()
+        self._rebuild_plots()
 
     def _filter_list(self, text):
         for i in range(self.channel_list.count()):
             item = self.channel_list.item(i)
             item.setHidden(text.lower() not in item.text().lower())
+        self._update_selection_status()
 
     def _select_all(self):
         self.channel_list.blockSignals(True)
         for i in range(self.channel_list.count()):
             self.channel_list.item(i).setCheckState(QtCore.Qt.CheckState.Checked)
         self.channel_list.blockSignals(False)
+        self._update_selection_status()
         self._rebuild_plots()
 
     def _clear_all(self):
@@ -461,6 +692,7 @@ class FlightReviewer(QtWidgets.QMainWindow):
         for i in range(self.channel_list.count()):
             self.channel_list.item(i).setCheckState(QtCore.Qt.CheckState.Unchecked)
         self.channel_list.blockSignals(False)
+        self._update_selection_status()
         self._rebuild_plots()
 
     def _checked_channels(self):
@@ -468,8 +700,20 @@ class FlightReviewer(QtWidgets.QMainWindow):
         for i in range(self.channel_list.count()):
             item = self.channel_list.item(i)
             if item.checkState() == QtCore.Qt.CheckState.Checked:
-                checked.append((i, item.text()))
+                color_idx = item.data(QtCore.Qt.ItemDataRole.UserRole)
+                checked.append((int(color_idx), item.text()))
         return checked
+
+    def _update_selection_status(self):
+        total = self.channel_list.count()
+        selected = len(self._checked_channels())
+        visible = sum(
+            1 for i in range(total)
+            if not self.channel_list.item(i).isHidden()
+        )
+        self.selection_status.setText("%d selected  |  %d visible  |  %d total" % (
+            selected, visible, total
+        ))
 
     def _rebuild_plots(self):
         self.plot_widget.clear()
